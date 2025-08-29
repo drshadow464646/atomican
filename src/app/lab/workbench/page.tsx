@@ -214,13 +214,6 @@ export default function WorkbenchPage() {
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
       />
-      <div className="flex items-center justify-end px-4 py-2 border-b bg-card">
-         <Button variant="ghost" size="sm" onClick={() => setIsGuidancePanelVisible(!isGuidancePanelVisible)}>
-             <span className='mr-2 hidden md:inline'>{isGuidancePanelVisible ? 'Hide Guidance' : 'Show Guidance'}</span>
-             {isGuidancePanelVisible ? <PanelRightClose /> : <PanelRightOpen />}
-         </Button>
-      </div>
-
       <ResizablePanelGroup 
         direction={isMobile ? "vertical" : "horizontal"} 
         className="flex-1"
@@ -280,5 +273,3 @@ export default function WorkbenchPage() {
     </div>
   );
 }
-
-    
