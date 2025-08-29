@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useTransition, useEffect } from 'react';
 import { LabHeader } from '@/components/lab-header';
 import { InventoryPanel } from '@/components/inventory-panel';
 import { Workbench } from '@/components/workbench';
@@ -47,6 +47,11 @@ export default function WorkbenchPage() {
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
   const [isGuidancePanelVisible, setIsGuidancePanelVisible] = useState(true);
   const isMobile = useIsMobile();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const { toast } = useToast();
 
@@ -197,6 +202,10 @@ export default function WorkbenchPage() {
   }
 
   const arePanelsVisible = isInventoryPanelVisible || isGuidancePanelVisible;
+
+  if (!isClient) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
