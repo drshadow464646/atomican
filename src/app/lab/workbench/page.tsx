@@ -25,6 +25,8 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import { PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -42,8 +44,8 @@ export default function WorkbenchPage() {
   const [safetyGogglesOn, setSafetyGogglesOn] = useState(true);
   const [isSuggestionLoading, startSuggestionTransition] = useTransition();
 
-  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(false);
-  const [isGuidanceCollapsed, setIsGuidanceCollapsed] = useState(false);
+  const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
+  const [isGuidancePanelVisible, setIsGuidancePanelVisible] = useState(true);
   const isMobile = useIsMobile();
 
   const { toast } = useToast();
@@ -189,59 +191,72 @@ export default function WorkbenchPage() {
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
       />
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-card">
+         <Button variant="ghost" size="sm" onClick={() => setIsInventoryPanelVisible(!isInventoryPanelVisible)}>
+            {isInventoryPanelVisible ? <PanelLeftClose /> : <PanelLeftOpen />}
+            <span className='ml-2'>{isInventoryPanelVisible ? 'Hide Inventory' : 'Show Inventory'}</span>
+         </Button>
+         <Button variant="ghost" size="sm" onClick={() => setIsGuidancePanelVisible(!isGuidancePanelVisible)}>
+             {isGuidancePanelVisible ? <PanelRightClose /> : <PanelRightOpen />}
+             <span className='ml-2'>{isGuidancePanelVisible ? 'Hide Guidance' : 'Show Guidance'}</span>
+         </Button>
+      </div>
+
       <ResizablePanelGroup 
         direction={isMobile ? "vertical" : "horizontal"} 
         className="flex-1"
       >
-        <ResizablePanel
-          defaultSize={isMobile ? 30 : 20}
-          minSize={15}
-          maxSize={isMobile ? 40 : 25}
-          collapsible
-          collapsedSize={4}
-          onCollapse={() => setIsInventoryCollapsed(true)}
-          onExpand={() => setIsInventoryCollapsed(false)}
-          className={cn(
-            'transition-all duration-300 ease-in-out',
-            isInventoryCollapsed && 'min-w-[50px] min-h-[50px]'
-          )}
-        >
-          <InventoryPanel
-            equipment={INITIAL_EQUIPMENT}
-            chemicals={INITIAL_CHEMICALS}
-            onAddEquipment={handleAddEquipment}
-            onAddChemical={handleAddChemical}
-            onAddIndicator={handleAddIndicator}
-            isCollapsed={isInventoryCollapsed}
-          />
-        </ResizablePanel>
-        <ResizableHandle withHandle />
+        {isInventoryPanelVisible && (
+          <>
+            <ResizablePanel
+              defaultSize={isMobile ? 30 : 20}
+              minSize={15}
+              maxSize={isMobile ? 40 : 25}
+              collapsible
+              collapsedSize={0}
+              className={cn(
+                'transition-all duration-300 ease-in-out'
+              )}
+            >
+              <InventoryPanel
+                equipment={INITIAL_EQUIPMENT}
+                chemicals={INITIAL_CHEMICALS}
+                onAddEquipment={handleAddEquipment}
+                onAddChemical={handleAddChemical}
+                onAddIndicator={handleAddIndicator}
+                isCollapsed={false}
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+          </>
+        )}
         <ResizablePanel defaultSize={isMobile ? 40 : 55} minSize={30}>
           <Workbench state={experimentState} onTitrate={handleTitrate} />
         </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel
-          defaultSize={isMobile ? 30 : 25}
-          minSize={15}
-          maxSize={isMobile ? 50 : 30}
-          collapsible
-          collapsedSize={4}
-          onCollapse={() => setIsGuidanceCollapsed(true)}
-          onExpand={() => setIsGuidanceCollapsed(false)}
-          className={cn(
-            'transition-all duration-300 ease-in-out',
-            isGuidanceCollapsed && 'min-w-[50px] min-h-[50px]'
-          )}
-        >
-          <GuidancePanel
-            logs={labLogs}
-            onGetSuggestion={handleGetSuggestion}
-            suggestion={aiSuggestion}
-            isSuggestionLoading={isSuggestionLoading}
-            isCollapsed={isGuidanceCollapsed}
-            onAddCustomLog={handleAddCustomLog}
-          />
-        </ResizablePanel>
+        {isGuidancePanelVisible && (
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel
+              defaultSize={isMobile ? 30 : 25}
+              minSize={15}
+              maxSize={isMobile ? 50 : 30}
+              collapsible
+              collapsedSize={0}
+              className={cn(
+                'transition-all duration-300 ease-in-out'
+              )}
+            >
+              <GuidancePanel
+                logs={labLogs}
+                onGetSuggestion={handleGetSuggestion}
+                suggestion={aiSuggestion}
+                isSuggestionLoading={isSuggestionLoading}
+                isCollapsed={false}
+                onAddCustomLog={handleAddCustomLog}
+              />
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
     </div>
   );

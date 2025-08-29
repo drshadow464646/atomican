@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Beaker, FlaskConical, Pipette, Droplets, Plus, PanelLeftClose, PanelRightClose, Package } from 'lucide-react';
