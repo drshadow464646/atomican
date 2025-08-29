@@ -214,11 +214,7 @@ export default function WorkbenchPage() {
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
       />
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-card">
-         <Button variant="ghost" size="sm" onClick={() => setIsInventoryPanelVisible(!isInventoryPanelVisible)}>
-            {isInventoryPanelVisible ? <PanelLeftClose /> : <PanelLeftOpen />}
-            <span className='ml-2 hidden md:inline'>{isInventoryPanelVisible ? 'Hide Inventory' : 'Show Inventory'}</span>
-         </Button>
+      <div className="flex items-center justify-end px-4 py-2 border-b bg-card">
          <Button variant="ghost" size="sm" onClick={() => setIsGuidancePanelVisible(!isGuidancePanelVisible)}>
              <span className='mr-2 hidden md:inline'>{isGuidancePanelVisible ? 'Hide Guidance' : 'Show Guidance'}</span>
              {isGuidancePanelVisible ? <PanelRightClose /> : <PanelRightOpen />}
@@ -247,7 +243,7 @@ export default function WorkbenchPage() {
                 onAddEquipment={handleAddEquipment}
                 onAddChemical={handleAddChemical}
                 onAddIndicator={handleAddIndicator}
-                isCollapsed={false}
+                isCollapsed={!isInventoryPanelVisible}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -274,7 +270,7 @@ export default function WorkbenchPage() {
                 onGetSuggestion={handleGetSuggestion}
                 suggestion={aiSuggestion}
                 isSuggestionLoading={isSuggestionLoading}
-                isCollapsed={false}
+                isCollapsed={!isGuidancePanelVisible}
                 onAddCustomLog={handleAddCustomLog}
               />
             </ResizablePanel>
@@ -284,3 +280,5 @@ export default function WorkbenchPage() {
     </div>
   );
 }
+
+    
