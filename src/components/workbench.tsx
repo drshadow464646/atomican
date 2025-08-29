@@ -13,7 +13,7 @@ type WorkbenchProps = {
 };
 
 const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: number }) => (
-  <div className="relative h-64 w-48">
+  <div className="relative h-48 w-32 md:h-64 md:w-48">
     <svg viewBox="0 0 100 120" className="h-full w-full">
       <defs>
         <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
@@ -61,10 +61,10 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-between h-[calc(100%-80px)]">
-        <div className="flex w-full justify-around items-end flex-1">
+        <div className="flex w-full flex-col md:flex-row justify-around items-center md:items-end flex-1">
           {hasBurette && buretteSolution ? (
             <div className="flex flex-col items-center gap-2">
-              <Pipette className="h-32 w-32 text-muted-foreground/50" />
+              <Pipette className="h-24 w-24 md:h-32 md:w-32 text-muted-foreground/50" />
               <p className="font-semibold text-lg">{buretteSolution.chemical.name}</p>
               <p className="text-sm text-muted-foreground">
                 Remaining: <span className='font-bold text-foreground'>{(buretteSolution.volume - state.volumeAdded).toFixed(1)}ml</span>
@@ -72,7 +72,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
             </div>
           ) : (
              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Pipette className="h-32 w-32" />
+                <Pipette className="h-24 w-24 md:h-32 md:w-32" />
                 <p>No Burette</p>
             </div>
           )}
@@ -82,11 +82,11 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
               <p className="font-semibold text-lg">
                 {beakerSolution.chemical.name}
               </p>
-              {state.ph !== null && <p className="text-3xl font-bold">pH: {state.ph.toFixed(2)}</p>}
+              {state.ph !== null && <p className="text-2xl md:text-3xl font-bold">pH: {state.ph.toFixed(2)}</p>}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Beaker className="h-32 w-32" />
+                <Beaker className="h-24 w-24 md:h-32 md:w-32" />
                 <p>No Beaker</p>
             </div>
           )}

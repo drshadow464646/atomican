@@ -18,13 +18,12 @@ import {
 } from '@/lib/experiment';
 import { getSuggestion } from '@/app/actions';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { PanelRightClose, PanelLeftClose } from 'lucide-react';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -44,6 +43,7 @@ export default function Home() {
 
   const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(false);
   const [isGuidanceCollapsed, setIsGuidanceCollapsed] = useState(false);
+  const isMobile = useIsMobile();
 
   const { toast } = useToast();
 
@@ -187,18 +187,21 @@ export default function Home() {
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
       />
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup 
+        direction={isMobile ? "vertical" : "horizontal"} 
+        className="flex-1"
+      >
         <ResizablePanel
-          defaultSize={20}
+          defaultSize={isMobile ? 30 : 20}
           minSize={15}
-          maxSize={25}
+          maxSize={isMobile ? 40 : 25}
           collapsible
           collapsedSize={4}
           onCollapse={() => setIsInventoryCollapsed(true)}
           onExpand={() => setIsInventoryCollapsed(false)}
           className={cn(
             'transition-all duration-300 ease-in-out',
-            isInventoryCollapsed && 'min-w-[50px]'
+            isInventoryCollapsed && 'min-w-[50px] min-h-[50px]'
           )}
         >
           <InventoryPanel
@@ -211,21 +214,21 @@ export default function Home() {
           />
         </ResizablePanel>
         <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={55} minSize={30}>
+        <ResizablePanel defaultSize={isMobile ? 40 : 55} minSize={30}>
           <Workbench state={experimentState} onTitrate={handleTitrate} />
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel
-          defaultSize={25}
+          defaultSize={isMobile ? 30 : 25}
           minSize={15}
-          maxSize={30}
+          maxSize={isMobile ? 50 : 30}
           collapsible
           collapsedSize={4}
           onCollapse={() => setIsGuidanceCollapsed(true)}
           onExpand={() => setIsGuidanceCollapsed(false)}
           className={cn(
             'transition-all duration-300 ease-in-out',
-            isGuidanceCollapsed && 'min-w-[50px]'
+            isGuidanceCollapsed && 'min-w-[50px] min-h-[50px]'
           )}
         >
           <GuidancePanel
