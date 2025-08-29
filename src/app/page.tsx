@@ -52,7 +52,7 @@ export default function Home() {
       ...prevLogs,
       {
         id: prevLogs.length,
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: new Date(),
         text,
         isCustom,
       },

@@ -34,7 +34,7 @@ export type ExperimentState = {
 
 export type LabLog = {
   id: number;
-  timestamp: string;
+  timestamp: Date;
   text: string;
   isCustom?: boolean;
 };
