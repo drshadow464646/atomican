@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/resizable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -184,6 +184,18 @@ export default function WorkbenchPage() {
     });
   }
 
+  const handleTogglePanels = () => {
+    if(isInventoryPanelVisible || isGuidancePanelVisible) {
+        setIsInventoryPanelVisible(false);
+        setIsGuidancePanelVisible(false);
+    } else {
+        setIsInventoryPanelVisible(true);
+        setIsGuidancePanelVisible(true);
+    }
+  }
+
+  const arePanelsVisible = isInventoryPanelVisible || isGuidancePanelVisible;
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <LabHeader 
@@ -194,11 +206,15 @@ export default function WorkbenchPage() {
       <div className="flex items-center justify-between px-4 py-2 border-b bg-card">
          <Button variant="ghost" size="sm" onClick={() => setIsInventoryPanelVisible(!isInventoryPanelVisible)}>
             {isInventoryPanelVisible ? <PanelLeftClose /> : <PanelLeftOpen />}
-            <span className='ml-2'>{isInventoryPanelVisible ? 'Hide Inventory' : 'Show Inventory'}</span>
+            <span className='ml-2 hidden md:inline'>{isInventoryPanelVisible ? 'Hide Inventory' : 'Show Inventory'}</span>
+         </Button>
+         <Button variant="outline" size="sm" onClick={handleTogglePanels}>
+            {arePanelsVisible ? <ArrowLeftToLine className="md:mr-2" /> : <ArrowRightToLine className="md:mr-2" />}
+            <span className="hidden md:inline">{arePanelsVisible ? 'Hide Panels' : 'Show Panels'}</span>
          </Button>
          <Button variant="ghost" size="sm" onClick={() => setIsGuidancePanelVisible(!isGuidancePanelVisible)}>
+             <span className='mr-2 hidden md:inline'>{isGuidancePanelVisible ? 'Hide Guidance' : 'Show Guidance'}</span>
              {isGuidancePanelVisible ? <PanelRightClose /> : <PanelRightOpen />}
-             <span className='ml-2'>{isGuidancePanelVisible ? 'Hide Guidance' : 'Show Guidance'}</span>
          </Button>
       </div>
 
