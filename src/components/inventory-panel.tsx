@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Chemical, Equipment } from '@/lib/experiment';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 type InventoryPanelProps = {
   equipment: Equipment[];
@@ -33,9 +34,19 @@ export function InventoryPanel({
 }: InventoryPanelProps) {
     if (isCollapsed) {
     return (
-      <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-12 border rounded-lg">
-        <PanelRightClose />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-full border rounded-lg">
+              <PanelRightClose />
+              <span className="sr-only">Open Inventory</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Open Inventory</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
   return (
@@ -44,6 +55,7 @@ export function InventoryPanel({
         <CardTitle>Inventory</CardTitle>
         <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
           <PanelLeftClose />
+          <span className="sr-only">Collapse Inventory</span>
         </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">

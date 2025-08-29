@@ -18,6 +18,8 @@ import {
 } from '@/lib/experiment';
 import { getSuggestion } from '@/app/actions';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { PanelRightClose, PanelLeftClose } from 'lucide-react';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -169,8 +171,8 @@ export default function Home() {
       <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 overflow-hidden">
         <div
           className={cn(
-            'transition-all duration-300 ease-in-out',
-            isInventoryCollapsed ? 'md:col-span-0 hidden' : 'md:col-span-3 h-full overflow-y-auto'
+            'transition-all duration-300 ease-in-out h-full overflow-y-auto',
+            isInventoryCollapsed ? 'md:col-span-1' : 'md:col-span-3'
           )}
         >
           <InventoryPanel
@@ -186,16 +188,16 @@ export default function Home() {
         <div
           className={cn(
             'h-full overflow-y-auto transition-all duration-300 ease-in-out',
-            isInventoryCollapsed && isGuidanceCollapsed ? 'md:col-span-12' :
-            isInventoryCollapsed || isGuidanceCollapsed ? 'md:col-span-9' : 'md:col-span-6'
+            isInventoryCollapsed && isGuidanceCollapsed ? 'md:col-span-10' :
+            (isInventoryCollapsed || isGuidanceCollapsed) ? 'md:col-span-8' : 'md:col-span-6'
           )}
         >
           <Workbench state={experimentState} onTitrate={handleTitrate} />
         </div>
         <div
           className={cn(
-            'transition-all duration-300 ease-in-out',
-            isGuidanceCollapsed ? 'md:col-span-0 hidden' : 'md:col-span-3 h-full overflow-y-auto'
+            'transition-all duration-300 ease-in-out h-full overflow-y-auto',
+            isGuidanceCollapsed ? 'md:col-span-1' : 'md:col-span-3'
           )}
         >
           <GuidancePanel

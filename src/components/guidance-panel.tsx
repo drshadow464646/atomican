@@ -8,6 +8,7 @@ import { LabNotebook } from './lab-notebook';
 import { Bot, Lightbulb, TestTube, Loader2, PanelLeftClose, PanelRightClose, Pen } from 'lucide-react';
 import type { AiSuggestion, LabLog } from '@/lib/experiment';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 type GuidancePanelProps = {
   logs: LabLog[];
@@ -37,9 +38,19 @@ export function GuidancePanel({
 
   if (isCollapsed) {
     return (
-      <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-12 border rounded-lg">
-        <PanelLeftClose />
-      </Button>
+       <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-full border rounded-lg">
+              <PanelLeftClose />
+              <span className="sr-only">Open Guidance</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Open Guidance</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
@@ -52,6 +63,7 @@ export function GuidancePanel({
         </CardTitle>
         <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
           <PanelRightClose />
+           <span className="sr-only">Collapse Guidance</span>
         </Button>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto">
