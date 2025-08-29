@@ -219,10 +219,6 @@ export default function WorkbenchPage() {
             {isInventoryPanelVisible ? <PanelLeftClose /> : <PanelLeftOpen />}
             <span className='ml-2 hidden md:inline'>{isInventoryPanelVisible ? 'Hide Inventory' : 'Show Inventory'}</span>
          </Button>
-         <Button variant="outline" size="sm" onClick={handleTogglePanels}>
-            {arePanelsVisible ? <ArrowLeftToLine className="md:mr-2" /> : <ArrowRightToLine className="md:mr-2" />}
-            <span className="hidden md:inline">{arePanelsVisible ? 'Hide Panels' : 'Show Panels'}</span>
-         </Button>
          <Button variant="ghost" size="sm" onClick={() => setIsGuidancePanelVisible(!isGuidancePanelVisible)}>
              <span className='mr-2 hidden md:inline'>{isGuidancePanelVisible ? 'Hide Guidance' : 'Show Guidance'}</span>
              {isGuidancePanelVisible ? <PanelRightClose /> : <PanelRightOpen />}
