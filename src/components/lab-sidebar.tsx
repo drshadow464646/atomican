@@ -71,16 +71,14 @@ export function LabSidebar() {
       <SidebarMenu className="flex-1">
         {menuItems.map(item => (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href} passHref>
+            <Link href={item.href} passHref legacyBehavior>
               <SidebarMenuButton
-                asChild
+                as="a"
                 isActive={pathname.startsWith(item.href)}
                 tooltip={{ children: item.label, side: 'right' }}
               >
-                <a>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </a>
+                <item.icon />
+                <span>{item.label}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -90,16 +88,14 @@ export function LabSidebar() {
       <SidebarFooter>
          <Separator className="my-1" />
          <SidebarMenuItem>
-             <Link href="/lab/profile" passHref>
+             <Link href="/lab/profile" passHref legacyBehavior>
               <SidebarMenuButton
-                asChild
+                as="a"
                 isActive={pathname.startsWith('/lab/profile')}
                 tooltip={{ children: 'Profile', side: 'right' }}
               >
-                <a>
-                  <User />
-                  <span>Profile</span>
-                </a>
+                <User />
+                <span>Profile</span>
               </SidebarMenuButton>
             </Link>
          </SidebarMenuItem>
