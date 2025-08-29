@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LabNotebook } from './lab-notebook';
-import { Bot, Lightbulb, TestTube, Loader2, PanelLeftClose, PanelRightClose, Pen } from 'lucide-react';
+import { Bot, Lightbulb, TestTube, Loader2, Pen, Sparkles } from 'lucide-react';
 import type { AiSuggestion, LabLog } from '@/lib/experiment';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { cn } from '@/lib/utils';
+import { Separator } from './ui/separator';
 
 type GuidancePanelProps = {
   logs: LabLog[];
@@ -16,7 +18,6 @@ type GuidancePanelProps = {
   suggestion: AiSuggestion;
   isSuggestionLoading: boolean;
   isCollapsed: boolean;
-  onToggleCollapse: () => void;
   onAddCustomLog: (note: string) => void;
 };
 
@@ -26,7 +27,6 @@ export function GuidancePanel({
   suggestion,
   isSuggestionLoading,
   isCollapsed,
-  onToggleCollapse,
   onAddCustomLog,
 }: GuidancePanelProps) {
   const [customNote, setCustomNote] = useState('');
@@ -38,40 +38,26 @@ export function GuidancePanel({
 
   if (isCollapsed) {
     return (
-       <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-full border rounded-lg">
-              <PanelLeftClose />
-              <span className="sr-only">Open Guidance</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            <p>Open Guidance</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+       <div className="h-full flex items-center justify-center">
+        <Bot className="h-8 w-8 text-muted-foreground" />
+       </div>
     );
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-6 w-6" />
+    <Card className="h-full flex flex-col border-0 rounded-none">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Bot className="h-5 w-5" />
           AI Assistant
         </CardTitle>
-        <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
-          <PanelRightClose />
-           <span className="sr-only">Collapse Guidance</span>
-        </Button>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto">
-        <Button onClick={onGetSuggestion} disabled={isSuggestionLoading} className="w-full">
+      <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto pt-0">
+        <Button onClick={onGetSuggestion} disabled={isSuggestionLoading}>
           {isSuggestionLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Lightbulb className="mr-2 h-4 w-4" />
+            <Sparkles className="mr-2 h-4 w-4" />
           )}
           Suggest Next Step
         </Button>
@@ -80,11 +66,11 @@ export function GuidancePanel({
             <>
               <Alert>
                 <TestTube className="h-4 w-4" />
-                <AlertTitle>Next Step</AlertTitle>
+                <AlertTitle>Suggestion</AlertTitle>
                 <AlertDescription>{suggestion.nextStepSuggestion}</AlertDescription>
               </Alert>
               {suggestion.hint && (
-                <Alert variant="default" className="bg-accent/20">
+                <Alert variant="default" className="bg-primary/10 border-primary/20">
                   <Lightbulb className="h-4 w-4" />
                   <AlertTitle>Hint</AlertTitle>
                   <AlertDescription>{suggestion.hint}</AlertDescription>
@@ -99,23 +85,29 @@ export function GuidancePanel({
               )}
             </>
           ) : (
-            <div className="text-center text-sm text-muted-foreground p-4">
-              Click the button above to get a suggestion for your next step.
+            <div className="text-center text-sm text-muted-foreground p-4 rounded-lg bg-muted">
+              Click the button to get an AI-powered suggestion for your next step.
             </div>
           )}
         </div>
-        <LabNotebook logs={logs} />
+        
+        <Separator className="my-2"/>
+        
+        <div className="flex-1 flex flex-col">
+          <LabNotebook logs={logs} />
+        </div>
+        
          <div className="mt-auto pt-4 border-t">
-            <h3 className="mb-2 text-lg font-semibold">Add Custom Note</h3>
+            <h3 className="mb-2 font-medium">Add a Note</h3>
             <Textarea 
               placeholder="Record your observations..."
               value={customNote}
               onChange={(e) => setCustomNote(e.target.value)}
               className="mb-2"
             />
-            <Button onClick={handleAddNote} className="w-full">
+            <Button onClick={handleAddNote} className="w-full" variant="secondary">
               <Pen className="mr-2 h-4 w-4" />
-              Add Note
+              Add to Notebook
             </Button>
         </div>
       </CardContent>

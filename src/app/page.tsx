@@ -20,6 +20,11 @@ import { getSuggestion } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PanelRightClose, PanelLeftClose } from 'lucide-react';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -71,10 +76,10 @@ export default function Home() {
     newState.ph = newPh;
     if (newState.beaker?.indicator) {
       if (newPh > 8.2) {
-        if (newState.color !== 'rgba(255, 215, 0, 0.5)') { // Using accent color
+        if (newState.color !== 'hsl(var(--primary) / 0.3)') {
           addLog('Solution color changed to pink.');
         }
-        newState.color = 'hsla(51, 100%, 50%, 0.5)';
+        newState.color = 'hsl(var(--primary) / 0.3)';
       } else {
         newState.color = 'transparent';
       }
@@ -165,14 +170,35 @@ export default function Home() {
     }
   };
 
+  const handleResetExperiment = () => {
+    setExperimentState(initialExperimentState);
+    setLabLogs([]);
+    setAiSuggestion(null);
+    toast({
+      title: 'Experiment Reset',
+      description: 'The lab has been reset to its initial state.',
+    });
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <LabHeader safetyGogglesOn={safetyGogglesOn} onGoggleToggle={setSafetyGogglesOn} />
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 overflow-hidden">
-        <div
+    <div className="flex flex-col h-screen bg-background text-foreground">
+      <LabHeader 
+        safetyGogglesOn={safetyGogglesOn} 
+        onGoggleToggle={setSafetyGogglesOn}
+        onResetExperiment={handleResetExperiment}
+      />
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        <ResizablePanel
+          defaultSize={20}
+          minSize={15}
+          maxSize={25}
+          collapsible
+          collapsedSize={4}
+          onCollapse={() => setIsInventoryCollapsed(true)}
+          onExpand={() => setIsInventoryCollapsed(false)}
           className={cn(
-            'transition-all duration-300 ease-in-out h-full overflow-y-auto',
-            isInventoryCollapsed ? 'md:col-span-1' : 'md:col-span-3'
+            'transition-all duration-300 ease-in-out',
+            isInventoryCollapsed && 'min-w-[50px]'
           )}
         >
           <InventoryPanel
@@ -182,22 +208,24 @@ export default function Home() {
             onAddChemical={handleAddChemical}
             onAddIndicator={handleAddIndicator}
             isCollapsed={isInventoryCollapsed}
-            onToggleCollapse={() => setIsInventoryCollapsed(!isInventoryCollapsed)}
           />
-        </div>
-        <div
-          className={cn(
-            'h-full overflow-y-auto transition-all duration-300 ease-in-out',
-            isInventoryCollapsed && isGuidanceCollapsed ? 'md:col-span-10' :
-            (isInventoryCollapsed || isGuidanceCollapsed) ? 'md:col-span-8' : 'md:col-span-6'
-          )}
-        >
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={55} minSize={30}>
           <Workbench state={experimentState} onTitrate={handleTitrate} />
-        </div>
-        <div
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel
+          defaultSize={25}
+          minSize={15}
+          maxSize={30}
+          collapsible
+          collapsedSize={4}
+          onCollapse={() => setIsGuidanceCollapsed(true)}
+          onExpand={() => setIsGuidanceCollapsed(false)}
           className={cn(
-            'transition-all duration-300 ease-in-out h-full overflow-y-auto',
-            isGuidanceCollapsed ? 'md:col-span-1' : 'md:col-span-3'
+            'transition-all duration-300 ease-in-out',
+            isGuidanceCollapsed && 'min-w-[50px]'
           )}
         >
           <GuidancePanel
@@ -206,11 +234,10 @@ export default function Home() {
             suggestion={aiSuggestion}
             isSuggestionLoading={isSuggestionLoading}
             isCollapsed={isGuidanceCollapsed}
-            onToggleCollapse={() => setIsGuidanceCollapsed(!isGuidanceCollapsed)}
             onAddCustomLog={handleAddCustomLog}
           />
-        </div>
-      </main>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
