@@ -1,9 +1,11 @@
+
 'use client';
 
-import { Glasses, Beaker, RefreshCw } from 'lucide-react';
+import { Glasses, RefreshCw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
+import { SidebarTrigger } from './ui/sidebar';
 
 type LabHeaderProps = {
   safetyGogglesOn: boolean;
@@ -15,9 +17,9 @@ export function LabHeader({ safetyGogglesOn, onGoggleToggle, onResetExperiment }
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-2">
-        <Beaker className="h-6 w-6 text-primary" />
+        <SidebarTrigger className="md:hidden" />
         <h1 className="text-xl font-bold tracking-tight text-foreground">
-          LabSphere
+          Workbench
         </h1>
       </div>
       <div className='flex items-center gap-4'>
