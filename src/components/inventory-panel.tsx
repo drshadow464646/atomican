@@ -1,6 +1,6 @@
 'use client';
 
-import { Beaker, FlaskConical, Pipette, Droplets, Plus } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, Droplets, Plus, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,6 +12,8 @@ type InventoryPanelProps = {
   onAddEquipment: (equipment: Equipment) => void;
   onAddChemical: (chemical: Chemical, target: 'beaker' | 'burette') => void;
   onAddIndicator: (chemical: Chemical) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 };
 
 const equipmentIcons = {
@@ -26,11 +28,23 @@ export function InventoryPanel({
   onAddEquipment,
   onAddChemical,
   onAddIndicator,
+  isCollapsed,
+  onToggleCollapse
 }: InventoryPanelProps) {
+    if (isCollapsed) {
+    return (
+      <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-12 border rounded-lg">
+        <PanelRightClose />
+      </Button>
+    );
+  }
   return (
     <Card className="h-full">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Inventory</CardTitle>
+        <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
+          <PanelLeftClose />
+        </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div>

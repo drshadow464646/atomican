@@ -17,6 +17,7 @@ import {
   calculatePH,
 } from '@/lib/experiment';
 import { getSuggestion } from '@/app/actions';
+import { cn } from '@/lib/utils';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -34,15 +35,19 @@ export default function Home() {
   const [safetyGogglesOn, setSafetyGogglesOn] = useState(true);
   const [isSuggestionLoading, startSuggestionTransition] = useTransition();
 
+  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(false);
+  const [isGuidanceCollapsed, setIsGuidanceCollapsed] = useState(false);
+
   const { toast } = useToast();
 
-  const addLog = useCallback((text: string) => {
+  const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs((prevLogs) => [
       ...prevLogs,
       {
         id: prevLogs.length,
         timestamp: new Date().toLocaleTimeString(),
         text,
+        isCustom,
       },
     ]);
   }, []);
@@ -152,28 +157,55 @@ export default function Home() {
     });
   }, [labLogs, experimentState]);
 
+  const handleAddCustomLog = (note: string) => {
+    if(note.trim()) {
+      addLog(note, true);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <LabHeader safetyGogglesOn={safetyGogglesOn} onGoggleToggle={setSafetyGogglesOn} />
       <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 overflow-hidden">
-        <div className="md:col-span-3 h-full overflow-y-auto">
+        <div
+          className={cn(
+            'transition-all duration-300 ease-in-out',
+            isInventoryCollapsed ? 'md:col-span-0 hidden' : 'md:col-span-3 h-full overflow-y-auto'
+          )}
+        >
           <InventoryPanel
             equipment={INITIAL_EQUIPMENT}
             chemicals={INITIAL_CHEMICALS}
             onAddEquipment={handleAddEquipment}
             onAddChemical={handleAddChemical}
             onAddIndicator={handleAddIndicator}
+            isCollapsed={isInventoryCollapsed}
+            onToggleCollapse={() => setIsInventoryCollapsed(!isInventoryCollapsed)}
           />
         </div>
-        <div className="md:col-span-6 h-full overflow-y-auto">
+        <div
+          className={cn(
+            'h-full overflow-y-auto transition-all duration-300 ease-in-out',
+            isInventoryCollapsed && isGuidanceCollapsed ? 'md:col-span-12' :
+            isInventoryCollapsed || isGuidanceCollapsed ? 'md:col-span-9' : 'md:col-span-6'
+          )}
+        >
           <Workbench state={experimentState} onTitrate={handleTitrate} />
         </div>
-        <div className="md:col-span-3 h-full overflow-y-auto">
+        <div
+          className={cn(
+            'transition-all duration-300 ease-in-out',
+            isGuidanceCollapsed ? 'md:col-span-0 hidden' : 'md:col-span-3 h-full overflow-y-auto'
+          )}
+        >
           <GuidancePanel
             logs={labLogs}
             onGetSuggestion={handleGetSuggestion}
             suggestion={aiSuggestion}
             isSuggestionLoading={isSuggestionLoading}
+            isCollapsed={isGuidanceCollapsed}
+            onToggleCollapse={() => setIsGuidanceCollapsed(!isGuidanceCollapsed)}
+            onAddCustomLog={handleAddCustomLog}
           />
         </div>
       </main>

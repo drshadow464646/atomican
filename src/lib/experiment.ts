@@ -36,6 +36,7 @@ export type LabLog = {
   id: number;
   timestamp: string;
   text: string;
+  isCustom?: boolean;
 };
 
 export type AiSuggestion = ExperimentStepSuggestionOutput | null;

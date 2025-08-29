@@ -5,14 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LabNotebook } from './lab-notebook';
-import { Bot, Lightbulb, TestTube, Loader2 } from 'lucide-react';
+import { Bot, Lightbulb, TestTube, Loader2, PanelLeftClose, PanelRightClose, Pen } from 'lucide-react';
 import type { AiSuggestion, LabLog } from '@/lib/experiment';
+import { Textarea } from '@/components/ui/textarea';
 
 type GuidancePanelProps = {
   logs: LabLog[];
   onGetSuggestion: () => void;
   suggestion: AiSuggestion;
   isSuggestionLoading: boolean;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  onAddCustomLog: (note: string) => void;
 };
 
 export function GuidancePanel({
@@ -20,16 +24,37 @@ export function GuidancePanel({
   onGetSuggestion,
   suggestion,
   isSuggestionLoading,
+  isCollapsed,
+  onToggleCollapse,
+  onAddCustomLog,
 }: GuidancePanelProps) {
+  const [customNote, setCustomNote] = useState('');
+
+  const handleAddNote = () => {
+    onAddCustomLog(customNote);
+    setCustomNote('');
+  };
+
+  if (isCollapsed) {
+    return (
+      <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-full w-12 border rounded-lg">
+        <PanelLeftClose />
+      </Button>
+    );
+  }
+
   return (
-    <Card className="h-full">
-      <CardHeader>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-6 w-6" />
           AI Assistant
         </CardTitle>
+        <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
+          <PanelRightClose />
+        </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto">
         <Button onClick={onGetSuggestion} disabled={isSuggestionLoading} className="w-full">
           {isSuggestionLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -38,7 +63,7 @@ export function GuidancePanel({
           )}
           Suggest Next Step
         </Button>
-        <div className="mt-4 space-y-3">
+        <div className="space-y-3">
           {suggestion ? (
             <>
               <Alert>
@@ -68,6 +93,19 @@ export function GuidancePanel({
           )}
         </div>
         <LabNotebook logs={logs} />
+         <div className="mt-auto pt-4 border-t">
+            <h3 className="mb-2 text-lg font-semibold">Add Custom Note</h3>
+            <Textarea 
+              placeholder="Record your observations..."
+              value={customNote}
+              onChange={(e) => setCustomNote(e.target.value)}
+              className="mb-2"
+            />
+            <Button onClick={handleAddNote} className="w-full">
+              <Pen className="mr-2 h-4 w-4" />
+              Add Note
+            </Button>
+        </div>
       </CardContent>
     </Card>
   );
