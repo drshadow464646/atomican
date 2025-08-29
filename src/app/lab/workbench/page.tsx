@@ -71,7 +71,7 @@ export default function WorkbenchPage() {
     if (!safetyGogglesOn) {
       toast({
         title: 'Safety Warning!',
-        description: 'Please put on your safety goggles before proceeding.',
+        description: 'Looking cool is great, but safety is cooler. Put your shades on!',
         variant: 'destructive',
       });
       return false;
@@ -218,57 +218,57 @@ export default function WorkbenchPage() {
         direction={isMobile ? "vertical" : "horizontal"} 
         className="flex-1"
       >
-        {isInventoryPanelVisible && (
-          <>
-            <ResizablePanel
-              defaultSize={isMobile ? 30 : 20}
-              minSize={15}
-              maxSize={isMobile ? 40 : 25}
-              collapsible
-              collapsedSize={0}
-              className={cn(
-                'transition-all duration-300 ease-in-out'
-              )}
-            >
-              <InventoryPanel
-                equipment={INITIAL_EQUIPMENT}
-                chemicals={INITIAL_CHEMICALS}
-                onAddEquipment={handleAddEquipment}
-                onAddChemical={handleAddChemical}
-                onAddIndicator={handleAddIndicator}
-                isCollapsed={!isInventoryPanelVisible}
-              />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-          </>
-        )}
+        <ResizablePanel
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setIsInventoryPanelVisible(false)}
+          onExpand={() => setIsInventoryPanelVisible(true)}
+          className={cn(
+            'transition-all duration-300 ease-in-out',
+            !isInventoryPanelVisible && 'w-0 min-w-0'
+          )}
+          defaultSize={isMobile ? 30 : 20}
+          minSize={15}
+          maxSize={isMobile ? 40 : 25}
+        >
+          <InventoryPanel
+            equipment={INITIAL_EQUIPMENT}
+            chemicals={INITIAL_CHEMICALS}
+            onAddEquipment={handleAddEquipment}
+            onAddChemical={handleAddChemical}
+            onAddIndicator={handleAddIndicator}
+            isCollapsed={!isInventoryPanelVisible}
+          />
+        </ResizablePanel>
+        <ResizableHandle withHandle className={cn(!isInventoryPanelVisible && 'hidden')}/>
+        
         <ResizablePanel defaultSize={isMobile ? 40 : 55} minSize={30}>
           <Workbench state={experimentState} onTitrate={handleTitrate} />
         </ResizablePanel>
-        {isGuidancePanelVisible && (
-          <>
-            <ResizableHandle withHandle />
-            <ResizablePanel
-              defaultSize={isMobile ? 30 : 25}
-              minSize={15}
-              maxSize={isMobile ? 50 : 30}
-              collapsible
-              collapsedSize={0}
-              className={cn(
-                'transition-all duration-300 ease-in-out'
-              )}
-            >
-              <GuidancePanel
-                logs={labLogs}
-                onGetSuggestion={handleGetSuggestion}
-                suggestion={aiSuggestion}
-                isSuggestionLoading={isSuggestionLoading}
-                isCollapsed={!isGuidancePanelVisible}
-                onAddCustomLog={handleAddCustomLog}
-              />
-            </ResizablePanel>
-          </>
-        )}
+
+        <ResizableHandle withHandle className={cn(!isGuidancePanelVisible && 'hidden')} />
+        <ResizablePanel
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setIsGuidancePanelVisible(false)}
+          onExpand={() => setIsGuidancePanelVisible(true)}
+          className={cn(
+            'transition-all duration-300 ease-in-out',
+            !isGuidancePanelVisible && 'w-0 min-w-0'
+          )}
+           defaultSize={isMobile ? 30 : 25}
+           minSize={15}
+           maxSize={isMobile ? 50 : 30}
+        >
+          <GuidancePanel
+            logs={labLogs}
+            onGetSuggestion={handleGetSuggestion}
+            suggestion={aiSuggestion}
+            isSuggestionLoading={isSuggestionLoading}
+            isCollapsed={!isGuidancePanelVisible}
+            onAddCustomLog={handleAddCustomLog}
+          />
+        </ResizablePanel>
       </ResizablePanelGroup>
     </div>
   );
