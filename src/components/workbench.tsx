@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,36 +13,88 @@ type WorkbenchProps = {
   onTitrate: (volume: number) => void;
 };
 
-const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: number }) => (
-  <div className="relative h-48 w-32 md:h-64 md:w-48">
-    <svg viewBox="0 0 100 120" className="h-full w-full">
-      <defs>
-        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="hsl(var(--foreground) / 0.05)" />
-          <stop offset="50%" stopColor="hsl(var(--foreground) / 0.2)" />
-          <stop offset="100%" stopColor="hsl(var(--foreground) / 0.05)" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M10 10 H90 L80 110 H20 L10 10 Z"
-        stroke="hsl(var(--foreground) / 0.3)"
-        strokeWidth="2"
-        fill="url(#glass)"
-      />
-      <rect
-        x="20.5"
-        y={110 - (100 * fillPercentage) / 100}
-        width="59"
-        height={(100 * fillPercentage) / 100}
-        fill={color === 'transparent' ? 'hsl(var(--background))' : color}
-        className="transition-all duration-500"
-      />
-    </svg>
-    <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-muted-foreground">
-      {Math.round(fillPercentage)}% Full
+const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: number }) => {
+  const liquidHeight = 95 * (fillPercentage / 100);
+  const liquidY = 115 - liquidHeight;
+
+  return (
+    <div className="relative h-48 w-32 md:h-64 md:w-48">
+      <svg viewBox="0 0 100 120" className="h-full w-full">
+        <defs>
+          <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
+            <stop offset="20%" style={{ stopColor: 'hsl(var(--foreground) / 0.15)' }} />
+            <stop offset="50%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
+            <stop offset="80%" style={{ stopColor: 'hsl(var(--foreground) / 0.15)' }} />
+            <stop offset="100%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
+          </linearGradient>
+           <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color={color} stop-opacity="0.7" />
+              <stop offset="50%" stop-color={color} stop-opacity="1" />
+              <stop offset="100%" stop-color={color} stop-opacity="0.7" />
+          </linearGradient>
+           <filter id="liquidSurface" x="-10%" y="-10%" width="120%" height="120%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
+              <feOffset in="blur" dx="0" dy="-1" result="offsetBlur"/>
+              <feSpecularLighting in="offsetBlur" surfaceScale="5" specularConstant=".75" specularExponent="20" lighting-color="#FFF" result="specular">
+                  <fePointLight x="-5000" y="-10000" z="20000" />
+              </feSpecularLighting>
+              <feComposite in="specular" in2="SourceAlpha" operator="in" result="specular" />
+              <feComposite in="SourceGraphic" in2="specular" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
+          </filter>
+        </defs>
+
+        {/* Liquid */}
+        {fillPercentage > 0 && (
+          <g>
+            <path
+              d={`M20,${liquidY} C 40,${liquidY-5}, 60,${liquidY-5}, 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
+              fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient)`}
+              className="transition-all duration-500"
+            />
+             <ellipse 
+              cx="50" 
+              cy={liquidY} 
+              rx="30" 
+              ry="3" 
+              fill={color === 'transparent' ? 'hsl(var(--foreground) / 0.1)' : color}
+              style={{filter: 'url(#liquidSurface)'}}
+              className="transition-all duration-500"
+            />
+          </g>
+        )}
+
+        {/* Beaker Glass */}
+        <path
+          d="M10,10 L20,115 A 5,5 0 0 0 25,120 H 75 A 5,5 0 0 0 80,115 L 90,10"
+          stroke="hsl(var(--foreground) / 0.3)"
+          strokeWidth="2"
+          fill="url(#glassGradient)"
+          fillOpacity="0.7"
+        />
+        <path
+          d="M10,10 H 90"
+          stroke="hsl(var(--foreground) / 0.3)"
+          strokeWidth="3"
+          fill="none"
+        />
+         {/* Highlight */}
+        <path 
+          d="M 80 15 C 75 40, 75 80, 80 110" 
+          stroke="white" 
+          strokeWidth="1.5"
+          fill="none" 
+          strokeOpacity="0.5"
+        />
+
+      </svg>
+      <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-muted-foreground">
+        {Math.round(fillPercentage)}% Full
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 export function Workbench({ state, onTitrate }: WorkbenchProps) {
   const [titrationAmount, setTitrationAmount] = useState(1);
