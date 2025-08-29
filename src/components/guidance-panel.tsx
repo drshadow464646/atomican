@@ -70,10 +70,10 @@ export function GuidancePanel({
                 <AlertDescription>{suggestion.nextStepSuggestion}</AlertDescription>
               </Alert>
               {suggestion.hint && (
-                <Alert variant="default" className="bg-primary/10 border-primary/20">
-                  <Lightbulb className="h-4 w-4" />
-                  <AlertTitle>Hint</AlertTitle>
-                  <AlertDescription>{suggestion.hint}</AlertDescription>
+                <Alert variant="default" className="bg-accent/20 border-accent/30">
+                  <Lightbulb className="h-4 w-4 text-accent-foreground" />
+                  <AlertTitle className='text-accent-foreground'>Hint</AlertTitle>
+                  <AlertDescription className='text-accent-foreground/80'>{suggestion.hint}</AlertDescription>
                 </Alert>
               )}
                {suggestion.rationale && (

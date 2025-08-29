@@ -34,7 +34,7 @@ export type ExperimentState = {
 
 export type LabLog = {
   id: number;
-  timestamp: Date;
+  timestamp: string; // Use ISO string for consistency
   text: string;
   isCustom?: boolean;
 };

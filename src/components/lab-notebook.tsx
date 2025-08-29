@@ -25,7 +25,7 @@ export function LabNotebook({ logs }: LabNotebookProps) {
             )}>
               {log.isCustom && <User className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />}
               <div className="flex-1">
-                <span className="font-mono text-xs text-muted-foreground mr-2">{log.timestamp.toLocaleTimeString()}</span>
+                <span className="font-mono text-xs text-muted-foreground mr-2">{new Date(log.timestamp).toLocaleTimeString()}</span>
                 <span>{log.text}</span>
               </div>
             </div>

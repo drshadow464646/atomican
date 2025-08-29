@@ -33,7 +33,7 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
         y={110 - (100 * fillPercentage) / 100}
         width="59"
         height={(100 * fillPercentage) / 100}
-        fill={color}
+        fill={color === 'transparent' ? 'hsl(var(--background))' : color}
         className="transition-all duration-500"
       />
     </svg>

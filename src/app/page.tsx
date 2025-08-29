@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useTransition, useEffect } from 'react';
 import { LabHeader } from '@/components/lab-header';
 import { InventoryPanel } from '@/components/inventory-panel';
 import { Workbench } from '@/components/workbench';
@@ -48,15 +48,13 @@ export default function Home() {
   const { toast } = useToast();
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
-    setLabLogs((prevLogs) => [
-      ...prevLogs,
-      {
-        id: prevLogs.length,
-        timestamp: new Date(),
-        text,
-        isCustom,
-      },
-    ]);
+    const newLog: LabLog = {
+      id: Date.now(), // Use a more unique ID
+      timestamp: new Date().toISOString(),
+      text,
+      isCustom,
+    };
+    setLabLogs(prevLogs => [...prevLogs, newLog]);
   }, []);
 
   const handleSafetyCheck = useCallback(() => {
@@ -98,35 +96,43 @@ export default function Home() {
       return { ...prevState, equipment: [...prevState.equipment, equipment] };
     });
   }, [addLog, handleSafetyCheck, toast]);
-
+  
   const handleAddChemical = useCallback((chemical: Chemical, target: 'beaker' | 'burette') => {
-    if (!handleSafetyCheck()) return;
-
-    setExperimentState((prevState) => {
-      const newState = { ...prevState };
-      const targetEquipmentType = target;
-      if (!newState.equipment.some((e) => e.type === targetEquipmentType)) {
-        toast({ title: 'Error', description: `Please add a ${target} to the workbench first.`, variant: 'destructive' });
-        return prevState;
-      }
-
-      if (target === 'beaker') {
-        if (!newState.beaker) newState.beaker = { solutions: [], indicator: null };
-        newState.beaker.solutions = [{ chemical, volume: 50 }]; // Default 50ml
-        addLog(`Added 50ml of ${chemical.name} to the beaker.`);
-      } else { // burette
-        newState.burette = { chemical, volume: 50 }; // Fill burette
-        addLog(`Filled the burette with 50ml of ${chemical.name}.`);
-      }
-      return updatePhAndColor(newState);
-    });
+      if (!handleSafetyCheck()) return;
+  
+      setExperimentState((prevState) => {
+        const newState = { ...prevState };
+        const targetEquipmentType = target;
+  
+        const hasEquipment = newState.equipment.some((e) => e.type === targetEquipmentType);
+  
+        if (!hasEquipment) {
+          // Use useEffect to delay toast until after render
+          setTimeout(() => {
+            toast({ title: 'Error', description: `Please add a ${target} to the workbench first.`, variant: 'destructive' });
+          }, 0);
+          return prevState;
+        }
+  
+        if (target === 'beaker') {
+          if (!newState.beaker) newState.beaker = { solutions: [], indicator: null };
+          newState.beaker.solutions = [{ chemical, volume: 50 }]; // Default 50ml
+          addLog(`Added 50ml of ${chemical.name} to the beaker.`);
+        } else { // burette
+          newState.burette = { chemical, volume: 50 }; // Fill burette
+          addLog(`Filled the burette with 50ml of ${chemical.name}.`);
+        }
+        return updatePhAndColor(newState);
+      });
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
-
+  
   const handleAddIndicator = useCallback((chemical: Chemical) => {
     if (!handleSafetyCheck()) return;
     setExperimentState((prevState) => {
       if (!prevState.beaker) {
-        toast({ title: 'Error', description: 'Add a solution to the beaker first.', variant: 'destructive' });
+        setTimeout(() => {
+          toast({ title: 'Error', description: 'Add a solution to the beaker first.', variant: 'destructive' });
+        }, 0);
         return prevState;
       }
       addLog(`Added ${chemical.name} indicator to the beaker.`);
@@ -134,17 +140,21 @@ export default function Home() {
       return updatePhAndColor(newState);
     });
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
-
+  
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
     setExperimentState(prevState => {
         if (!prevState.beaker || !prevState.burette) {
-            toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' });
+            setTimeout(() => {
+              toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' });
+            }, 0);
             return prevState;
         }
         const newVolumeAdded = Math.max(0, Math.min(prevState.burette.volume, prevState.volumeAdded + volume));
         if (newVolumeAdded === prevState.volumeAdded && volume !== 0) {
-            toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' });
+            setTimeout(() => {
+              toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' });
+            }, 0);
             return prevState;
         }
         if (volume !== 0) {
