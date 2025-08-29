@@ -51,13 +51,15 @@ export default function WorkbenchPage() {
   const { toast } = useToast();
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
-    const newLog: LabLog = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      text,
-      isCustom,
-    };
-    setLabLogs(prevLogs => [...prevLogs, newLog]);
+    setLabLogs(prevLogs => {
+      const newLog: LabLog = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        text,
+        isCustom,
+      };
+      return [...prevLogs, newLog]
+    });
   }, []);
 
   const handleSafetyCheck = useCallback(() => {

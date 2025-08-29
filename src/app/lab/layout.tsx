@@ -1,6 +1,6 @@
 
 import { LabSidebar } from '@/components/lab-sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 export default function LabLayout({
   children,
@@ -10,7 +10,9 @@ export default function LabLayout({
   return (
     <SidebarProvider>
       <LabSidebar />
-      <main className="flex-1">{children}</main>
+      <SidebarInset>
+        {children}
+      </SidebarInset>
     </SidebarProvider>
   );
 }
