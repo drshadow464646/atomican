@@ -36,7 +36,7 @@ export function LabHeader({ safetyGogglesOn, onGoggleToggle, onResetExperiment }
             id="goggle-switch"
             checked={safetyGogglesOn}
             onCheckedChange={onGoggleToggle}
-            aria-label="Toggle cool shades"
+            aria-label="Toggle safety goggles"
           />
         </div>
       </div>

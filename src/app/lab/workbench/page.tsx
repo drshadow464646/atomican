@@ -25,8 +25,6 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Button } from '@/components/ui/button';
-import { PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
@@ -190,18 +188,6 @@ export default function WorkbenchPage() {
       description: 'The lab has been reset to its initial state.',
     });
   }
-
-  const handleTogglePanels = () => {
-    if(isInventoryPanelVisible || isGuidancePanelVisible) {
-        setIsInventoryPanelVisible(false);
-        setIsGuidancePanelVisible(false);
-    } else {
-        setIsInventoryPanelVisible(true);
-        setIsGuidancePanelVisible(true);
-    }
-  }
-
-  const arePanelsVisible = isInventoryPanelVisible || isGuidancePanelVisible;
 
   if (!isClient) {
     return null; // or a loading spinner
