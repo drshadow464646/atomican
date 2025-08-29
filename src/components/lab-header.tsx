@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Sunglasses, RefreshCw } from 'lucide-react';
+import { Glasses, RefreshCw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -28,7 +28,7 @@ export function LabHeader({ safetyGogglesOn, onGoggleToggle, onResetExperiment }
           Reset
         </Button>
         <div className="flex items-center space-x-2">
-          <Sunglasses className="h-5 w-5 text-muted-foreground" />
+          <Glasses className="h-5 w-5 text-muted-foreground" />
           <Label htmlFor="goggle-switch" className="text-sm font-medium">
             Cool Shades
           </Label>
