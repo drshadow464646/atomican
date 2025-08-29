@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
+import { useEffect, useState } from 'react';
 
 const menuItems = [
   {
@@ -56,6 +57,11 @@ const menuItems = [
 export function LabSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const isCollapsed = state === 'collapsed';
 
@@ -64,25 +70,23 @@ export function LabSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
             <Beaker className="h-6 w-6 text-primary" />
-            {!isCollapsed && <h1 className="text-xl font-bold">LabSphere</h1>}
+            {isClient && !isCollapsed && <h1 className="text-xl font-bold">LabSphere</h1>}
         </div>
       </SidebarHeader>
       
       <SidebarMenu className="flex-1">
         {menuItems.map(item => (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href)}
-                tooltip={{ children: item.label, side: 'right' }}
-              >
-                <div>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </div>
-              </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith(item.href)}
+              tooltip={{ children: item.label, side: 'right' }}
+            >
+              <Link href={item.href}>
+                <item.icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
@@ -90,18 +94,16 @@ export function LabSidebar() {
       <SidebarFooter>
          <Separator className="my-1" />
          <SidebarMenuItem>
-             <Link href="/lab/profile">
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith('/lab/profile')}
-                tooltip={{ children: 'Profile', side: 'right' }}
-              >
-                <div>
-                  <User />
-                  <span>Profile</span>
-                </div>
-              </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/lab/profile')}
+              tooltip={{ children: 'Profile', side: 'right' }}
+            >
+              <Link href="/lab/profile">
+                <User />
+                <span>Profile</span>
+              </Link>
+            </SidebarMenuButton>
          </SidebarMenuItem>
       </SidebarFooter>
     </Sidebar>
