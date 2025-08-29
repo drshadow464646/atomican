@@ -29,9 +29,9 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
             <stop offset="100%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
           </linearGradient>
            <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color={color} stop-opacity="0.7" />
-              <stop offset="50%" stop-color={color} stop-opacity="1" />
-              <stop offset="100%" stop-color={color} stop-opacity="0.7" />
+              <stop offset="0%" stopColor={color} stopOpacity="0.7" />
+              <stop offset="50%" stopColor={color} stopOpacity="1" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.7" />
           </linearGradient>
            <filter id="liquidSurface" x="-10%" y="-10%" width="120%" height="120%">
               <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
