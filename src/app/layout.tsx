@@ -1,7 +1,8 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Inter as FontSans, Orbitron as FontDisplay } from "next/font/google"
+import { Lora as FontSans, Orbitron as FontDisplay } from "next/font/google"
 import { cn } from '@/lib/utils';
 
 const fontSans = FontSans({
