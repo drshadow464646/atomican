@@ -2,17 +2,12 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Lora as FontSans, Orbitron as FontDisplay } from "next/font/google"
+import { Inter as FontSans } from "next/font/google"
 import { cn } from '@/lib/utils';
 
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
-})
-
-const fontDisplay = FontDisplay({
-  subsets: ["latin"],
-  variable: "--font-display",
 })
 
 export const metadata: Metadata = {
@@ -29,8 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable,
-          fontDisplay.variable
+          fontSans.variable
         )}>
         {children}
         <Toaster />

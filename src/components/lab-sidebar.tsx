@@ -24,40 +24,30 @@ const menuItems = [
     href: '/lab/workbench',
     icon: '🔬',
     label: 'Workbench',
-    activeColor: 'text-[#00bfff]',
-    hoverColor: 'hover:text-[#00eaff]',
     tooltip: 'Start your experiment here'
   },
   {
     href: '/lab/market',
     icon: '🛒',
     label: 'Market',
-    activeColor: 'text-[#f59e0b]',
-    hoverColor: 'hover:text-[#fbbf24]',
     tooltip: 'Buy reagents & apparatus'
   },
   {
     href: '/lab/apparatus',
     icon: '🧪',
     label: 'Apparatus',
-    activeColor: 'text-[#ec4899]',
-    hoverColor: 'hover:text-[#f472b6]',
     tooltip: 'Explore lab tools'
   },
   {
     href: '/lab/practicals',
     icon: '📋',
     label: 'Past Practicals',
-    activeColor: 'text-[#10b981]',
-    hoverColor: 'hover:text-[#34d399]',
     tooltip: 'Review your experiments'
   },
   {
     href: '/lab/settings',
     icon: '⚙️',
     label: 'Settings',
-    activeColor: 'text-[#8b5cf6]',
-    hoverColor: 'hover:text-[#a855f7]',
     tooltip: 'Customize your lab'
   },
 ];
@@ -79,7 +69,7 @@ export function LabSidebar() {
         <div className="flex items-center gap-2">
             <span className="text-2xl">🌌</span>
             {isClient && !isCollapsed && 
-              <h1 className="text-2xl font-display font-bold text-glow">NEXUS</h1>
+              <h1 className="text-xl font-semibold">LabSphere</h1>
             }
         </div>
       </SidebarHeader>
@@ -94,15 +84,14 @@ export function LabSidebar() {
                 isActive={isActive}
                 tooltip={{ children: item.tooltip, side: 'right' }}
                 className={cn(
-                  "font-display font-bold group transition-all duration-300",
-                  isActive ? `${item.activeColor} bg-primary/10` : 'text-slate-300',
-                  item.hoverColor,
-                  'hover:bg-primary/20 hover:scale-105'
+                  "font-medium group transition-all duration-200",
+                  isActive ? `bg-primary/10 text-primary` : 'text-foreground/70 hover:text-foreground',
+                  'hover:bg-muted'
                 )}
               >
                 <Link href={item.href}>
-                  <span className={cn("text-2xl transition-transform duration-300 group-hover:scale-110", isActive && 'scale-110')}>{item.icon}</span>
-                  <span className='group-hover:text-glow'>{item.label}</span>
+                  <span className={cn("text-xl transition-transform duration-200 group-hover:scale-110", isActive && 'scale-105')}>{item.icon}</span>
+                  <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -111,13 +100,13 @@ export function LabSidebar() {
       </SidebarMenu>
       
       <SidebarFooter>
-         <Separator className="my-1 border-slate-700" />
+         <Separator className="my-1" />
          <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               isActive={pathname.startsWith('/lab/profile')}
               tooltip={{ children: 'Profile', side: 'right' }}
-               className="font-display font-bold text-slate-300 hover:text-white hover:bg-primary/20 hover:scale-105"
+               className="font-medium text-foreground/70 hover:text-foreground hover:bg-muted"
             >
               <Link href="/lab/profile">
                 <User />
