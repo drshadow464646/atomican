@@ -50,11 +50,11 @@ export function SettingsForm() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
     const savedSettings = localStorage.getItem('labSettings');
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings));
     }
+    setIsClient(true);
   }, []);
   
   useEffect(() => {

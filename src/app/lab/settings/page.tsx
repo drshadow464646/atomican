@@ -4,8 +4,15 @@
 import { SettingsForm } from '@/components/settings-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
 
 export default function SettingsPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
@@ -16,7 +23,7 @@ export default function SettingsPage() {
           </p>
         </header>
         <Separator className="mb-8" />
-        <SettingsForm />
+        {isClient ? <SettingsForm /> : null}
       </div>
     </div>
   );
