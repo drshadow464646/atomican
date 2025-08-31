@@ -36,7 +36,7 @@ type Settings = {
 
 export function SettingsForm() {
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
 
   const [settings, setSettings] = useState<Settings>({
     displayName: 'Astera',
@@ -58,8 +58,11 @@ export function SettingsForm() {
   useEffect(() => {
     if (isClient) {
       localStorage.setItem('labSettings', JSON.stringify(settings));
+      
       setTheme(settings.appearanceMode);
+      
       document.body.dataset.gradient = settings.baseGradient;
+      document.body.dataset.motionLevel = settings.uiMotionLevel;
 
       if (settings.typographyMode === 'serif') {
         document.body.classList.remove('font-mono');
