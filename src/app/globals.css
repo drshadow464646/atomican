@@ -105,12 +105,43 @@
   
   body[data-gradient="moon"] {
     background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    --primary: 210 80% 60%;
+    --primary-foreground: 210 10% 15%;
+    --accent: 210 50% 40%;
+    --accent-foreground: 0 0% 98%;
   }
+  body[data-gradient="moon"].dark {
+    --primary: 210 70% 55%;
+    --primary-foreground: 210 20% 95%;
+    --accent: 210 40% 25%;
+  }
+
   body[data-gradient="sunset"] {
      background: linear-gradient(to right, #ff7e5f, #feb47b);
+     --primary: 25 95% 55%;
+     --primary-foreground: 25 10% 15%;
+     --accent: 35 90% 60%;
+     --accent-foreground: 25 5% 10%;
   }
+  body[data-gradient="sunset"].dark {
+     background: linear-gradient(to right, #8A2387, #E94057, #F27121);
+     --primary: 25 90% 60%;
+     --primary-foreground: 20 10% 95%;
+     --accent: 15 80% 50%;
+  }
+
   body[data-gradient="dawn"] {
      background: linear-gradient(to right, #f8b500, #fceabb);
+     --primary: 45 100% 50%;
+     --primary-foreground: 45 20% 10%;
+     --accent: 50 95% 60%;
+     --accent-foreground: 45 15% 10%;
+  }
+  body[data-gradient="dawn"].dark {
+     background: linear-gradient(to right, #005AA7, #FFFDE4);
+     --primary: 45 90% 55%;
+     --primary-foreground: 45 10% 95%;
+     --accent: 50 80% 45%;
   }
 }
 
