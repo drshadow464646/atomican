@@ -51,44 +51,35 @@ export function SettingsForm() {
     setIsClient(true);
     const savedSettings = localStorage.getItem('labSettings');
     if (savedSettings) {
-      const parsedSettings = JSON.parse(savedSettings);
-      setSettings(parsedSettings);
-      setTheme(parsedSettings.appearanceMode);
-      
-      // Apply other settings dynamically
-      document.body.dataset.gradient = parsedSettings.baseGradient;
-      document.body.dataset.typography = parsedSettings.typographyMode;
-    } else {
-       // Set defaults if nothing is saved
-       document.body.dataset.gradient = settings.baseGradient;
-       document.body.dataset.typography = settings.typographyMode;
+      setSettings(JSON.parse(savedSettings));
     }
-  }, [setTheme, settings.baseGradient, settings.typographyMode]);
+  }, []);
+  
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('labSettings', JSON.stringify(settings));
+      setTheme(settings.appearanceMode);
+      document.body.dataset.gradient = settings.baseGradient;
+
+      if (settings.typographyMode === 'serif') {
+        document.body.classList.remove('font-mono');
+        document.body.classList.add('font-serif');
+      } else if (settings.typographyMode === 'monospace') {
+        document.body.classList.remove('font-serif');
+        document.body.classList.add('font-mono');
+      } else {
+        document.body.classList.remove('font-serif', 'font-mono');
+      }
+    }
+  }, [settings, isClient, setTheme]);
   
   const handleInputChange = (key: keyof Settings, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     localStorage.setItem('labSettings', JSON.stringify(settings));
-    
-    // Apply theme changes
-    setTheme(settings.appearanceMode);
-    document.body.dataset.gradient = settings.baseGradient;
-    document.body.dataset.typography = settings.typographyMode;
-
-    if (settings.typographyMode === 'serif') {
-      document.body.classList.remove('font-mono');
-      document.body.classList.add('font-serif');
-    } else if (settings.typographyMode === 'monospace') {
-      document.body.classList.remove('font-serif');
-      document.body.classList.add('font-mono');
-    } else {
-      document.body.classList.remove('font-serif', 'font-mono');
-    }
-
-
     toast({
       title: 'Settings Saved',
       description: 'Your preferences have been updated and saved.',
@@ -100,7 +91,7 @@ export function SettingsForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="space-y-8">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -234,10 +225,6 @@ export function SettingsForm() {
           </div>
         </CardContent>
       </Card>
-      
-      <div className="flex justify-end">
-        <Button type="submit">Save Preferences</Button>
-      </div>
-    </form>
+    </div>
   );
 }
