@@ -34,17 +34,19 @@ type Settings = {
   typographyMode: 'default' | 'serif' | 'monospace';
 };
 
+const defaultSettings: Settings = {
+  displayName: 'Astera',
+  appearanceMode: 'system',
+  baseGradient: 'moon',
+  uiMotionLevel: 'medium',
+  typographyMode: 'default',
+};
+
 export function SettingsForm() {
   const { toast } = useToast();
   const { setTheme } = useTheme();
 
-  const [settings, setSettings] = useState<Settings>({
-    displayName: 'Astera',
-    appearanceMode: 'system',
-    baseGradient: 'moon',
-    uiMotionLevel: 'medium',
-    typographyMode: 'default',
-  });
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -64,14 +66,11 @@ export function SettingsForm() {
       document.body.dataset.gradient = settings.baseGradient;
       document.body.dataset.motionLevel = settings.uiMotionLevel;
 
+      document.body.classList.remove('font-serif', 'font-mono');
       if (settings.typographyMode === 'serif') {
-        document.body.classList.remove('font-mono');
         document.body.classList.add('font-serif');
       } else if (settings.typographyMode === 'monospace') {
-        document.body.classList.remove('font-serif');
         document.body.classList.add('font-mono');
-      } else {
-        document.body.classList.remove('font-serif', 'font-mono');
       }
     }
   }, [settings, isClient, setTheme]);
@@ -80,17 +79,57 @@ export function SettingsForm() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    localStorage.setItem('labSettings', JSON.stringify(settings));
+  const handleReset = () => {
+    setSettings(defaultSettings);
     toast({
-      title: 'Settings Saved',
-      description: 'Your preferences have been updated and saved.',
+      title: 'Settings Reset',
+      description: 'Your preferences have been reset to the defaults.',
     });
-  };
+  }
 
   if (!isClient) {
-    return null; // or a loading skeleton
+    return (
+      <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <User className="w-6 h-6" />
+              <div>
+                <CardTitle>Your Name</CardTitle>
+                <CardDescription>
+                  This is how your name will appear on the leaderboard.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Palette className="w-6 h-6" />
+              <div>
+                <CardTitle>Aesthetic & Interface</CardTitle>
+                <CardDescription>
+                  Customize the look and feel of the application.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
+            <Separator />
+            <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
+            <Separator />
+            <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
+            <Separator />
+            <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -227,6 +266,9 @@ export function SettingsForm() {
             </Select>
           </div>
         </CardContent>
+        <CardFooter>
+            <Button variant="outline" onClick={handleReset}>Reset to Defaults</Button>
+        </CardFooter>
       </Card>
     </div>
   );
