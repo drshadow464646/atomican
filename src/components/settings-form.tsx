@@ -178,7 +178,7 @@ export function SettingsForm() {
             <RadioGroup 
               value={settings.appearanceMode} 
               onValueChange={value => handleInputChange('appearanceMode', value)}
-              className="flex gap-4"
+              className="flex flex-wrap gap-4"
             >
                 <Label className="flex items-center gap-2 cursor-pointer rounded-md p-2 border border-transparent hover:border-border transition-colors">
                   <RadioGroupItem value="light" />
@@ -205,7 +205,7 @@ export function SettingsForm() {
             <RadioGroup 
               value={settings.baseGradient}
               onValueChange={value => handleInputChange('baseGradient', value)}
-              className="flex gap-4"
+              className="flex flex-wrap gap-4"
             >
                  <Label className="flex items-center gap-2 cursor-pointer rounded-md p-2 border border-transparent hover:border-border transition-colors">
                   <RadioGroupItem value="moon" />
