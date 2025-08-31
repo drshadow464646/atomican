@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,16 +26,78 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Palette, User, Sun, Moon, Laptop, Sparkles, Waves, Type } from 'lucide-react';
 
+type Settings = {
+  displayName: string;
+  appearanceMode: 'light' | 'dark' | 'system';
+  baseGradient: 'moon' | 'sunset' | 'dawn';
+  uiMotionLevel: 'low' | 'medium' | 'high';
+  typographyMode: 'default' | 'serif' | 'monospace';
+};
+
 export function SettingsForm() {
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+
+  const [settings, setSettings] = useState<Settings>({
+    displayName: 'Astera',
+    appearanceMode: 'system',
+    baseGradient: 'moon',
+    uiMotionLevel: 'medium',
+    typographyMode: 'default',
+  });
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const savedSettings = localStorage.getItem('labSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      setSettings(parsedSettings);
+      setTheme(parsedSettings.appearanceMode);
+      
+      // Apply other settings dynamically
+      document.body.dataset.gradient = parsedSettings.baseGradient;
+      document.body.dataset.typography = parsedSettings.typographyMode;
+    } else {
+       // Set defaults if nothing is saved
+       document.body.dataset.gradient = settings.baseGradient;
+       document.body.dataset.typography = settings.typographyMode;
+    }
+  }, [setTheme, settings.baseGradient, settings.typographyMode]);
+  
+  const handleInputChange = (key: keyof Settings, value: string) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    localStorage.setItem('labSettings', JSON.stringify(settings));
+    
+    // Apply theme changes
+    setTheme(settings.appearanceMode);
+    document.body.dataset.gradient = settings.baseGradient;
+    document.body.dataset.typography = settings.typographyMode;
+
+    if (settings.typographyMode === 'serif') {
+      document.body.classList.remove('font-mono');
+      document.body.classList.add('font-serif');
+    } else if (settings.typographyMode === 'monospace') {
+      document.body.classList.remove('font-serif');
+      document.body.classList.add('font-mono');
+    } else {
+      document.body.classList.remove('font-serif', 'font-mono');
+    }
+
+
     toast({
       title: 'Settings Saved',
-      description: 'Your preferences have been updated.',
+      description: 'Your preferences have been updated and saved.',
     });
   };
+
+  if (!isClient) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -51,7 +114,11 @@ export function SettingsForm() {
           </div>
         </CardHeader>
         <CardContent>
-          <Input defaultValue="Astera" placeholder="Enter display name" />
+          <Input 
+            value={settings.displayName} 
+            onChange={e => handleInputChange('displayName', e.target.value)}
+            placeholder="Enter display name" 
+          />
         </CardContent>
       </Card>
 
@@ -75,7 +142,11 @@ export function SettingsForm() {
                 Choose between light and dark mode.
               </p>
             </div>
-            <RadioGroup defaultValue="system" className="flex gap-4">
+            <RadioGroup 
+              value={settings.appearanceMode} 
+              onValueChange={value => handleInputChange('appearanceMode', value)}
+              className="flex gap-4"
+            >
                 <Label className="flex items-center gap-2 cursor-pointer rounded-md p-2 border border-transparent hover:border-border transition-colors">
                   <RadioGroupItem value="light" />
                   <Sun className="w-4 h-4" /> Light
@@ -98,7 +169,11 @@ export function SettingsForm() {
                     Choose the background gradient for the app.
                 </p>
             </div>
-            <RadioGroup defaultValue="moon" className="flex gap-4">
+            <RadioGroup 
+              value={settings.baseGradient}
+              onValueChange={value => handleInputChange('baseGradient', value)}
+              className="flex gap-4"
+            >
                  <Label className="flex items-center gap-2 cursor-pointer rounded-md p-2 border border-transparent hover:border-border transition-colors">
                   <RadioGroupItem value="moon" />
                   <Moon className="w-4 h-4" /> Moon
@@ -121,7 +196,10 @@ export function SettingsForm() {
                 Adjust animation intensity. &apos;Low&apos; reduces most animations.
               </p>
             </div>
-            <Select defaultValue="medium">
+            <Select 
+              value={settings.uiMotionLevel} 
+              onValueChange={value => handleInputChange('uiMotionLevel', value)}
+            >
               <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Select motion level" />
               </SelectTrigger>
@@ -140,7 +218,10 @@ export function SettingsForm() {
                 Choose your preferred font style for the application.
               </p>
             </div>
-            <Select defaultValue="default">
+            <Select 
+              value={settings.typographyMode}
+              onValueChange={value => handleInputChange('typographyMode', value)}
+            >
               <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Select font style" />
               </SelectTrigger>

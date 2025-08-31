@@ -1,20 +1,21 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 240 3.8% 95.9%; /* #F0F0F0 */
-    --foreground: 240 10% 3.9%; /* #0A0A0A */
+    --background: 240 10% 100%;
+    --foreground: 240 6% 10%;
     
-    --card: 240 3.8% 95.9%;
-    --card-foreground: 240 10% 3.9%;
+    --card: 240 10% 100%;
+    --card-foreground: 240 6% 10%;
     
-    --popover: 240 3.8% 95.9%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 240 10% 100%;
+    --popover-foreground: 240 6% 10%;
     
-    --primary: 271 76% 53%; /* #4B0082 - Deep Indigo */
-    --primary-foreground: 60 9.1% 97.8%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
     
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -22,7 +23,7 @@
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 45 100% 51%; /* #FFD700 - Yellow-Gold */
+    --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
     
     --destructive: 0 84.2% 60.2%;
@@ -30,13 +31,13 @@
 
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 271 76% 53%;
+    --ring: 240 5.9% 10%;
 
-    --chart-1: 271 70% 50%;
-    --chart-2: 45 90% 55%;
-    --chart-3: 180 75% 45%;
+    --chart-1: 240 70% 50%;
+    --chart-2: 160 90% 55%;
+    --chart-3: 30 75% 45%;
     --chart-4: 350 85% 60%;
-    --chart-5: 220 80% 65%;
+    --chart-5: 280 80% 65%;
     --radius: 0.5rem;
 
     /* Sidebar specific theme */
@@ -45,12 +46,12 @@
     --sidebar-border: 240 5% 90%;
     --sidebar-accent: 240 5% 90%;
     --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-ring: 45 100% 51%;
+    --sidebar-ring: 240 5.9% 10%;
   }
 
   .dark {
-    --background: 240 6% 10%; /* #1A1A1A */
-    --foreground: 0 0% 98%; /* #FAFAFA */
+    --background: 240 6% 10%;
+    --foreground: 0 0% 98%;
     
     --card: 240 6% 10%;
     --card-foreground: 0 0% 98%;
@@ -58,7 +59,7 @@
     --popover: 240 6% 10%;
     --popover-foreground: 0 0% 98%;
     
-    --primary: 271 76% 65%; /* Lighter Indigo for dark mode */
+    --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
     
     --secondary: 240 3.7% 15.9%;
@@ -67,21 +68,21 @@
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 45 100% 51%; /* Yellow-Gold */
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
     
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 271 76% 65%;
+    --ring: 0 0% 98%;
 
-    --chart-1: 271 70% 60%;
-    --chart-2: 45 90% 55%;
-    --chart-3: 180 75% 45%;
+    --chart-1: 0 0% 98%;
+    --chart-2: 160 90% 55%;
+    --chart-3: 30 75% 45%;
     --chart-4: 350 85% 60%;
-    --chart-5: 220 80% 65%;
+    --chart-5: 280 80% 65%;
     
     /* Sidebar specific theme */
     --sidebar: 240 4% 12%;
@@ -89,7 +90,7 @@
     --sidebar-border: 240 4% 18%;
     --sidebar-accent: 240 4% 20%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-ring: 45 100% 51%;
+    --sidebar-ring: 0 0% 98%;
   }
 }
 
@@ -99,6 +100,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  body[data-gradient="moon"] {
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  }
+  body[data-gradient="sunset"] {
+     background: linear-gradient(to right, #ff7e5f, #feb47b);
+  }
+  body[data-gradient="dawn"] {
+     background: linear-gradient(to right, #f8b500, #fceabb);
   }
 }
 
