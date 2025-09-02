@@ -4,20 +4,20 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame } from 'lucide-react';
 import type { Equipment } from '@/lib/experiment';
 import { ALL_EQUIPMENT } from '@/lib/experiment';
 import { Badge } from '@/components/ui/badge';
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
-  beaker: <Beaker className="h-10 w-10 text-primary" />,
+  'beaker-250': <Beaker className="h-10 w-10 text-primary" />,
   burette: <Pipette className="h-10 w-10 text-primary" />, // Using Pipette as a stand-in
   pipette: <Pipette className="h-10 w-10 text-primary" />,
   'graduated-cylinder': <TestTube className="h-10 w-10 text-primary" />, // Using TestTube
   'erlenmeyer-flask': <FlaskConical className="h-10 w-10 text-primary" />,
   thermometer: <Thermometer className="h-10 w-10 text-primary" />,
   'ph-meter': <Wind className="h-10 w-10 text-primary" />, // Stand-in
-  'hot-plate': <Flame className="h-10 w-10 text-primary" />, // Stand-in from workbench
+  'hot-plate': <Flame className="h-10 w-10 text-primary" />,
   'analytical-balance': <Scale className="h-10 w-10 text-primary" />,
   microscope: <Microscope className="h-10 w-10 text-primary" />,
 };
