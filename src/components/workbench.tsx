@@ -154,7 +154,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
       <Card 
         className="h-full rounded-none flex flex-col"
         style={{
-          backgroundImage: "url('https://i.ibb.co/3s0pCVG/white-brick-wall-pattern.png')",
+          backgroundImage: "url('https://i.ibb.co/yWJT8pD/white-brick-wall-pattern.png')",
           backgroundSize: '300px 300px',
           backgroundRepeat: 'repeat',
         }}
@@ -179,22 +179,24 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
               </div>
           )}
 
-          <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
-              <p className="text-sm font-medium text-foreground">Titration Control</p>
-              <div className="flex items-center gap-4 w-full">
-                  <Slider 
-                    value={[titrationAmount]}
-                    onValueChange={(value) => setTitrationAmount(value[0])}
-                    min={0.1}
-                    max={10}
-                    step={0.1}
-                    disabled={!hasBurette || !hasBeaker}
-                  />
-                  <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48' variant="secondary">
-                      Add {titrationAmount.toFixed(1)}ml
-                  </Button>
-              </div>
-          </div>
+          {hasBeaker && hasBurette && (
+            <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
+                <p className="text-sm font-medium text-foreground">Titration Control</p>
+                <div className="flex items-center gap-4 w-full">
+                    <Slider 
+                      value={[titrationAmount]}
+                      onValueChange={(value) => setTitrationAmount(value[0])}
+                      min={0.1}
+                      max={10}
+                      step={0.1}
+                      disabled={!hasBurette || !hasBeaker}
+                    />
+                    <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48' variant="secondary">
+                        Add {titrationAmount.toFixed(1)}ml
+                    </Button>
+                </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
