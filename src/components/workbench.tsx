@@ -123,8 +123,6 @@ export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitr
         className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
         style={{
           backgroundImage: `url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')`,
-          backgroundSize: '300px 300px',
-          backgroundColor: 'hsl(var(--muted))'
         }}
       >
         <CardHeader>
@@ -136,9 +134,10 @@ export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitr
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
                 <div 
-                  className="relative w-full h-full bg-white rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.1),_0_6px_6px_rgba(0,0,0,0.15)]"
+                  className="relative w-full h-full rounded-lg border border-white/20 shadow-lg backdrop-blur-sm"
                   style={{
-                    boxShadow: '0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.15), inset 0 -2px 5px rgba(0,0,0,0.1)'
+                    backgroundColor: 'rgba(200, 200, 210, 0.15)',
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
                   }}
                 >
                     {state.equipment.length > 0 ? (
