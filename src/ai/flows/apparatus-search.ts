@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for searching for lab apparatus using an AI model.
@@ -49,10 +50,15 @@ const apparatusSearchFlow = ai.defineFlow(
     outputSchema: ApparatusSearchOutputSchema,
   },
   async (query) => {
-    const { output } = await prompt(query);
-    if (!output) {
-        return { equipment: [] };
+    try {
+      const { output } = await prompt(query);
+      if (!output) {
+          return { equipment: [] };
+      }
+      return output;
+    } catch (error) {
+      console.error('Apparatus search flow failed:', error);
+      return { equipment: [] };
     }
-    return output;
   }
 );

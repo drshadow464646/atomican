@@ -51,10 +51,15 @@ const chemicalSearchFlow = ai.defineFlow(
     outputSchema: ChemicalSearchOutputSchema,
   },
   async (query) => {
-    const { output } = await prompt(query);
-    if (!output) {
-        return { chemicals: [] };
+    try {
+      const { output } = await prompt(query);
+      if (!output) {
+          return { chemicals: [] };
+      }
+      return output;
+    } catch (error) {
+      console.error('Chemical search flow failed:', error);
+      return { chemicals: [] };
     }
-    return output;
   }
 );

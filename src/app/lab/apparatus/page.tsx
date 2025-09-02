@@ -139,7 +139,7 @@ export default function ApparatusPage() {
           ))}
         </div>
         
-        {!isSearching && equipmentToДisplay.length === 0 && (
+        {!isSearching && equipmentToDisplay.length === 0 && (
             <div className="text-center col-span-full py-16">
                 <p className="text-muted-foreground">No equipment found matching your search.</p>
             </div>
