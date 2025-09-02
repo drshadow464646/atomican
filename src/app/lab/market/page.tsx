@@ -114,7 +114,7 @@ export default function MarketPage() {
               <CardFooter>
                 <Button className="w-full" onClick={() => handleAddChemicalToInventory(chem)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add to Inventory
+                  Add
                 </Button>
               </CardFooter>
             </Card>
