@@ -148,7 +148,13 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
   return (
-    <Card className="h-full border-0 rounded-none bg-transparent flex flex-col">
+    <Card className={cn(
+      "h-full border-0 rounded-none bg-transparent flex flex-col",
+      "bg-slate-200/20 dark:bg-slate-800/20",
+      "[background-image:radial-gradient(var(--slate-700)_1px,_transparent_1px)]",
+      "dark:[background-image:radial-gradient(var(--slate-300)_1px,_transparent_1px)]",
+      "[background-size:16px_16px]"
+      )}>
       <CardHeader>
         <CardTitle className='flex items-center gap-2'>
           <TestTubeDiagonal />
@@ -169,7 +175,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
             </div>
         )}
 
-        <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border bg-card/50">
+        <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border bg-card/80 backdrop-blur-sm">
             <p className="text-sm font-medium">Titration Control</p>
             <div className="flex items-center gap-4 w-full">
                 <Slider 
