@@ -58,7 +58,7 @@ export default function ApparatusPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredEquipment.map(item => (
-            <Card key={item.id} className="flex flex-col">
+            <Card key={item.id} className="flex flex-col transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
               <CardHeader className="items-center text-center">
                 <div className="p-4 bg-primary/10 rounded-full mb-2">
                     {equipmentIcons[item.id] || <Beaker className="h-10 w-10 text-primary" />}
