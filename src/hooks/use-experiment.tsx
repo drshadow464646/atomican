@@ -69,11 +69,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleSafetyCheck = useCallback(() => {
     if (!safetyGogglesOn) {
-      toast({
-        title: 'Safety Warning!',
-        description: 'Looking cool is great, but safety is cooler. Put your shades on!',
-        variant: 'destructive',
-      });
+      setTimeout(() => {
+        toast({
+          title: 'Safety Warning!',
+          description: 'Looking cool is great, but safety is cooler. Put your shades on!',
+          variant: 'destructive',
+        });
+      }, 0);
       return false;
     }
     return true;
@@ -109,7 +111,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (!handleSafetyCheck()) return;
 
     if (experimentState.equipment.find((e) => e.id === equipment.id)) {
-      toast({ title: 'Notice', description: `${equipment.name} is already on the workbench.` });
+      setTimeout(() => toast({ title: 'Notice', description: `${equipment.name} is already on the workbench.` }), 0);
       return;
     }
 
@@ -127,11 +129,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleAddEquipmentToInventory = useCallback((equipment: Equipment) => {
     if (inventoryEquipment.find((e) => e.id === equipment.id)) {
-      toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` });
+       setTimeout(() => toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` }), 0);
       return;
     }
     setInventoryEquipment(prev => [...prev, equipment]);
-    toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
+     setTimeout(() => toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` }), 0);
   }, [inventoryEquipment, toast]);
   
   const handleRemoveEquipmentFromWorkbench = useCallback((equipmentId: string) => {
@@ -186,7 +188,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 addLog(`Added ${heldItem.name} indicator to the beaker.`);
                 success = true;
             } else {
-                 toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' });
+                 setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' }), 0);
             }
         }
         // Drop into Burette
@@ -196,7 +198,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
             } else {
-                toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the burette.`, variant: 'destructive' });
+                setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the burette.`, variant: 'destructive' }), 0);
             }
         }
 
@@ -211,42 +213,46 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handlePickUpChemical = useCallback((chemical: Chemical) => {
     setHeldItem(chemical);
-    toast({
-      title: `Holding ${chemical.name}`,
-      description: "Click on a piece of equipment to add it.",
-    });
+    setTimeout(() => {
+      toast({
+        title: `Holding ${chemical.name}`,
+        description: "Click on a piece of equipment to add it.",
+      });
+    }, 0);
   }, [toast]);
 
   const handleClearHeldItem = useCallback(() => {
     setHeldItem(null);
-     toast({
-      title: `Action Canceled`,
-      description: "You are no longer holding an item.",
-      variant: 'default',
-    });
+     setTimeout(() => {
+      toast({
+        title: `Action Canceled`,
+        description: "You are no longer holding an item.",
+        variant: 'default',
+      });
+    }, 0);
   }, [toast]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
-        toast({ title: 'Already in Inventory', description: `${chemical.name} is already in your inventory.` });
+        setTimeout(() => toast({ title: 'Already in Inventory', description: `${chemical.name} is already in your inventory.` }), 0);
         return;
     }
     setInventoryChemicals(prev => [...prev, chemical]);
-    toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
+    setTimeout(() => toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` }), 0);
   }, [inventoryChemicals, toast]);
   
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
 
     if (!experimentState.beaker || !experimentState.burette) {
-        toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' });
+        setTimeout(() => toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' }), 0);
         return;
     }
 
     const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + volume));
 
     if (newVolumeAdded === experimentState.volumeAdded && volume !== 0) {
-        toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' });
+        setTimeout(() => toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' }), 0);
         return;
     }
 
@@ -329,3 +335,5 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
