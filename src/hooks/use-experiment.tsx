@@ -215,7 +215,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   return (
     <ExperimentContext.Provider value={value}>
       {children}
-    </Experiment.Provider>
+    </ExperimentContext.Provider>
   );
 }
 
