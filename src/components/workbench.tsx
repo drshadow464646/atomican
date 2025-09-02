@@ -20,7 +20,7 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
 
   return (
     <div className="relative h-40 w-28">
-      <svg viewBox="0 0 100 120" className="h-full w-full">
+      <svg viewBox="0 0 100 120" className="h-full w-full [filter:drop-shadow(0_4px_6px_rgba(0,0,0,0.3))]">
         <defs>
           <filter id="liquidShine">
             <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
@@ -92,6 +92,8 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
     const beakerSolution = state.beaker?.solutions[0];
     const buretteSolution = state.burette;
     const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
+    
+    const iconClass = "h-32 w-32 text-muted-foreground/50 [filter:drop-shadow(0_4px_6px_rgba(0,0,0,0.3))]";
 
     const renderContent = () => {
         switch (item.type) {
@@ -106,7 +108,7 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
             case 'burette':
                 return (
                     <>
-                        <Pipette className="h-32 w-32 text-muted-foreground/50" />
+                        <Pipette className={iconClass} />
                         <CardDescription>{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
                          {buretteSolution && (
                             <p className="text-sm text-muted-foreground">
@@ -118,14 +120,14 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
             case 'erlenmeyer-flask':
                  return (
                     <>
-                        <FlaskConical className="h-32 w-32 text-muted-foreground/50" />
+                        <FlaskConical className={iconClass} />
                         <CardDescription>{item.name}</CardDescription>
                     </>
                 );
             default:
                 return (
                     <>
-                        <Beaker className="h-32 w-32 text-muted-foreground/50" />
+                        <Beaker className={iconClass} />
                         <CardDescription>{item.name}</CardDescription>
                     </>
                 );
@@ -133,8 +135,8 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
     };
 
     return (
-        <Card className="flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px]">
-            <CardTitle className="text-base font-medium">{item.name}</CardTitle>
+        <Card className="flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px] transition-transform duration-300 hover:-translate-y-2">
+            <CardTitle className="text-base font-medium text-foreground/80">{item.name}</CardTitle>
             <div className="flex-1 flex flex-col items-center justify-center gap-2">
                 {renderContent()}
             </div>
@@ -148,46 +150,49 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
   return (
-    <Card className={cn(
-      "h-full border-0 rounded-none bg-slate-200 dark:bg-slate-900 flex flex-col"
-      )}>
-      <CardHeader>
-        <CardTitle className='flex items-center gap-2'>
-          <TestTubeDiagonal />
-          Workbench
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col items-center justify-between p-2 md:p-6">
-        {state.equipment.length > 0 ? (
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end flex-1">
-            {state.equipment.map(item => (
-                <EquipmentDisplay key={item.id} item={item} state={state} />
-            ))}
-          </div>
-        ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
-                <TestTubeDiagonal className="h-24 w-24" />
-                <p className="text-center">Your workbench is empty.<br />Add equipment from your inventory to begin.</p>
+    <div className="h-full flex flex-col [perspective:1000px]">
+      <Card className={cn(
+        "h-full rounded-none bg-slate-800 flex flex-col transition-transform duration-500 [transform:rotateX(5deg)]",
+        "bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl"
+        )}>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2 text-white/90'>
+            <TestTubeDiagonal />
+            Workbench
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col items-center justify-between p-2 md:p-6 text-white">
+          {state.equipment.length > 0 ? (
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end flex-1">
+              {state.equipment.map(item => (
+                  <EquipmentDisplay key={item.id} item={item} state={state} />
+              ))}
             </div>
-        )}
+          ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
+                  <TestTubeDiagonal className="h-24 w-24" />
+                  <p className="text-center">Your workbench is empty.<br />Add equipment from your inventory to begin.</p>
+              </div>
+          )}
 
-        <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border bg-card/80 backdrop-blur-sm">
-            <p className="text-sm font-medium">Titration Control</p>
-            <div className="flex items-center gap-4 w-full">
-                <Slider 
-                  value={[titrationAmount]}
-                  onValueChange={(value) => setTitrationAmount(value[0])}
-                  min={0.1}
-                  max={10}
-                  step={0.1}
-                  disabled={!hasBurette || !hasBeaker}
-                />
-                <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48'>
-                    Add {titrationAmount.toFixed(1)}ml
-                </Button>
-            </div>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border border-white/10 bg-black/20 backdrop-blur-sm">
+              <p className="text-sm font-medium text-white/80">Titration Control</p>
+              <div className="flex items-center gap-4 w-full">
+                  <Slider 
+                    value={[titrationAmount]}
+                    onValueChange={(value) => setTitrationAmount(value[0])}
+                    min={0.1}
+                    max={10}
+                    step={0.1}
+                    disabled={!hasBurette || !hasBeaker}
+                  />
+                  <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48' variant="secondary">
+                      Add {titrationAmount.toFixed(1)}ml
+                  </Button>
+              </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
