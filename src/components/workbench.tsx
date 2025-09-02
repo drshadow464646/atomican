@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn, Trash2 } from 'lucide-react';
 import type { Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercentage: number; size: number }) => {
@@ -167,7 +167,7 @@ export function Workbench({
   }, []);
 
   // Attach and clean up global event listeners
-  React.useEffect(() => {
+  useEffect(() => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mouseleave', handleMouseLeave);
