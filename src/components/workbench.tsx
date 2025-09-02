@@ -113,7 +113,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
           Workbench
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-between h-[calc(100%-80px)]">
+      <CardContent className="flex flex-col items-center justify-between h-[calc(100%-80px)] p-2 md:p-6">
         <div className="flex w-full flex-col md:flex-row justify-around items-center md:items-end flex-1">
           {hasBurette && buretteSolution ? (
             <div className="flex flex-col items-center gap-2">
@@ -139,7 +139,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Beaker className="h-24 w-24 md:h-32 md:w-32" />
+                <Beaker className="h-32 w-32 md:h-48 md:w-48" />
                 <p>No Beaker</p>
             </div>
           )}
