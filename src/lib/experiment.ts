@@ -16,6 +16,8 @@ export type Equipment = {
   volume?: number; // in ml
   description: string;
   size?: number; // scale factor, e.g., 1 for 100%
+  position: { x: number; y: number };
+  isSelected: boolean;
 };
 
 export type Solution = {
@@ -45,21 +47,21 @@ export type LabLog = {
 export type AiSuggestion = ExperimentStepSuggestionOutput | null;
 
 export const INITIAL_EQUIPMENT: Equipment[] = [
-    { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250, description: 'A cylindrical container used for holding, mixing, and heating liquids.' },
-    { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50, description: 'A graduated glass tube with a tap at one end, for delivering known volumes of a liquid, especially in titrations.' },
+    { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250, description: 'A cylindrical container used for holding, mixing, and heating liquids.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50, description: 'A graduated glass tube with a tap at one end, for delivering known volumes of a liquid, especially in titrations.', position: {x: 0, y: 0}, isSelected: false },
 ];
 
 export const ALL_EQUIPMENT: Equipment[] = [
-    { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250, description: 'A cylindrical container used for holding, mixing, and heating liquids.' },
-    { id: 'erlenmeyer-flask', name: '250ml Erlenmeyer Flask', type: 'erlenmeyer-flask', volume: 250, description: 'A conical flask with a narrow neck, used to hold and mix chemicals. The small neck helps prevent splashes.' },
-    { id: 'graduated-cylinder', name: '100ml Graduated Cylinder', type: 'graduated-cylinder', volume: 100, description: 'A piece of laboratory equipment used to measure the volume of a liquid. It is generally more accurate than a beaker.' },
-    { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50, description: 'A graduated glass tube with a tap at one end, for delivering known volumes of a liquid, especially in titrations.' },
-    { id: 'pipette', name: '10ml Pipette', type: 'pipette', volume: 10, description: 'A laboratory tool used to transport a measured volume of liquid, often as a media dispenser.' },
-    { id: 'thermometer', name: 'Digital Thermometer', type: 'measurement', description: 'Used to measure temperature with high precision.' },
-    { id: 'ph-meter', name: 'pH Meter', type: 'measurement', description: 'A scientific instrument that measures the hydrogen-ion activity in water-based solutions.' },
-    { id: 'hot-plate', name: 'Hot Plate Stirrer', type: 'heating', description: 'A portable self-contained tabletop appliance that features one or more electric heating elements or gas burners.' },
-    { id: 'analytical-balance', name: 'Analytical Balance', type: 'measurement', description: 'A highly sensitive lab instrument designed to accurately measure mass.' },
-    { id: 'microscope', name: 'Compound Microscope', type: 'microscopy', description: 'A high-power microscope that uses a compound lens system for observing small specimens.' },
+    { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250, description: 'A cylindrical container used for holding, mixing, and heating liquids.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'erlenmeyer-flask', name: '250ml Erlenmeyer Flask', type: 'erlenmeyer-flask', volume: 250, description: 'A conical flask with a narrow neck, used to hold and mix chemicals. The small neck helps prevent splashes.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'graduated-cylinder', name: '100ml Graduated Cylinder', type: 'graduated-cylinder', volume: 100, description: 'A piece of laboratory equipment used to measure the volume of a liquid. It is generally more accurate than a beaker.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50, description: 'A graduated glass tube with a tap at one end, for delivering known volumes of a liquid, especially in titrations.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'pipette', name: '10ml Pipette', type: 'pipette', volume: 10, description: 'A laboratory tool used to transport a measured volume of liquid, often as a media dispenser.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'thermometer', name: 'Digital Thermometer', type: 'measurement', description: 'Used to measure temperature with high precision.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'ph-meter', name: 'pH Meter', type: 'measurement', description: 'A scientific instrument that measures the hydrogen-ion activity in water-based solutions.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'hot-plate', name: 'Hot Plate Stirrer', type: 'heating', description: 'A portable self-contained tabletop appliance that features one or more electric heating elements or gas burners.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'analytical-balance', name: 'Analytical Balance', type: 'measurement', description: 'A highly sensitive lab instrument designed to accurately measure mass.', position: {x: 0, y: 0}, isSelected: false },
+    { id: 'microscope', name: 'Compound Microscope', type: 'microscopy', description: 'A high-power microscope that uses a compound lens system for observing small specimens.', position: {x: 0, y: 0}, isSelected: false },
 ];
 
 
@@ -114,7 +116,7 @@ export function calculatePH(state: ExperimentState): number {
         const concentrationOH = remainingMolesOH / totalVolumeL;
         const pOH = -Math.log10(concentrationOH);
         return 14 - pOH;
-    } else if (addedMolesH > initialMolesOH) {
+    } else if (addedMolesH > initialMolesH) {
         const excessMolesH = addedMolesH - initialMolesH;
         const concentrationH = excessMolesH / totalVolumeL;
         return -Math.log10(concentrationH);

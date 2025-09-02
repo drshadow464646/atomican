@@ -31,6 +31,8 @@ type ExperimentContextType = {
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
   handleRemoveEquipmentFromWorkbench: (equipmentId: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
+  handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
+  handleSelectEquipment: (equipmentId: string | null) => void;
   handleAddChemical: (chemical: Chemical) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
   handleAddIndicator: (chemical: Chemical) => void;
@@ -90,6 +92,16 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     return newState;
   }, [addLog]);
 
+  const handleSelectEquipment = useCallback((equipmentId: string | null) => {
+    setExperimentState(prevState => ({
+      ...prevState,
+      equipment: prevState.equipment.map(e => ({
+        ...e,
+        isSelected: e.id === equipmentId,
+      })),
+    }));
+  }, []);
+
   const handleAddEquipmentToWorkbench = useCallback((equipment: Equipment) => {
     if (!handleSafetyCheck()) return;
 
@@ -100,7 +112,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     setExperimentState((prevState) => {
       addLog(`Added ${equipment.name} to the workbench.`);
-      const newEquipment = { ...equipment, size: 1 }; // Default size
+      const newEquipment: Equipment = { 
+        ...equipment, 
+        size: 1, // Default size
+        position: { x: 50, y: 50 }, // Default position
+        isSelected: false,
+      }; 
       return { ...prevState, equipment: [...prevState.equipment, newEquipment] };
     });
   }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
@@ -132,6 +149,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       ...prevState,
       equipment: prevState.equipment.map(e => 
         e.id === equipmentId ? { ...e, size } : e
+      ),
+    }));
+  }, []);
+  
+  const handleMoveEquipment = useCallback((equipmentId: string, position: { x: number, y: number }) => {
+    setExperimentState(prevState => ({
+      ...prevState,
+      equipment: prevState.equipment.map(e =>
+        e.id === equipmentId ? { ...e, position } : e
       ),
     }));
   }, []);
@@ -235,6 +261,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleAddEquipmentToInventory,
     handleRemoveEquipmentFromWorkbench,
     handleResizeEquipment,
+    handleMoveEquipment,
+    handleSelectEquipment,
     handleAddChemical,
     handleAddChemicalToInventory,
     handleAddIndicator,
@@ -252,6 +280,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleAddEquipmentToInventory,
     handleRemoveEquipmentFromWorkbench,
     handleResizeEquipment,
+    handleMoveEquipment,
+    handleSelectEquipment,
     handleAddChemical,
     handleAddChemicalToInventory,
     handleAddIndicator,

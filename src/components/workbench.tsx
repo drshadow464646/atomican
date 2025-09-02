@@ -3,18 +3,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn, Trash2 } from 'lucide-react';
 import type { Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercentage: number; size: number }) => {
   const liquidHeight = 95 * (fillPercentage / 100);
   const liquidY = 115 - liquidHeight;
+  
+  const width = 7 * size;
+  const height = 10 * size;
 
   return (
-    <div className="relative" style={{ height: `${10 * size}rem`, width: `${7 * size}rem`}}>
+    <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
       <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
            <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -23,8 +26,6 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
               <stop offset="100%" stopColor={color} stopOpacity="0.7" />
           </linearGradient>
         </defs>
-
-        {/* Liquid */}
         {fillPercentage > 0 && (
           <g>
             <path
@@ -34,8 +35,6 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
             />
           </g>
         )}
-
-        {/* Beaker Glass */}
         <path
           d="M10,10 L20,115 A 5,5 0 0 0 25,120 H 75 A 5,5 0 0 0 80,115 L 90,10"
           stroke="hsl(var(--foreground) / 0.3)"
@@ -49,9 +48,6 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
           fill="none"
         />
       </svg>
-      <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-muted-foreground">
-        {Math.round(fillPercentage)}% Full
-      </div>
     </div>
   );
 };
@@ -60,13 +56,13 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
 const EquipmentDisplay = ({ 
   item, 
   state,
-  onRemove,
-  onResize,
+  onMouseDown,
+  onSelect,
 }: { 
   item: Equipment, 
   state: ExperimentState,
-  onRemove: (id: string) => void,
-  onResize: (id: string, size: number) => void,
+  onMouseDown: (e: React.MouseEvent, id: string) => void,
+  onSelect: (id: string) => void,
 }) => {
     const beakerSolution = state.beaker?.solutions[0];
     const buretteSolution = state.burette;
@@ -79,64 +75,37 @@ const EquipmentDisplay = ({
         const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
         switch (item.type) {
             case 'beaker':
-                return (
-                    <>
-                        <BeakerIcon color={state.color} fillPercentage={fillPercentage} size={size} />
-                        <CardDescription className="text-foreground/80 mt-2">{beakerSolution ? beakerSolution.chemical.name : 'Empty'}</CardDescription>
-                        {state.ph !== null && <p className="text-xl font-bold text-foreground">pH: {state.ph.toFixed(2)}</p>}
-                    </>
-                );
+                return <BeakerIcon color={state.color} fillPercentage={fillPercentage} size={size} />;
             case 'burette':
-                return (
-                    <>
-                        <Pipette className={iconClass} style={iconStyle} />
-                        <CardDescription className="text-foreground/80 mt-2">{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
-                         {buretteSolution && (
-                            <p className="text-sm text-muted-foreground">
-                                <span className='font-bold text-foreground'>{(buretteSolution.volume - state.volumeAdded).toFixed(1)}ml</span> left
-                            </p>
-                        )}
-                    </>
-                );
+                return <Pipette className={iconClass} style={iconStyle} />;
             case 'erlenmeyer-flask':
-                 return (
-                    <>
-                        <FlaskConical className={iconClass} style={iconStyle} />
-                        <CardDescription className="text-foreground/80 mt-2">{item.name}</CardDescription>
-                    </>
-                );
+                 return <FlaskConical className={iconClass} style={iconStyle} />;
             default:
-                return (
-                    <>
-                        <TestTube className={iconClass} style={iconStyle} />
-                        <CardDescription className="text-foreground/80 mt-2">{item.name}</CardDescription>
-                    </>
-                );
+                return <TestTube className={iconClass} style={iconStyle} />;
         }
     };
 
     return (
-        <Card className="relative flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px] transition-all" style={{ gridColumn: `span ${Math.round(size)}`}}>
-            <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6" onClick={() => onRemove(item.id)}>
-                <X className="h-4 w-4" />
-            </Button>
-            <CardTitle className="text-base font-medium text-foreground/80">{item.name}</CardTitle>
-            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-4">
+        <div 
+            className={cn(
+                "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-shadow duration-200 rounded-lg",
+                item.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl"
+            )}
+            style={{ 
+                left: `${item.position.x}px`, 
+                top: `${item.position.y}px`,
+                touchAction: 'none', // prevent default touch actions
+            }}
+            onMouseDown={(e) => {
+              onSelect(item.id);
+              onMouseDown(e, item.id);
+            }}
+        >
+            <div className="flex-1 flex flex-col items-center justify-center pointer-events-none">
                 {renderContent()}
             </div>
-            <div className="w-full max-w-xs pt-4">
-                <div className="flex items-center gap-2">
-                    <ZoomIn className="h-4 w-4 text-muted-foreground" />
-                    <Slider
-                        value={[size]}
-                        onValueChange={(value) => onResize(item.id, value[0])}
-                        min={0.5}
-                        max={1.5}
-                        step={0.1}
-                    />
-                </div>
-            </div>
-        </Card>
+             <p className="text-xs font-medium text-foreground/80 pointer-events-none select-none">{item.name}</p>
+        </div>
     );
 };
 
@@ -144,30 +113,78 @@ export function Workbench({
     state, 
     onTitrate,
     onRemoveEquipment,
-    onResizeEquipment
+    onResizeEquipment,
+    onMoveEquipment,
+    onSelectEquipment,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number) => void;
     onRemoveEquipment: (id: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
+    onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
+    onSelectEquipment: (id: string | null) => void;
 }) {
   const [titrationAmount, setTitrationAmount] = useState(1);
+  const workbenchRef = useRef<HTMLDivElement>(null);
+  const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number } } | null>(null);
+
   const hasBeaker = state.equipment.some((e) => e.type === 'beaker');
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
+  const selectedEquipment = state.equipment.find(e => e.isSelected);
+
+  const handleMouseDown = (e: React.MouseEvent, id: string) => {
+    const workbenchRect = workbenchRef.current?.getBoundingClientRect();
+    const item = state.equipment.find(i => i.id === id);
+    if (!workbenchRect || !item) return;
+
+    draggedItemRef.current = {
+      id,
+      offset: {
+        x: e.clientX - workbenchRect.left - item.position.x,
+        y: e.clientY - workbenchRect.top - item.position.y,
+      },
+    };
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggedItemRef.current || !workbenchRef.current) return;
+
+    const workbenchRect = workbenchRef.current.getBoundingClientRect();
+    const newX = e.clientX - workbenchRect.left - draggedItemRef.current.offset.x;
+    const newY = e.clientY - workbenchRect.top - draggedItemRef.current.offset.y;
+
+    onMoveEquipment(draggedItemRef.current.id, { x: newX, y: newY });
+  }, [onMoveEquipment]);
+
+
+  const handleMouseUp = useCallback(() => {
+    draggedItemRef.current = null;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    draggedItemRef.current = null;
+  }, []);
+
+  // Attach and clean up global event listeners
+  React.useEffect(() => {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [handleMouseMove, handleMouseUp, handleMouseLeave]);
+
   return (
     <div className="h-full flex flex-col">
       <Card 
         className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
         style={{
           backgroundColor: 'hsl(var(--muted))',
-          backgroundImage: `
-            linear-gradient(45deg, hsl(var(--border)) 25%, transparent 25%), 
-            linear-gradient(-45deg, hsl(var(--border)) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, hsl(var(--border)) 75%),
-            linear-gradient(-45deg, transparent 75%, hsl(var(--border)) 75%)
-          `,
-          backgroundSize: '20px 20px',
         }}
       >
         <CardHeader>
@@ -177,51 +194,74 @@ export function Workbench({
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
-            <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
-                 <div
-                    className="relative w-full h-full rounded-2xl border border-white/10 bg-gray-400/20 p-4 shadow-2xl backdrop-blur-md"
-                    style={{
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
-                    }}
-                >
-                    {state.equipment.length > 0 ? (
-                        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center p-4">
-                            {state.equipment.map(item => (
-                                <EquipmentDisplay 
-                                    key={item.id} 
-                                    item={item} 
-                                    state={state} 
-                                    onRemove={onRemoveEquipment}
-                                    onResize={onResizeEquipment}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                            {/* This is now empty for a clean slate */}
-                        </div>
-                    )}
+            <div 
+              ref={workbenchRef}
+              className="relative w-full flex-1 rounded-2xl bg-gray-400/20 shadow-inner"
+              onClick={(e) => {
+                if (e.target === workbenchRef.current) {
+                  onSelectEquipment(null);
+                }
+              }}
+            >
+              {state.equipment.length > 0 ? (
+                  <>
+                      {state.equipment.map(item => (
+                          <EquipmentDisplay 
+                              key={item.id} 
+                              item={item} 
+                              state={state} 
+                              onMouseDown={handleMouseDown}
+                              onSelect={onSelectEquipment}
+                          />
+                      ))}
+                  </>
+              ) : (
+                   <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                        <p className="text-lg font-medium">Your workbench is ready.</p>
+                        <p className="text-sm">Add equipment and chemicals from the inventory to begin.</p>
+                  </div>
+              )}
+            </div>
+          
+          <div className="w-full max-w-2xl mt-4">
+              {selectedEquipment ? (
+                <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
+                    <p className="text-base font-bold text-foreground">Editing: {selectedEquipment.name}</p>
+                    <div className="flex items-center gap-4 w-full">
+                        <ZoomIn className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <Slider
+                            value={[selectedEquipment.size ?? 1]}
+                            onValueChange={(value) => onResizeEquipment(selectedEquipment.id, value[0])}
+                            min={0.5}
+                            max={1.5}
+                            step={0.1}
+                        />
+                        <Button variant="destructive" size="sm" onClick={() => onRemoveEquipment(selectedEquipment.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Remove
+                        </Button>
+                    </div>
                 </div>
+              ) : hasBeaker && hasBurette ? (
+                 <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
+                    <p className="text-sm font-medium text-foreground">Titration Control</p>
+                    <div className="flex items-center gap-4 w-full">
+                        <Slider 
+                          value={[titrationAmount]}
+                          onValueChange={(value) => setTitrationAmount(value[0])}
+                          min={0.1}
+                          max={10}
+                          step={0.1}
+                          disabled={!hasBurette || !hasBeaker}
+                        />
+                        <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48' variant="secondary">
+                            Add {titrationAmount.toFixed(1)}ml
+                        </Button>
+                    </div>
+                </div>
+              ) : null}
             </div>
 
-          {hasBeaker && hasBurette && (
-            <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
-                <p className="text-sm font-medium text-foreground">Titration Control</p>
-                <div className="flex items-center gap-4 w-full">
-                    <Slider 
-                      value={[titrationAmount]}
-                      onValueChange={(value) => setTitrationAmount(value[0])}
-                      min={0.1}
-                      max={10}
-                      step={0.1}
-                      disabled={!hasBurette || !hasBeaker}
-                    />
-                    <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48' variant="secondary">
-                        Add {titrationAmount.toFixed(1)}ml
-                    </Button>
-                </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

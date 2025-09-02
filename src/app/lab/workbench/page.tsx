@@ -38,6 +38,8 @@ export default function WorkbenchPage() {
     handleResetExperiment,
     handleRemoveEquipmentFromWorkbench,
     handleResizeEquipment,
+    handleMoveEquipment,
+    handleSelectEquipment,
   } = useExperiment();
 
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion>(null);
@@ -102,6 +104,8 @@ export default function WorkbenchPage() {
             onTitrate={handleTitrate}
             onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
             onResizeEquipment={handleResizeEquipment}
+            onMoveEquipment={handleMoveEquipment}
+            onSelectEquipment={handleSelectEquipment}
           />
         </ResizablePanel>
 
