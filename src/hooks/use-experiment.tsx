@@ -90,15 +90,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Equipment) => {
     if (!handleSafetyCheck()) return;
+
+    if (experimentState.equipment.find((e) => e.id === equipment.id)) {
+      toast({ title: 'Notice', description: `${equipment.name} is already on the workbench.` });
+      return;
+    }
+
     setExperimentState((prevState) => {
-      if (prevState.equipment.find((e) => e.id === equipment.id)) {
-        toast({ title: 'Notice', description: `${equipment.name} is already on the workbench.` });
-        return prevState;
-      }
       addLog(`Added ${equipment.name} to the workbench.`);
       return { ...prevState, equipment: [...prevState.equipment, equipment] };
     });
-  }, [addLog, handleSafetyCheck, toast]);
+  }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
 
   const handleAddEquipmentToInventory = useCallback((equipment: Equipment) => {
     if (inventoryEquipment.find((e) => e.id === equipment.id)) {
@@ -150,36 +152,40 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handleAddIndicator = useCallback((chemical: Chemical) => {
     if (!handleSafetyCheck()) return;
+    if (!experimentState.beaker) {
+      toast({ title: 'Error', description: 'Add a solution to the beaker first.', variant: 'destructive' });
+      return;
+    }
     setExperimentState((prevState) => {
-      if (!prevState.beaker) {
-        toast({ title: 'Error', description: 'Add a solution to the beaker first.', variant: 'destructive' });
-        return prevState;
-      }
       addLog(`Added ${chemical.name} indicator to the beaker.`);
-      const newState = { ...prevState, beaker: { ...prevState.beaker, indicator: chemical } };
+      const newState = { ...prevState, beaker: { ...prevState.beaker!, indicator: chemical } };
       return updatePhAndColor(newState);
     });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
+  }, [addLog, handleSafetyCheck, toast, experimentState.beaker, updatePhAndColor]);
   
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
+
+    if (!experimentState.beaker || !experimentState.burette) {
+        toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' });
+        return;
+    }
+
+    const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + volume));
+
+    if (newVolumeAdded === experimentState.volumeAdded && volume !== 0) {
+        toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' });
+        return;
+    }
+
     setExperimentState(prevState => {
-        if (!prevState.beaker || !prevState.burette) {
-            toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' });
-            return prevState;
-        }
-        const newVolumeAdded = Math.max(0, Math.min(prevState.burette.volume, prevState.volumeAdded + volume));
-        if (newVolumeAdded === prevState.volumeAdded && volume !== 0) {
-            toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' });
-            return prevState;
-        }
         if (volume !== 0) {
-            addLog(`Added ${volume.toFixed(1)}ml of ${prevState.burette.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
+            addLog(`Added ${volume.toFixed(1)}ml of ${prevState.burette!.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
         }
         const newState = { ...prevState, volumeAdded: newVolumeAdded };
         return updatePhAndColor(newState);
     });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
+  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
 
   const handleAddCustomLog = useCallback((note: string) => {
     if(note.trim()) {
@@ -214,6 +220,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     inventoryChemicals, 
     inventoryEquipment, 
     safetyGogglesOn,
+    setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleAddChemical,
