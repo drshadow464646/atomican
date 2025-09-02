@@ -6,6 +6,11 @@ import type { ExperimentState, LabLog, Chemical, Equipment } from '@/lib/experim
 import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 
+let logIdCounter = 0;
+const getUniqueLogId = () => {
+    return `${Date.now()}-${logIdCounter++}`;
+};
+
 const initialExperimentState: ExperimentState = {
   equipment: [],
   beaker: null,
@@ -46,7 +51,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
       const newLog: LabLog = {
-        id: Date.now(),
+        id: getUniqueLogId(),
         timestamp: new Date().toISOString(),
         text,
         isCustom,
@@ -100,8 +105,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` });
       return;
     }
-    toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
     setInventoryEquipment(prev => [...prev, equipment]);
+    toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
   }, [inventoryEquipment, toast]);
   
   const handleAddChemical = useCallback((chemical: Chemical, target: 'beaker' | 'burette') => {
@@ -135,8 +140,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         toast({ title: 'Already in Inventory', description: `${chemical.name} is already in your inventory.` });
         return;
     }
-    toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
     setInventoryChemicals(prev => [...prev, chemical]);
+    toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
   }, [inventoryChemicals, toast]);
   
   const handleAddIndicator = useCallback((chemical: Chemical) => {
@@ -210,7 +215,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     inventoryChemicals, 
     inventoryEquipment, 
     safetyGogglesOn,
-    setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleAddChemical,
