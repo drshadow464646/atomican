@@ -12,8 +12,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         setIsMounted(true);
     }, []);
 
-    // We need to delay the rendering of the children until the component is mounted
-    // to avoid hydration errors.
     if (!isMounted) {
         return null;
     }
