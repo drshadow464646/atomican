@@ -4,6 +4,7 @@
 import { LabSidebar } from '@/components/lab-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useEffect, useState } from 'react';
+import { SettingsForm } from '@/components/settings-form';
 
 export default function LabLayout({
   children,
@@ -16,16 +17,19 @@ export default function LabLayout({
     setIsClient(true);
   }, []);
 
-  if (!isClient) {
-    return null; // or a loading skeleton
-  }
-
   return (
-    <SidebarProvider>
-      <LabSidebar />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <>
+      {isClient ? (
+        <SidebarProvider>
+          <LabSidebar />
+          <SidebarInset>
+            {children}
+          </SidebarInset>
+          <div className="hidden">
+            <SettingsForm />
+          </div>
+        </SidebarProvider>
+      ) : null}
+    </>
   );
 }

@@ -45,11 +45,6 @@ export default function WorkbenchPage() {
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
   const [isGuidancePanelVisible, setIsGuidancePanelVisible] = useState(true);
   const isMobile = useIsMobile();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const { toast } = useToast();
 
@@ -189,12 +184,8 @@ export default function WorkbenchPage() {
     });
   }
 
-  if (!isClient) {
-    return null; // or a loading spinner
-  }
-
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div className="flex flex-col h-screen bg-transparent text-foreground">
       <LabHeader 
         safetyGogglesOn={safetyGogglesOn} 
         onGoggleToggle={setSafetyGogglesOn}
