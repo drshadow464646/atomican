@@ -210,7 +210,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleTitrate,
     handleAddCustomLog,
     handleResetExperiment,
-  }), [experimentState, labLogs, inventoryChemicals, inventoryEquipment, safetyGogglesOn, setSafetyGogglesOn, addLog, handleAddEquipmentToWorkbench, handleAddEquipmentToInventory, handleAddChemical, handleAddChemicalToInventory, handleAddIndicator, handleTitrate, handleAddCustomLog, handleResetExperiment]);
+  }), [experimentState, labLogs, inventoryChemicals, inventoryEquipment, safetyGogglesOn, addLog, handleAddEquipmentToWorkbench, handleAddEquipmentToInventory, handleAddChemical, handleAddChemicalToInventory, handleAddIndicator, handleTitrate, handleAddCustomLog, handleResetExperiment]);
 
   return (
     <ExperimentContext.Provider value={value}>
