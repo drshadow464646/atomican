@@ -41,7 +41,7 @@ const prompt = ai.definePrompt({
   For each chemical, provide a unique ID (a simple lowercase, url-safe slug is fine, e.g. "hydrochloric-acid"), its common name, chemical formula, its general type, and a typical concentration if it's commonly sold as a solution.
   Ensure the results are accurate and diverse, reflecting the breadth of a real-world chemical supplier.
 
-  User Search Query: {{{input}}}
+  User Search Query: {{input}}
   `,
 });
 
