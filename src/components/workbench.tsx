@@ -154,8 +154,8 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
       <Card 
         className="h-full rounded-none flex flex-col"
         style={{
-          backgroundImage: "url('https://i.ibb.co/yWJT8pD/white-brick-wall-pattern.png')",
-          backgroundSize: '300px 300px',
+          backgroundImage: "url('https://www.transparenttextures.com/patterns/white-wall-3.png')",
+          backgroundSize: 'auto',
           backgroundRepeat: 'repeat',
         }}
       >
