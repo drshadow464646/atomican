@@ -152,7 +152,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   return (
     <div className="h-full flex flex-col">
       <Card 
-        className="h-full rounded-none flex flex-col"
+        className="h-full rounded-none flex flex-col text-foreground"
         style={{
           backgroundImage: "url('https://www.transparenttextures.com/patterns/white-wall-3.png')",
           backgroundSize: 'auto',
@@ -173,10 +173,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
               ))}
             </div>
           ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
-                  <TestTubeDiagonal className="h-24 w-24" />
-                  <p className="text-center">Your workbench is empty.<br />Add equipment from your inventory to begin.</p>
-              </div>
+             <div className="flex-1 w-full"></div>
           )}
 
           {hasBeaker && hasBurette && (
