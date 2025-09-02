@@ -22,7 +22,6 @@ type ExperimentContextType = {
   inventoryEquipment: Equipment[];
   safetyGogglesOn: boolean;
   setSafetyGogglesOn: (on: boolean) => void;
-  addLog: (text: string, isCustom?: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
   handleAddChemical: (chemical: Chemical, target: 'beaker' | 'burette') => void;
@@ -201,7 +200,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     inventoryEquipment,
     safetyGogglesOn,
     setSafetyGogglesOn,
-    addLog,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleAddChemical,
@@ -216,7 +214,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     inventoryChemicals, 
     inventoryEquipment, 
     safetyGogglesOn,
-    addLog,
+    setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleAddChemical,
