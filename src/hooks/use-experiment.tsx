@@ -26,6 +26,7 @@ type ExperimentContextType = {
   inventoryChemicals: Chemical[];
   inventoryEquipment: Equipment[];
   safetyGogglesOn: boolean;
+  heldItem: Chemical | null;
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
@@ -33,12 +34,13 @@ type ExperimentContextType = {
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
   handleSelectEquipment: (equipmentId: string | null) => void;
-  handleAddChemical: (chemical: Chemical) => void;
+  handleDropOnApparatus: (equipmentId: string) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
-  handleAddIndicator: (chemical: Chemical) => void;
   handleTitrate: (volume: number) => void;
   handleAddCustomLog: (note: string) => void;
   handleResetExperiment: () => void;
+  handlePickUpChemical: (chemical: Chemical) => void;
+  handleClearHeldItem: () => void;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -47,6 +49,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const [experimentState, setExperimentState] = useState<ExperimentState>(initialExperimentState);
   const [labLogs, setLabLogs] = useState<LabLog[]>([]);
   const [safetyGogglesOn, setSafetyGogglesOn] = useState(true);
+  const [heldItem, setHeldItem] = useState<Chemical | null>(null);
   const { toast } = useToast();
 
   const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>(INITIAL_CHEMICALS);
@@ -162,35 +165,66 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }));
   }, []);
 
-  const handleAddChemical = useCallback((chemical: Chemical) => {
-    if (!handleSafetyCheck()) return;
+  const handleDropOnApparatus = useCallback((equipmentId: string) => {
+    if (!handleSafetyCheck() || !heldItem) return;
 
-    const hasBurette = experimentState.equipment.some(e => e.type === 'burette');
-    const hasBeaker = experimentState.equipment.some(e => e.type === 'beaker');
-    const canAddBase = chemical.type === 'base' && hasBurette && !experimentState.burette;
-    const canAddAcid = chemical.type === 'acid' && hasBeaker && !experimentState.beaker;
+    const targetEquipment = experimentState.equipment.find(e => e.id === equipmentId);
+    if (!targetEquipment) return;
 
-    if (!canAddBase && !canAddAcid) {
-      toast({
-        title: 'Cannot Add Chemical',
-        description: `Please add the appropriate empty equipment (beaker for acid, burette for base) to the workbench first.`,
-        variant: 'destructive'
-      });
-      return;
-    }
+    setExperimentState(prevState => {
+        const newState = { ...prevState };
+        let success = false;
 
-    setExperimentState((prevState) => {
-      const newState = { ...prevState };
-      if (canAddBase) {
-        newState.burette = { chemical, volume: 50 };
-        addLog(`Filled the burette with 50ml of ${chemical.name}.`);
-      } else if (canAddAcid) {
-        newState.beaker = { solutions: [{ chemical, volume: 50 }], indicator: null };
-        addLog(`Added 50ml of ${chemical.name} to the beaker.`);
-      }
-      return updatePhAndColor(newState);
+        // Drop into Beaker
+        if (targetEquipment.type === 'beaker') {
+            if (heldItem.type === 'acid' && !prevState.beaker) {
+                newState.beaker = { solutions: [{ chemical: heldItem, volume: 50 }], indicator: null };
+                addLog(`Added 50ml of ${heldItem.name} to the beaker.`);
+                success = true;
+            } else if (heldItem.type === 'indicator' && prevState.beaker) {
+                newState.beaker = { ...prevState.beaker, indicator: heldItem };
+                addLog(`Added ${heldItem.name} indicator to the beaker.`);
+                success = true;
+            } else {
+                 toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' });
+            }
+        }
+        // Drop into Burette
+        else if (targetEquipment.type === 'burette') {
+            if (heldItem.type === 'base' && !prevState.burette) {
+                newState.burette = { chemical: heldItem, volume: 50 };
+                addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
+                success = true;
+            } else {
+                toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the burette.`, variant: 'destructive' });
+            }
+        }
+
+        if (success) {
+          setHeldItem(null);
+          return updatePhAndColor(newState);
+        }
+
+        return prevState;
     });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
+  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState, heldItem]);
+  
+  const handlePickUpChemical = useCallback((chemical: Chemical) => {
+    setHeldItem(chemical);
+    toast({
+      title: `Holding ${chemical.name}`,
+      description: "Click on a piece of equipment to add it.",
+    });
+  }, [toast]);
+
+  const handleClearHeldItem = useCallback(() => {
+    setHeldItem(null);
+     toast({
+      title: `Action Canceled`,
+      description: "You are no longer holding an item.",
+      variant: 'default',
+    });
+  }, [toast]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
@@ -200,19 +234,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setInventoryChemicals(prev => [...prev, chemical]);
     toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
   }, [inventoryChemicals, toast]);
-  
-  const handleAddIndicator = useCallback((chemical: Chemical) => {
-    if (!handleSafetyCheck()) return;
-    if (!experimentState.beaker) {
-      toast({ title: 'Error', description: 'Add a solution to the beaker first.', variant: 'destructive' });
-      return;
-    }
-    setExperimentState((prevState) => {
-      addLog(`Added ${chemical.name} indicator to the beaker.`);
-      const newState = { ...prevState, beaker: { ...prevState.beaker!, indicator: chemical } };
-      return updatePhAndColor(newState);
-    });
-  }, [addLog, handleSafetyCheck, toast, experimentState.beaker, updatePhAndColor]);
   
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
@@ -256,6 +277,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     inventoryChemicals,
     inventoryEquipment,
     safetyGogglesOn,
+    heldItem,
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
@@ -263,18 +285,20 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,
-    handleAddChemical,
+    handleDropOnApparatus,
     handleAddChemicalToInventory,
-    handleAddIndicator,
     handleTitrate,
     handleAddCustomLog,
     handleResetExperiment,
+    handlePickUpChemical,
+    handleClearHeldItem,
   }), [
     experimentState, 
     labLogs, 
     inventoryChemicals, 
     inventoryEquipment, 
     safetyGogglesOn,
+    heldItem,
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
@@ -282,12 +306,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,
-    handleAddChemical,
+    handleDropOnApparatus,
     handleAddChemicalToInventory,
-    handleAddIndicator,
     handleTitrate,
     handleAddCustomLog,
-    handleResetExperiment
+    handleResetExperiment,
+    handlePickUpChemical,
+    handleClearHeldItem,
   ]);
 
   return (

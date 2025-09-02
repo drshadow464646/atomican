@@ -31,8 +31,7 @@ export default function WorkbenchPage() {
     safetyGogglesOn, 
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
-    handleAddChemical,
-    handleAddIndicator,
+    handleDropOnApparatus,
     handleTitrate,
     handleAddCustomLog,
     handleResetExperiment,
@@ -40,6 +39,9 @@ export default function WorkbenchPage() {
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,
+    heldItem,
+    handlePickUpChemical,
+    handleClearHeldItem,
   } = useExperiment();
 
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion>(null);
@@ -62,9 +64,26 @@ export default function WorkbenchPage() {
     // Clear suggestion when logs change
     setAiSuggestion(null);
   }, [labLogs])
+  
+  useEffect(() => {
+    // Add a global key listener to drop the held item with Escape key
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && heldItem) {
+        handleClearHeldItem();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [heldItem, handleClearHeldItem]);
+
 
   return (
-    <div className="flex flex-col h-screen bg-transparent text-foreground">
+    <div className={cn(
+      "flex flex-col h-screen bg-transparent text-foreground",
+       heldItem && "cursor-copy"
+    )}>
       <LabHeader 
         safetyGogglesOn={safetyGogglesOn} 
         onGoggleToggle={setSafetyGogglesOn}
@@ -91,9 +110,9 @@ export default function WorkbenchPage() {
             equipment={inventoryEquipment}
             chemicals={inventoryChemicals}
             onAddEquipment={handleAddEquipmentToWorkbench}
-            onAddChemical={handleAddChemical}
-            onAddIndicator={handleAddIndicator}
+            onPickUpChemical={handlePickUpChemical}
             isCollapsed={!isInventoryPanelVisible}
+            heldItem={heldItem}
           />
         </ResizablePanel>
         <ResizableHandle withHandle className={cn(!isInventoryPanelVisible && 'hidden')}/>
@@ -106,6 +125,8 @@ export default function WorkbenchPage() {
             onResizeEquipment={handleResizeEquipment}
             onMoveEquipment={handleMoveEquipment}
             onSelectEquipment={handleSelectEquipment}
+            onDropOnApparatus={handleDropOnApparatus}
+            heldItem={heldItem}
           />
         </ResizablePanel>
 

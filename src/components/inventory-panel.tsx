@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Beaker, FlaskConical, Pipette, Droplets, Plus, PanelLeftClose, PanelRightClose, Package } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, Droplets, Plus, PanelLeftClose, PanelRightClose, Package, Hand } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -19,9 +19,9 @@ type InventoryPanelProps = {
   equipment: Equipment[];
   chemicals: Chemical[];
   onAddEquipment: (equipment: Equipment) => void;
-  onAddChemical: (chemical: Chemical) => void;
-  onAddIndicator: (chemical: Chemical) => void;
+  onPickUpChemical: (chemical: Chemical) => void;
   isCollapsed: boolean;
+  heldItem: Chemical | null;
 };
 
 const equipmentIcons = {
@@ -35,9 +35,9 @@ export function InventoryPanel({
   equipment,
   chemicals,
   onAddEquipment,
-  onAddChemical,
-  onAddIndicator,
+  onPickUpChemical,
   isCollapsed,
+  heldItem,
 }: InventoryPanelProps) {
     if (isCollapsed) {
     return (
@@ -79,7 +79,10 @@ export function InventoryPanel({
             <AccordionContent>
               <div className="grid grid-cols-1 gap-2 pt-2">
                 {chemicals.map((chem) => (
-                  <div key={chem.id} className="rounded-md border p-2">
+                  <div key={chem.id} className={cn(
+                      "rounded-md border p-2 transition-all",
+                      heldItem?.id === chem.id && "ring-2 ring-primary bg-primary/10"
+                    )}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <Droplets className="mr-2 h-5 w-5 text-primary" />
@@ -95,13 +98,13 @@ export function InventoryPanel({
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
-                              onClick={() => chem.type === 'indicator' ? onAddIndicator(chem) : onAddChemical(chem)}
+                              onClick={() => onPickUpChemical(chem)}
                             >
-                                <Plus className="h-4 w-4" />
+                                <Hand className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Add to Workbench</p>
+                            <p>Pick up chemical</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

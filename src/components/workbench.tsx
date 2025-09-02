@@ -3,8 +3,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn, Trash2 } from 'lucide-react';
-import type { Equipment, ExperimentState } from '@/lib/experiment';
+import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn, Trash2, Hand } from 'lucide-react';
+import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -58,11 +58,15 @@ const EquipmentDisplay = ({
   state,
   onMouseDown,
   onSelect,
+  onDrop,
+  isHoverTarget,
 }: { 
   item: Equipment, 
   state: ExperimentState,
   onMouseDown: (e: React.MouseEvent, id: string) => void,
   onSelect: (id: string) => void,
+  onDrop: (id: string) => void,
+  isHoverTarget: boolean,
 }) => {
     const beakerSolution = state.beaker?.solutions[0];
     const buretteSolution = state.burette;
@@ -88,8 +92,9 @@ const EquipmentDisplay = ({
     return (
         <div 
             className={cn(
-                "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-shadow duration-200 rounded-lg",
-                item.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl"
+                "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-all duration-200 rounded-lg",
+                item.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
+                isHoverTarget && "ring-2 ring-accent ring-offset-2 ring-offset-background shadow-2xl",
             )}
             style={{ 
                 left: `${item.position.x}px`, 
@@ -100,6 +105,7 @@ const EquipmentDisplay = ({
               onSelect(item.id);
               onMouseDown(e, item.id);
             }}
+            onClick={() => onDrop(item.id)}
         >
             <div className="flex-1 flex flex-col items-center justify-center pointer-events-none">
                 {renderContent()}
@@ -116,6 +122,8 @@ export function Workbench({
     onResizeEquipment,
     onMoveEquipment,
     onSelectEquipment,
+    onDropOnApparatus,
+    heldItem,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number) => void;
@@ -123,10 +131,13 @@ export function Workbench({
     onResizeEquipment: (id: string, size: number) => void;
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
     onSelectEquipment: (id: string | null) => void;
+    onDropOnApparatus: (equipmentId: string) => void;
+    heldItem: Chemical | null;
 }) {
   const [titrationAmount, setTitrationAmount] = useState(1);
   const workbenchRef = useRef<HTMLDivElement>(null);
   const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number } } | null>(null);
+  const [hoveredEquipment, setHoveredEquipment] = useState<string | null>(null);
 
   const hasBeaker = state.equipment.some((e) => e.type === 'beaker');
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
@@ -134,6 +145,7 @@ export function Workbench({
   const selectedEquipment = state.equipment.find(e => e.isSelected);
 
   const handleMouseDown = (e: React.MouseEvent, id: string) => {
+    if (heldItem) return; // Don't drag if holding a chemical
     const workbenchRect = workbenchRef.current?.getBoundingClientRect();
     const item = state.equipment.find(i => i.id === id);
     if (!workbenchRect || !item) return;
@@ -192,6 +204,12 @@ export function Workbench({
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-test-tube-diagonal"><path d="M14.5 2.5 16 4l-1.5 1.5"/><path d="M17.5 5.5 19 7l-1.5 1.5"/><path d="m3 21 7-7"/><path d="M13.5 6.5 16 9l4-4"/><path d="m3 21 7-7"/><path d="M14.5 6.5 17 9l4-4"/><path d="M10.586 11.414a2 2 0 1 1 2.828-2.828"/></svg>
             Workbench
           </CardTitle>
+           {heldItem && (
+            <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
+              <Hand className="h-4 w-4"/>
+              Holding: {heldItem.name}. Click on an apparatus to add it. (Press Esc to cancel)
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div 
@@ -206,13 +224,20 @@ export function Workbench({
               {state.equipment.length > 0 ? (
                   <>
                       {state.equipment.map(item => (
-                          <EquipmentDisplay 
-                              key={item.id} 
-                              item={item} 
-                              state={state} 
-                              onMouseDown={handleMouseDown}
-                              onSelect={onSelectEquipment}
-                          />
+                          <div
+                            key={item.id}
+                            onMouseEnter={() => { if (heldItem) setHoveredEquipment(item.id)}}
+                            onMouseLeave={() => { if (heldItem) setHoveredEquipment(null)}}
+                          >
+                            <EquipmentDisplay 
+                                item={item} 
+                                state={state} 
+                                onMouseDown={handleMouseDown}
+                                onSelect={onSelectEquipment}
+                                onDrop={onDropOnApparatus}
+                                isHoverTarget={!!heldItem && hoveredEquipment === item.id}
+                            />
+                          </div>
                       ))}
                   </>
               ) : (
@@ -242,7 +267,7 @@ export function Workbench({
                         </Button>
                     </div>
                 </div>
-              ) : hasBeaker && hasBurette ? (
+              ) : hasBeaker && hasBurette && !heldItem ? (
                  <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">Titration Control</p>
                     <div className="flex items-center gap-4 w-full">
