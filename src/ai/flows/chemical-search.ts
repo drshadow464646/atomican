@@ -32,16 +32,15 @@ const prompt = ai.definePrompt({
   name: 'chemicalSearchPrompt',
   input: { schema: z.string() },
   output: { schema: ChemicalSearchOutputSchema },
-  prompt: `You are an expert chemist and act as a comprehensive chemical database and supplier's search engine.
-  You have access to a vast catalog of chemicals, including core reagents, specialty reagents, and analytical standards.
-  A user will provide a search query for a chemical.
-  The query could be a name (common or IUPAC), formula, CAS number, or a general category (e.g., "strong acids", "deuterated solvents", "chiral auxiliaries").
-  
-  Based on the user's query, return a list of 5-10 highly relevant chemicals from your catalog.
-  For each chemical, provide a unique ID (a simple lowercase, url-safe slug is fine, e.g. "hydrochloric-acid"), its common name, chemical formula, its general type, and a typical concentration if it's commonly sold as a solution.
-  Ensure the results are accurate and diverse, reflecting the breadth of a real-world chemical supplier.
+  prompt: `You are an expert chemist acting as a chemical database search engine.
+  A user will provide a search query. This could be a name (common or IUPAC), formula, CAS number, or a general category.
+  You MUST use the user's query to find matching chemicals from a comprehensive catalog.
+  Return a list of 5-10 chemicals that are a direct match for the query.
 
-  User Search Query: {{input}}
+  **User Search Query:** {{input}}
+
+  Filter your results based on this query. For example, if the query is "Thulium(III) chloride", you should return "Thulium(III) chloride" and related compounds, not Hydrochloric Acid.
+  For each chemical, provide a unique ID (e.g. "thulium-iii-chloride"), its common name, chemical formula, its general type, and concentration if it's a solution.
   `,
 });
 
