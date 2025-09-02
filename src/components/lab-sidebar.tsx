@@ -29,8 +29,8 @@ const menuItems = [
   {
     href: '/lab/market',
     icon: '🛒',
-    label: 'Market',
-    tooltip: 'Buy reagents & apparatus'
+    label: 'Chemical Market',
+    tooltip: 'Buy reagents'
   },
   {
     href: '/lab/apparatus',

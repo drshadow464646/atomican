@@ -10,10 +10,11 @@ export type Chemical = {
 };
 
 export type Equipment = {
-  id: 'beaker-250' | 'burette-50' | 'pipette-25' | 'grad-cyl-100';
+  id: string;
   name: string;
-  type: 'beaker' | 'burette' | 'pipette' | 'cylinder';
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other';
   volume?: number; // in ml
+  description: string;
 };
 
 export type Solution = {
@@ -43,34 +44,28 @@ export type LabLog = {
 export type AiSuggestion = ExperimentStepSuggestionOutput | null;
 
 export const INITIAL_EQUIPMENT: Equipment[] = [
-  { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250 },
-  { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50 },
+    { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250, description: 'A cylindrical container used for holding, mixing, and heating liquids.' },
+    { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50, description: 'A graduated glass tube with a tap at one end, for delivering known volumes of a liquid, especially in titrations.' },
 ];
+
+export const ALL_EQUIPMENT: Equipment[] = [
+    { id: 'beaker-250', name: '250ml Beaker', type: 'beaker', volume: 250, description: 'A cylindrical container used for holding, mixing, and heating liquids.' },
+    { id: 'erlenmeyer-flask', name: '250ml Erlenmeyer Flask', type: 'erlenmeyer-flask', volume: 250, description: 'A conical flask with a narrow neck, used to hold and mix chemicals. The small neck helps prevent splashes.' },
+    { id: 'graduated-cylinder', name: '100ml Graduated Cylinder', type: 'graduated-cylinder', volume: 100, description: 'A piece of laboratory equipment used to measure the volume of a liquid. It is generally more accurate than a beaker.' },
+    { id: 'burette-50', name: '50ml Burette', type: 'burette', volume: 50, description: 'A graduated glass tube with a tap at one end, for delivering known volumes of a liquid, especially in titrations.' },
+    { id: 'pipette', name: '10ml Pipette', type: 'pipette', volume: 10, description: 'A laboratory tool used to transport a measured volume of liquid, often as a media dispenser.' },
+    { id: 'thermometer', name: 'Digital Thermometer', type: 'measurement', description: 'Used to measure temperature with high precision.' },
+    { id: 'ph-meter', name: 'pH Meter', type: 'measurement', description: 'A scientific instrument that measures the hydrogen-ion activity in water-based solutions.' },
+    { id: 'hot-plate', name: 'Hot Plate Stirrer', type: 'heating', description: 'A portable self-contained tabletop appliance that features one or more electric heating elements or gas burners.' },
+    { id: 'analytical-balance', name: 'Analytical Balance', type: 'measurement', description: 'A highly sensitive lab instrument designed to accurately measure mass.' },
+    { id: 'microscope', name: 'Compound Microscope', type: 'microscopy', description: 'A high-power microscope that uses a compound lens system for observing small specimens.' },
+];
+
 
 export const INITIAL_CHEMICALS: Chemical[] = [
   { id: 'hcl', name: 'Hydrochloric Acid', formula: 'HCl', type: 'acid', concentration: 0.1 },
   { id: 'naoh', name: 'Sodium Hydroxide', formula: 'NaOH', type: 'base', concentration: 0.1 },
   { id: 'phenolphthalein', name: 'Phenolphthalein', formula: 'C20H14O4', type: 'indicator' },
-];
-
-export const ALL_CHEMICALS: Chemical[] = [
-    // Acids
-    { id: 'hcl', name: 'Hydrochloric Acid', formula: 'HCl', type: 'acid', concentration: 0.1 },
-    { id: 'h2so4', name: 'Sulfuric Acid', formula: 'H₂SO₄', type: 'acid', concentration: 0.1 },
-    { id: 'hno3', name: 'Nitric Acid', formula: 'HNO₃', type: 'acid', concentration: 0.1 },
-    { id: 'ch3cooh', name: 'Acetic Acid', formula: 'CH₃COOH', type: 'acid', concentration: 0.1 },
-    // Bases
-    { id: 'naoh', name: 'Sodium Hydroxide', formula: 'NaOH', type: 'base', concentration: 0.1 },
-    { id: 'koh', name: 'Potassium Hydroxide', formula: 'KOH', type: 'base', concentration: 0.1 },
-    { id: 'nh3', name: 'Ammonia', formula: 'NH₃', type: 'base', concentration: 0.1 },
-    // Salts
-    { id: 'nacl', name: 'Sodium Chloride', formula: 'NaCl', type: 'salt' },
-    { id: 'kcl', name: 'Potassium Chloride', formula: 'KCl', type: 'salt' },
-    { id: 'mgso4', name: 'Magnesium Sulfate', formula: 'MgSO₄', type: 'salt' },
-    // Indicators
-    { id: 'phenolphthalein', name: 'Phenolphthalein', formula: 'C₂₀H₁₄O₄', type: 'indicator' },
-    { id: 'methyl-orange', name: 'Methyl Orange', formula: 'C₁₄H₁₄N₃NaO₃S', type: 'indicator' },
-    { id: 'bromothymol-blue', name: 'Bromothymol Blue', formula: 'C₂₇H₂₈Br₂O₅S', type: 'indicator' },
 ];
 
 
