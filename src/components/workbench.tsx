@@ -150,18 +150,22 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
   return (
-    <div className="h-full flex flex-col [perspective:1000px]">
-      <Card className={cn(
-        "h-full rounded-none bg-slate-800 flex flex-col transition-transform duration-500 [transform:rotateX(5deg)]",
-        "bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl"
-        )}>
+    <div className="h-full flex flex-col">
+      <Card 
+        className="h-full rounded-none flex flex-col"
+        style={{
+          backgroundImage: "url('https://i.ibb.co/3s0pCVG/white-brick-wall-pattern.png')",
+          backgroundSize: '300px 300px',
+          backgroundRepeat: 'repeat',
+        }}
+      >
         <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-white/90'>
+          <CardTitle className='flex items-center gap-2 text-foreground'>
             <TestTubeDiagonal />
             Workbench
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col items-center justify-between p-2 md:p-6 text-white">
+        <CardContent className="flex-1 flex flex-col items-center justify-between p-2 md:p-6 text-foreground">
           {state.equipment.length > 0 ? (
             <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end flex-1">
               {state.equipment.map(item => (
@@ -169,14 +173,14 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
               ))}
             </div>
           ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
                   <TestTubeDiagonal className="h-24 w-24" />
                   <p className="text-center">Your workbench is empty.<br />Add equipment from your inventory to begin.</p>
               </div>
           )}
 
-          <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border border-white/10 bg-black/20 backdrop-blur-sm">
-              <p className="text-sm font-medium text-white/80">Titration Control</p>
+          <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
+              <p className="text-sm font-medium text-foreground">Titration Control</p>
               <div className="flex items-center gap-4 w-full">
                   <Slider 
                     value={[titrationAmount]}
