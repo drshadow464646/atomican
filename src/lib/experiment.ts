@@ -15,6 +15,7 @@ export type Equipment = {
   type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other';
   volume?: number; // in ml
   description: string;
+  size?: number; // scale factor, e.g., 1 for 100%
 };
 
 export type Solution = {
@@ -114,7 +115,7 @@ export function calculatePH(state: ExperimentState): number {
         const pOH = -Math.log10(concentrationOH);
         return 14 - pOH;
     } else if (addedMolesH > initialMolesOH) {
-        const excessMolesH = addedMolesH - initialMolesOH;
+        const excessMolesH = addedMolesH - initialMolesH;
         const concentrationH = excessMolesH / totalVolumeL;
         return -Math.log10(concentrationH);
     } else {

@@ -29,6 +29,8 @@ type ExperimentContextType = {
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
+  handleRemoveEquipmentFromWorkbench: (equipmentId: string) => void;
+  handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleAddChemical: (chemical: Chemical) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
   handleAddIndicator: (chemical: Chemical) => void;
@@ -98,7 +100,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     setExperimentState((prevState) => {
       addLog(`Added ${equipment.name} to the workbench.`);
-      return { ...prevState, equipment: [...prevState.equipment, equipment] };
+      const newEquipment = { ...equipment, size: 1 }; // Default size
+      return { ...prevState, equipment: [...prevState.equipment, newEquipment] };
     });
   }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
 
@@ -111,6 +114,28 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
   }, [inventoryEquipment, toast]);
   
+  const handleRemoveEquipmentFromWorkbench = useCallback((equipmentId: string) => {
+    setExperimentState(prevState => {
+      const equipmentToRemove = prevState.equipment.find(e => e.id === equipmentId);
+      if (equipmentToRemove) {
+        addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
+      }
+      return {
+        ...prevState,
+        equipment: prevState.equipment.filter(e => e.id !== equipmentId)
+      };
+    });
+  }, [addLog]);
+
+  const handleResizeEquipment = useCallback((equipmentId: string, size: number) => {
+    setExperimentState(prevState => ({
+      ...prevState,
+      equipment: prevState.equipment.map(e => 
+        e.id === equipmentId ? { ...e, size } : e
+      ),
+    }));
+  }, []);
+
   const handleAddChemical = useCallback((chemical: Chemical) => {
     if (!handleSafetyCheck()) return;
 
@@ -208,6 +233,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
+    handleRemoveEquipmentFromWorkbench,
+    handleResizeEquipment,
     handleAddChemical,
     handleAddChemicalToInventory,
     handleAddIndicator,
@@ -223,6 +250,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
+    handleRemoveEquipmentFromWorkbench,
+    handleResizeEquipment,
     handleAddChemical,
     handleAddChemicalToInventory,
     handleAddIndicator,

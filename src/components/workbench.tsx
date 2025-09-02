@@ -3,17 +3,18 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn } from 'lucide-react';
 import type { Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
-const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: number }) => {
+const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercentage: number; size: number }) => {
   const liquidHeight = 95 * (fillPercentage / 100);
   const liquidY = 115 - liquidHeight;
 
   return (
-    <div className="relative h-40 w-28">
+    <div className="relative" style={{ height: `${10 * size}rem`, width: `${7 * size}rem`}}>
       <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
            <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -56,28 +57,40 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
 };
 
 
-const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentState }) => {
+const EquipmentDisplay = ({ 
+  item, 
+  state,
+  onRemove,
+  onResize,
+}: { 
+  item: Equipment, 
+  state: ExperimentState,
+  onRemove: (id: string) => void,
+  onResize: (id: string, size: number) => void,
+}) => {
     const beakerSolution = state.beaker?.solutions[0];
     const buretteSolution = state.burette;
     const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
     
-    const iconClass = "h-32 w-32 text-muted-foreground/50";
+    const size = item.size ?? 1;
+    const iconClass = "text-muted-foreground/50 transition-all";
 
     const renderContent = () => {
+        const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
         switch (item.type) {
             case 'beaker':
                 return (
                     <>
-                        <BeakerIcon color={state.color} fillPercentage={fillPercentage} />
-                        <CardDescription className="text-foreground/80">{beakerSolution ? beakerSolution.chemical.name : 'Empty'}</CardDescription>
+                        <BeakerIcon color={state.color} fillPercentage={fillPercentage} size={size} />
+                        <CardDescription className="text-foreground/80 mt-2">{beakerSolution ? beakerSolution.chemical.name : 'Empty'}</CardDescription>
                         {state.ph !== null && <p className="text-xl font-bold text-foreground">pH: {state.ph.toFixed(2)}</p>}
                     </>
                 );
             case 'burette':
                 return (
                     <>
-                        <Pipette className={iconClass} />
-                        <CardDescription className="text-foreground/80">{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
+                        <Pipette className={iconClass} style={iconStyle} />
+                        <CardDescription className="text-foreground/80 mt-2">{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
                          {buretteSolution && (
                             <p className="text-sm text-muted-foreground">
                                 <span className='font-bold text-foreground'>{(buretteSolution.volume - state.volumeAdded).toFixed(1)}ml</span> left
@@ -88,31 +101,56 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
             case 'erlenmeyer-flask':
                  return (
                     <>
-                        <FlaskConical className={iconClass} />
-                        <CardDescription className="text-foreground/80">{item.name}</CardDescription>
+                        <FlaskConical className={iconClass} style={iconStyle} />
+                        <CardDescription className="text-foreground/80 mt-2">{item.name}</CardDescription>
                     </>
                 );
             default:
                 return (
                     <>
-                        <TestTube className={iconClass} />
-                        <CardDescription className="text-foreground/80">{item.name}</CardDescription>
+                        <TestTube className={iconClass} style={iconStyle} />
+                        <CardDescription className="text-foreground/80 mt-2">{item.name}</CardDescription>
                     </>
                 );
         }
     };
 
     return (
-        <Card className="flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px]">
+        <Card className="relative flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px] transition-all" style={{ gridColumn: `span ${Math.round(size)}`}}>
+            <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6" onClick={() => onRemove(item.id)}>
+                <X className="h-4 w-4" />
+            </Button>
             <CardTitle className="text-base font-medium text-foreground/80">{item.name}</CardTitle>
-            <div className="flex-1 flex flex-col items-center justify-center gap-2">
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-4">
                 {renderContent()}
+            </div>
+            <div className="w-full max-w-xs pt-4">
+                <div className="flex items-center gap-2">
+                    <ZoomIn className="h-4 w-4 text-muted-foreground" />
+                    <Slider
+                        value={[size]}
+                        onValueChange={(value) => onResize(item.id, value[0])}
+                        min={0.5}
+                        max={1.5}
+                        step={0.1}
+                    />
+                </div>
             </div>
         </Card>
     );
 };
 
-export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitrate: (volume: number) => void; }) {
+export function Workbench({ 
+    state, 
+    onTitrate,
+    onRemoveEquipment,
+    onResizeEquipment
+}: { 
+    state: ExperimentState, 
+    onTitrate: (volume: number) => void;
+    onRemoveEquipment: (id: string) => void;
+    onResizeEquipment: (id: string, size: number) => void;
+}) {
   const [titrationAmount, setTitrationAmount] = useState(1);
   const hasBeaker = state.equipment.some((e) => e.type === 'beaker');
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
@@ -121,9 +159,6 @@ export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitr
     <div className="h-full flex flex-col">
       <Card 
         className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
-        style={{
-          backgroundImage: `url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')`,
-        }}
       >
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-foreground'>
@@ -134,16 +169,21 @@ export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitr
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
                 <div 
-                  className="relative w-full h-full rounded-lg border border-white/20 shadow-lg backdrop-blur-sm"
-                  style={{
-                    backgroundColor: 'rgba(200, 200, 210, 0.15)',
-                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
-                  }}
+                  className={cn(
+                      "relative w-full h-full rounded-lg",
+                      state.equipment.length === 0 && "flex items-center justify-center"
+                  )}
                 >
                     {state.equipment.length > 0 ? (
                         <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center p-4">
                             {state.equipment.map(item => (
-                                <EquipmentDisplay key={item.id} item={item} state={state} />
+                                <EquipmentDisplay 
+                                    key={item.id} 
+                                    item={item} 
+                                    state={state} 
+                                    onRemove={onRemoveEquipment}
+                                    onResize={onResizeEquipment}
+                                />
                             ))}
                         </div>
                     ) : (

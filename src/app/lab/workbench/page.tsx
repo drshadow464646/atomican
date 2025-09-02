@@ -36,6 +36,8 @@ export default function WorkbenchPage() {
     handleTitrate,
     handleAddCustomLog,
     handleResetExperiment,
+    handleRemoveEquipmentFromWorkbench,
+    handleResizeEquipment,
   } = useExperiment();
 
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion>(null);
@@ -95,7 +97,12 @@ export default function WorkbenchPage() {
         <ResizableHandle withHandle className={cn(!isInventoryPanelVisible && 'hidden')}/>
         
         <ResizablePanel defaultSize={isMobile ? 40 : 55} minSize={30}>
-          <Workbench state={experimentState} onTitrate={handleTitrate} />
+          <Workbench 
+            state={experimentState} 
+            onTitrate={handleTitrate}
+            onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
+            onResizeEquipment={handleResizeEquipment}
+          />
         </ResizablePanel>
 
         <ResizableHandle withHandle className={cn(!isGuidancePanelVisible && 'hidden')} />
