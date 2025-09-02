@@ -3,11 +3,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, Flame, Minus, Plus, TestTubeDiagonal, FlaskConical, TestTube } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube } from 'lucide-react';
 import type { Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
 
 const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: number }) => {
   const liquidHeight = 95 * (fillPercentage / 100);
@@ -15,24 +14,8 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
 
   return (
     <div className="relative h-40 w-28">
-      <svg viewBox="0 0 100 120" className="h-full w-full [filter:drop-shadow(0_4px_6px_rgba(0,0,0,0.3))]">
+      <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
-          <filter id="liquidShine">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
-            <feOffset in="blur" dx="2" dy="-2" result="offsetBlur" />
-            <feSpecularLighting in="blur" surfaceScale="5" specularConstant=".75" specularExponent="20" lightingColor="#FFF" result="specOut">
-                <fePointLight x="-5000" y="-10000" z="20000" />
-            </feSpecularLighting>
-            <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut" />
-            <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litPaint" />
-          </filter>
-          <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
-            <stop offset="20%" style={{ stopColor: 'hsl(var(--foreground) / 0.15)' }} />
-            <stop offset="50%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
-            <stop offset="80%" style={{ stopColor: 'hsl(var(--foreground) / 0.15)' }} />
-            <stop offset="100%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
-          </linearGradient>
            <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={color} stopOpacity="0.7" />
               <stop offset="50%" stopColor={color} stopOpacity="1" />
@@ -44,17 +27,8 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
         {fillPercentage > 0 && (
           <g>
             <path
-              d={`M20,${liquidY} C 40,${liquidY-5}, 60,${liquidY-5}, 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
+              d={`M20,${liquidY} L 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
               fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient)`}
-              className="transition-all duration-500"
-              filter="url(#liquidShine)"
-            />
-             <ellipse 
-              cx="50" 
-              cy={liquidY} 
-              rx="30" 
-              ry="3" 
-              fill={color === 'transparent' ? 'hsl(var(--foreground) / 0.1)' : color}
               className="transition-all duration-500"
             />
           </g>
@@ -65,8 +39,7 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
           d="M10,10 L20,115 A 5,5 0 0 0 25,120 H 75 A 5,5 0 0 0 80,115 L 90,10"
           stroke="hsl(var(--foreground) / 0.3)"
           strokeWidth="2"
-          fill="url(#glassGradient)"
-          fillOpacity="0.7"
+          fill="transparent"
         />
         <path
           d="M10,10 H 90"
@@ -88,7 +61,7 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
     const buretteSolution = state.burette;
     const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
     
-    const iconClass = "h-32 w-32 text-muted-foreground/50 [filter:drop-shadow(0_4px_6px_rgba(0,0,0,0.3))]";
+    const iconClass = "h-32 w-32 text-muted-foreground/50";
 
     const renderContent = () => {
         switch (item.type) {
@@ -130,7 +103,7 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
     };
 
     return (
-        <Card className="flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px] transition-transform duration-300 hover:-translate-y-2">
+        <Card className="flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px]">
             <CardTitle className="text-base font-medium text-foreground/80">{item.name}</CardTitle>
             <div className="flex-1 flex flex-col items-center justify-center gap-2">
                 {renderContent()}
@@ -139,7 +112,7 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
     );
 };
 
-export function Workbench({ state, onTitrate }: WorkbenchProps) {
+export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitrate: (volume: number) => void; }) {
   const [titrationAmount, setTitrationAmount] = useState(1);
   const hasBeaker = state.equipment.some((e) => e.type === 'beaker');
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
@@ -147,23 +120,16 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   return (
     <div className="h-full flex flex-col">
       <Card 
-        className="h-full rounded-none flex flex-col text-card-foreground"
-        style={{
-          backgroundImage: "url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')",
-          backgroundSize: 'auto',
-          backgroundRepeat: 'repeat',
-        }}
+        className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
       >
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-foreground'>
-            <TestTubeDiagonal />
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-test-tube-diagonal"><path d="M14.5 2.5 16 4l-1.5 1.5"/><path d="M17.5 5.5 19 7l-1.5 1.5"/><path d="m3 21 7-7"/><path d="M13.5 6.5 16 9l4-4"/><path d="m3 21 7-7"/><path d="M14.5 6.5 17 9l4-4"/><path d="M10.586 11.414a2 2 0 1 1 2.828-2.828"/></svg>
             Workbench
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
-                {/* 3D Slab */}
-                <div className="w-full h-full absolute top-0 left-0 bg-gray-300/10 rounded-lg shadow-[inset_0_-2px_4px_rgba(0,0,0,0.2),_0_8px_16px_rgba(0,0,0,0.3)] border-t border-white/30"></div>
                 <div className="relative w-full flex-1 self-stretch">
                     {state.equipment.length > 0 ? (
                         <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center">
@@ -172,7 +138,11 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
                             ))}
                         </div>
                     ) : (
-                        <div className="flex-1 w-full"></div>
+                         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-flask-conical mb-4"><path d="M10 2v7.31"/><path d="M14 9.31V2"/><path d="M4 14h16"/><path d="M10 14a2 2 0 1 0-4 0"/><path d="M14 14a2 2 0 1 0 4 0"/><path d="M10.33 16.67 4 22"/><path d="m13.67 16.67 6.33 5.33"/></svg>
+                            <h3 className="text-lg font-semibold">Your workbench is empty.</h3>
+                            <p className="text-sm">Add equipment from your inventory to begin.</p>
+                        </div>
                     )}
                 </div>
             </div>
