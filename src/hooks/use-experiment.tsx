@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ExperimentState, LabLog, Chemical, Equipment } from '@/lib/experiment';
-import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT } from '@/lib/experiment';
+import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT, ALL_EQUIPMENT } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 
 let logIdCounter = 0;
@@ -172,13 +172,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     const targetEquipment = experimentState.equipment.find(e => e.id === equipmentId);
     if (!targetEquipment) return;
+    
+    // Find the equipment definition which contains the type
+    const equipmentDefinition = ALL_EQUIPMENT.find(e => e.id === targetEquipment.id);
+    if (!equipmentDefinition) return;
 
     setExperimentState(prevState => {
         const newState = { ...prevState };
         let success = false;
 
         // Drop into Beaker
-        if (targetEquipment.type === 'beaker') {
+        if (equipmentDefinition.type === 'beaker') {
             if (heldItem.type === 'acid' && !prevState.beaker) {
                 newState.beaker = { solutions: [{ chemical: heldItem, volume: 50 }], indicator: null };
                 addLog(`Added 50ml of ${heldItem.name} to the beaker.`);
@@ -192,7 +196,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             }
         }
         // Drop into Burette
-        else if (targetEquipment.type === 'burette') {
+        else if (equipmentDefinition.type === 'burette') {
             if (heldItem.type === 'base' && !prevState.burette) {
                 newState.burette = { chemical: heldItem, volume: 50 };
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
@@ -335,5 +339,3 @@ export function useExperiment() {
   }
   return context;
 }
-
-    
