@@ -22,6 +22,15 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
     <div className="relative h-40 w-28">
       <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
+          <filter id="liquidShine">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+            <feOffset in="blur" dx="2" dy="-2" result="offsetBlur" />
+            <feSpecularLighting in="blur" surfaceScale="5" specularConstant=".75" specularExponent="20" lightingColor="#FFF" result="specOut">
+                <fePointLight x="-5000" y="-10000" z="20000" />
+            </feSpecularLighting>
+            <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut" />
+            <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litPaint" />
+          </filter>
           <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" style={{ stopColor: 'hsl(var(--foreground) / 0.05)' }} />
             <stop offset="20%" style={{ stopColor: 'hsl(var(--foreground) / 0.15)' }} />
@@ -43,6 +52,7 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
               d={`M20,${liquidY} C 40,${liquidY-5}, 60,${liquidY-5}, 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
               fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient)`}
               className="transition-all duration-500"
+              filter="url(#liquidShine)"
             />
              <ellipse 
               cx="50" 
