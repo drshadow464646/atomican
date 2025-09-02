@@ -121,6 +121,11 @@ export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitr
     <div className="h-full flex flex-col">
       <Card 
         className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
+        style={{
+          backgroundImage: `url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')`,
+          backgroundSize: '300px 300px',
+          backgroundColor: 'hsl(var(--muted))'
+        }}
       >
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-foreground'>
@@ -130,18 +135,21 @@ export function Workbench({ state, onTitrate }: { state: ExperimentState, onTitr
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
-                <div className="relative w-full flex-1 self-stretch">
+                <div 
+                  className="relative w-full h-full bg-white rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.1),_0_6px_6px_rgba(0,0,0,0.15)]"
+                  style={{
+                    boxShadow: '0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.15), inset 0 -2px 5px rgba(0,0,0,0.1)'
+                  }}
+                >
                     {state.equipment.length > 0 ? (
-                        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center">
+                        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center p-4">
                             {state.equipment.map(item => (
                                 <EquipmentDisplay key={item.id} item={item} state={state} />
                             ))}
                         </div>
                     ) : (
                          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-flask-conical mb-4"><path d="M10 2v7.31"/><path d="M14 9.31V2"/><path d="M4 14h16"/><path d="M10 14a2 2 0 1 0-4 0"/><path d="M14 14a2 2 0 1 0 4 0"/><path d="M10.33 16.67 4 22"/><path d="m13.67 16.67 6.33 5.33"/></svg>
-                            <h3 className="text-lg font-semibold">Your workbench is empty.</h3>
-                            <p className="text-sm">Add equipment from your inventory to begin.</p>
+                            {/* This is now empty for a clean slate */}
                         </div>
                     )}
                 </div>
