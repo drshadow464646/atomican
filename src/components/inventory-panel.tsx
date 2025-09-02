@@ -19,7 +19,7 @@ type InventoryPanelProps = {
   equipment: Equipment[];
   chemicals: Chemical[];
   onAddEquipment: (equipment: Equipment) => void;
-  onAddChemical: (chemical: Chemical, target: 'beaker' | 'burette') => void;
+  onAddChemical: (chemical: Chemical) => void;
   onAddIndicator: (chemical: Chemical) => void;
   isCollapsed: boolean;
 };
@@ -28,6 +28,7 @@ const equipmentIcons = {
   beaker: <Beaker className="mr-2 h-5 w-5" />,
   burette: <Pipette className="mr-2 h-5 w-5" />,
   pipette: <Pipette className="mr-2 h-5 w-5" />,
+  'erlenmeyer-flask': <FlaskConical className="mr-2 h-5 w-5" />,
 };
 
 export function InventoryPanel({
@@ -66,7 +67,7 @@ export function InventoryPanel({
                     className="justify-start"
                     onClick={() => onAddEquipment(item)}
                   >
-                    {equipmentIcons[item.type]}
+                    {equipmentIcons[item.type] || <Beaker className="mr-2 h-5 w-5" />}
                     {item.name}
                   </Button>
                 ))}
@@ -87,41 +88,23 @@ export function InventoryPanel({
                           <p className="text-xs text-muted-foreground">{chem.formula}</p>
                         </div>
                       </div>
-                      {chem.type === 'indicator' ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onAddIndicator(chem)}>
-                                  <Plus className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Add to Beaker</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <div className="flex gap-1">
-                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button size="sm" variant="secondary" onClick={() => onAddChemical(chem, 'beaker')}>
-                                  Beaker
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Add to Beaker</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button size="sm" variant="secondary" onClick={() => onAddChemical(chem, 'burette')}>
-                                  Burette
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Add to Burette</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => chem.type === 'indicator' ? onAddIndicator(chem) : onAddChemical(chem)}
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Add to Workbench</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 ))}

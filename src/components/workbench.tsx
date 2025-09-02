@@ -1,12 +1,13 @@
 
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, Flame, Minus, Plus, TestTubeDiagonal } from 'lucide-react';
-import type { ExperimentState } from '@/lib/experiment';
+import { Beaker, Pipette, Flame, Minus, Plus, TestTubeDiagonal, FlaskConical } from 'lucide-react';
+import type { Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 type WorkbenchProps = {
   state: ExperimentState;
@@ -18,7 +19,7 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
   const liquidY = 115 - liquidHeight;
 
   return (
-    <div className="relative h-48 w-32 md:h-64 md:w-48">
+    <div className="relative h-40 w-28">
       <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
           <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -33,15 +34,6 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
               <stop offset="50%" stopColor={color} stopOpacity="1" />
               <stop offset="100%" stopColor={color} stopOpacity="0.7" />
           </linearGradient>
-           <filter id="liquidSurface" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
-              <feOffset in="blur" dx="0" dy="-1" result="offsetBlur"/>
-              <feSpecularLighting in="offsetBlur" surfaceScale="5" specularConstant=".75" specularExponent="20" lighting-color="#FFF" result="specular">
-                  <fePointLight x="-5000" y="-10000" z="20000" />
-              </feSpecularLighting>
-              <feComposite in="specular" in2="SourceAlpha" operator="in" result="specular" />
-              <feComposite in="SourceGraphic" in2="specular" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
-          </filter>
         </defs>
 
         {/* Liquid */}
@@ -58,7 +50,6 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
               rx="30" 
               ry="3" 
               fill={color === 'transparent' ? 'hsl(var(--foreground) / 0.1)' : color}
-              style={{filter: 'url(#liquidSurface)'}}
               className="transition-all duration-500"
             />
           </g>
@@ -78,15 +69,6 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
           strokeWidth="3"
           fill="none"
         />
-         {/* Highlight */}
-        <path 
-          d="M 80 15 C 75 40, 75 80, 80 110" 
-          stroke="white" 
-          strokeWidth="1.5"
-          fill="none" 
-          strokeOpacity="0.5"
-        />
-
       </svg>
       <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-muted-foreground">
         {Math.round(fillPercentage)}% Full
@@ -96,56 +78,88 @@ const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: 
 };
 
 
+const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentState }) => {
+    const beakerSolution = state.beaker?.solutions[0];
+    const buretteSolution = state.burette;
+    const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
+
+    const renderContent = () => {
+        switch (item.type) {
+            case 'beaker':
+                return (
+                    <>
+                        <BeakerIcon color={state.color} fillPercentage={fillPercentage} />
+                        <CardDescription>{beakerSolution ? beakerSolution.chemical.name : 'Empty'}</CardDescription>
+                        {state.ph !== null && <p className="text-xl font-bold">pH: {state.ph.toFixed(2)}</p>}
+                    </>
+                );
+            case 'burette':
+                return (
+                    <>
+                        <Pipette className="h-32 w-32 text-muted-foreground/50" />
+                        <CardDescription>{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
+                         {buretteSolution && (
+                            <p className="text-sm text-muted-foreground">
+                                <span className='font-bold text-foreground'>{(buretteSolution.volume - state.volumeAdded).toFixed(1)}ml</span> left
+                            </p>
+                        )}
+                    </>
+                );
+            case 'erlenmeyer-flask':
+                 return (
+                    <>
+                        <FlaskConical className="h-32 w-32 text-muted-foreground/50" />
+                        <CardDescription>{item.name}</CardDescription>
+                    </>
+                );
+            default:
+                return (
+                    <>
+                        <Beaker className="h-32 w-32 text-muted-foreground/50" />
+                        <CardDescription>{item.name}</CardDescription>
+                    </>
+                );
+        }
+    };
+
+    return (
+        <Card className="flex flex-col items-center justify-between p-4 bg-transparent border-0 shadow-none min-h-[220px]">
+            <CardTitle className="text-base font-medium">{item.name}</CardTitle>
+            <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                {renderContent()}
+            </div>
+        </Card>
+    );
+};
+
 export function Workbench({ state, onTitrate }: WorkbenchProps) {
   const [titrationAmount, setTitrationAmount] = useState(1);
   const hasBeaker = state.equipment.some((e) => e.type === 'beaker');
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
-  const beakerSolution = state.beaker?.solutions[0];
-  const buretteSolution = state.burette;
   
-  const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
-
   return (
-    <Card className="h-full border-0 rounded-none bg-transparent">
+    <Card className="h-full border-0 rounded-none bg-transparent flex flex-col">
       <CardHeader>
         <CardTitle className='flex items-center gap-2'>
           <TestTubeDiagonal />
           Workbench
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-between h-[calc(100%-80px)] p-2 md:p-6">
-        <div className="flex w-full flex-col md:flex-row justify-around items-center md:items-end flex-1">
-          {hasBurette && buretteSolution ? (
-            <div className="flex flex-col items-center gap-2">
-              <Pipette className="h-24 w-24 md:h-32 md:w-32 text-muted-foreground/50" />
-              <p className="font-semibold text-lg">{buretteSolution.chemical.name}</p>
-              <p className="text-sm text-muted-foreground">
-                Remaining: <span className='font-bold text-foreground'>{(buretteSolution.volume - state.volumeAdded).toFixed(1)}ml</span>
-              </p>
+      <CardContent className="flex-1 flex flex-col items-center justify-between p-2 md:p-6">
+        {state.equipment.length > 0 ? (
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end flex-1">
+            {state.equipment.map(item => (
+                <EquipmentDisplay key={item.id} item={item} state={state} />
+            ))}
+          </div>
+        ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
+                <TestTubeDiagonal className="h-24 w-24" />
+                <p className="text-center">Your workbench is empty.<br />Add equipment from your inventory to begin.</p>
             </div>
-          ) : (
-             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Pipette className="h-24 w-24 md:h-32 md:w-32" />
-                <p>No Burette</p>
-            </div>
-          )}
-          {hasBeaker && beakerSolution ? (
-            <div className="flex flex-col items-center gap-2">
-              <BeakerIcon color={state.color} fillPercentage={fillPercentage} />
-              <p className="font-semibold text-lg">
-                {beakerSolution.chemical.name}
-              </p>
-              {state.ph !== null && <p className="text-2xl md:text-3xl font-bold">pH: {state.ph.toFixed(2)}</p>}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Beaker className="h-32 w-32 md:h-48 md:w-48" />
-                <p>No Beaker</p>
-            </div>
-          )}
-        </div>
+        )}
 
-        <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-4 rounded-lg border bg-card">
+        <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border bg-card/50">
             <p className="text-sm font-medium">Titration Control</p>
             <div className="flex items-center gap-4 w-full">
                 <Slider 

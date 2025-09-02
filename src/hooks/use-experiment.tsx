@@ -29,7 +29,7 @@ type ExperimentContextType = {
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
-  handleAddChemical: (chemical: Chemical, target: 'beaker' | 'burette') => void;
+  handleAddChemical: (chemical: Chemical) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
   handleAddIndicator: (chemical: Chemical) => void;
   handleTitrate: (volume: number) => void;
@@ -109,30 +109,38 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
   }, [inventoryEquipment, toast]);
   
-  const handleAddChemical = useCallback((chemical: Chemical, target: 'beaker' | 'burette') => {
-      if (!handleSafetyCheck()) return;
-  
-      setExperimentState((prevState) => {
+  const handleAddChemical = useCallback((chemical: Chemical) => {
+    if (!handleSafetyCheck()) return;
+
+    setExperimentState((prevState) => {
         const newState = { ...prevState };
-        const targetEquipmentType = target;
-  
-        const hasEquipment = newState.equipment.some((e) => e.type === targetEquipmentType);
-  
-        if (!hasEquipment) {
-          toast({ title: 'Error', description: `Please add a ${target} to the workbench first.`, variant: 'destructive' });
-          return prevState;
+        
+        // Logic to decide where to add the chemical
+        const hasBurette = newState.equipment.some(e => e.type === 'burette');
+        const hasBeaker = newState.equipment.some(e => e.type === 'beaker');
+
+        // Titrants (bases) go in the burette if available
+        if (chemical.type === 'base' && hasBurette && !newState.burette) {
+            newState.burette = { chemical, volume: 50 };
+            addLog(`Filled the burette with 50ml of ${chemical.name}.`);
+        } 
+        // Analytes (acids) go in the beaker if available
+        else if (chemical.type === 'acid' && hasBeaker && !newState.beaker) {
+            newState.beaker = { solutions: [{ chemical, volume: 50 }], indicator: null };
+            addLog(`Added 50ml of ${chemical.name} to the beaker.`);
+        } 
+        // Fallback logic
+        else {
+            toast({
+                title: 'Cannot Add Chemical',
+                description: `Please add the appropriate empty equipment (beaker for acid, burette for base) to the workbench first.`,
+                variant: 'destructive'
+            });
+            return prevState;
         }
-  
-        if (target === 'beaker') {
-          if (!newState.beaker) newState.beaker = { solutions: [], indicator: null };
-          newState.beaker.solutions = [{ chemical, volume: 50 }]; // Default 50ml
-          addLog(`Added 50ml of ${chemical.name} to the beaker.`);
-        } else { // burette
-          newState.burette = { chemical, volume: 50 }; // Fill burette
-          addLog(`Filled the burette with 50ml of ${chemical.name}.`);
-        }
+
         return updatePhAndColor(newState);
-      });
+    });
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
@@ -186,13 +194,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleResetExperiment = useCallback(() => {
     setExperimentState(initialExperimentState);
     setLabLogs([]);
-    setInventoryChemicals(INITIAL_CHEMICALS);
-    setInventoryEquipment(INITIAL_EQUIPMENT);
-    toast({
-      title: 'Experiment Reset',
-      description: 'The lab has been reset to its initial state.',
-    });
-  }, [toast]);
+    addLog('Experiment reset.');
+  }, [addLog]);
 
   const value = useMemo(() => ({
     experimentState,

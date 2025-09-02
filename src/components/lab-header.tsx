@@ -24,7 +24,7 @@ export function LabHeader({ safetyGogglesOn, onGoggleToggle, onResetExperiment }
       </div>
       <div className='flex items-center gap-2 md:gap-4'>
         <Button variant="outline" size="sm" onClick={onResetExperiment}>
-          <RefreshCw className="md:mr-2 h-4 w-4" />
+          <RefreshCw className="h-4 w-4 md:mr-2" />
           <span className="hidden md:inline">Reset</span>
         </Button>
         <div className="flex items-center space-x-2">
