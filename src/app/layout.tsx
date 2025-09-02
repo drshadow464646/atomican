@@ -4,8 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Inter } from "next/font/google"
 import { cn } from '@/lib/utils';
-import { ThemeProvider } from '@/components/theme-provider';
-import { SettingsProvider } from '@/hooks/use-settings';
+import { AppProviders } from '@/components/app-providers';
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -28,17 +27,10 @@ export default function RootLayout({
           "min-h-screen bg-background font-sans antialiased",
           fontSans.variable
         )}>
-        <SettingsProvider>
-          <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-          >
+        <AppProviders>
             {children}
             <Toaster />
-          </ThemeProvider>
-        </SettingsProvider>
+        </AppProviders>
       </body>
     </html>
   );
