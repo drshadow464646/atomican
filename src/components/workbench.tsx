@@ -3,16 +3,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, Flame, Minus, Plus, TestTubeDiagonal, FlaskConical } from 'lucide-react';
+import { Beaker, Pipette, Flame, Minus, Plus, TestTubeDiagonal, FlaskConical, TestTube } from 'lucide-react';
 import type { Equipment, ExperimentState } from '@/lib/experiment';
 import { Slider } from './ui/slider';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-
-type WorkbenchProps = {
-  state: ExperimentState;
-  onTitrate: (volume: number) => void;
-};
 
 const BeakerIcon = ({ color, fillPercentage }: { color: string; fillPercentage: number }) => {
   const liquidHeight = 95 * (fillPercentage / 100);
@@ -101,15 +96,15 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
                 return (
                     <>
                         <BeakerIcon color={state.color} fillPercentage={fillPercentage} />
-                        <CardDescription>{beakerSolution ? beakerSolution.chemical.name : 'Empty'}</CardDescription>
-                        {state.ph !== null && <p className="text-xl font-bold">pH: {state.ph.toFixed(2)}</p>}
+                        <CardDescription className="text-foreground/80">{beakerSolution ? beakerSolution.chemical.name : 'Empty'}</CardDescription>
+                        {state.ph !== null && <p className="text-xl font-bold text-foreground">pH: {state.ph.toFixed(2)}</p>}
                     </>
                 );
             case 'burette':
                 return (
                     <>
                         <Pipette className={iconClass} />
-                        <CardDescription>{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
+                        <CardDescription className="text-foreground/80">{buretteSolution ? buretteSolution.chemical.name : 'Empty'}</CardDescription>
                          {buretteSolution && (
                             <p className="text-sm text-muted-foreground">
                                 <span className='font-bold text-foreground'>{(buretteSolution.volume - state.volumeAdded).toFixed(1)}ml</span> left
@@ -121,14 +116,14 @@ const EquipmentDisplay = ({ item, state }: { item: Equipment, state: ExperimentS
                  return (
                     <>
                         <FlaskConical className={iconClass} />
-                        <CardDescription>{item.name}</CardDescription>
+                        <CardDescription className="text-foreground/80">{item.name}</CardDescription>
                     </>
                 );
             default:
                 return (
                     <>
-                        <Beaker className={iconClass} />
-                        <CardDescription>{item.name}</CardDescription>
+                        <TestTube className={iconClass} />
+                        <CardDescription className="text-foreground/80">{item.name}</CardDescription>
                     </>
                 );
         }
@@ -152,9 +147,9 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   return (
     <div className="h-full flex flex-col">
       <Card 
-        className="h-full rounded-none flex flex-col text-foreground"
+        className="h-full rounded-none flex flex-col text-card-foreground"
         style={{
-          backgroundImage: "url('https://www.transparenttextures.com/patterns/white-wall-3.png')",
+          backgroundImage: "url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')",
           backgroundSize: 'auto',
           backgroundRepeat: 'repeat',
         }}
@@ -165,19 +160,25 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
             Workbench
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col items-center justify-between p-2 md:p-6 text-foreground">
-          {state.equipment.length > 0 ? (
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end flex-1">
-              {state.equipment.map(item => (
-                  <EquipmentDisplay key={item.id} item={item} state={state} />
-              ))}
+        <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
+            <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
+                {/* 3D Slab */}
+                <div className="w-full h-full absolute top-0 left-0 bg-gray-300/10 rounded-lg shadow-[inset_0_-2px_4px_rgba(0,0,0,0.2),_0_8px_16px_rgba(0,0,0,0.3)] border-t border-white/30"></div>
+                <div className="relative w-full flex-1 self-stretch">
+                    {state.equipment.length > 0 ? (
+                        <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center">
+                            {state.equipment.map(item => (
+                                <EquipmentDisplay key={item.id} item={item} state={state} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex-1 w-full"></div>
+                    )}
+                </div>
             </div>
-          ) : (
-             <div className="flex-1 w-full"></div>
-          )}
 
           {hasBeaker && hasBurette && (
-            <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-auto rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
+            <div className="flex flex-col items-center gap-4 w-full max-w-lg p-4 mt-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                 <p className="text-sm font-medium text-foreground">Titration Control</p>
                 <div className="flex items-center gap-4 w-full">
                     <Slider 
