@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,14 @@ import type { Chemical } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
 import { searchChemicals, ChemicalSearchOutput } from '@/ai/flows/chemical-search';
+import { useExperiment } from '@/hooks/use-experiment';
 
 export default function MarketPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(true);
   const [results, setResults] = useState<ChemicalSearchOutput | null>(null);
   const { toast } = useToast();
+  const { handleAddChemicalToInventory } = useExperiment();
 
   const performSearch = async (query: string) => {
     setIsSearching(true);
@@ -54,18 +56,6 @@ export default function MarketPage() {
     const query = e.target.value;
     setSearchTerm(query);
     debouncedSearch(query);
-  };
-
-
-  const handleAddToInventory = (chemical: Chemical) => {
-    // This is a placeholder for now.
-    // In a real app, you would use a state management solution (like Context or Zustand)
-    // to update a shared inventory state and likely save it to a database.
-    console.log('Adding to inventory:', chemical);
-    toast({
-      title: 'Added to Inventory',
-      description: `${chemical.name} has been added to your inventory.`,
-    });
   };
 
   const chemicalsToDisplay = results ? results.chemicals : [];
@@ -122,7 +112,7 @@ export default function MarketPage() {
                 </p>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={() => handleAddToInventory(chem)}>
+                <Button className="w-full" onClick={() => handleAddChemicalToInventory(chem)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add to Inventory
                 </Button>

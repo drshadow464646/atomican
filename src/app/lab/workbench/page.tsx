@@ -11,10 +11,6 @@ import {
   type ExperimentState,
   type LabLog,
   type AiSuggestion,
-  type Chemical,
-  type Equipment,
-  INITIAL_EQUIPMENT,
-  INITIAL_CHEMICALS,
 } from '@/lib/experiment';
 import { getSuggestion } from '@/app/actions';
 import { cn } from '@/lib/utils';
@@ -30,9 +26,11 @@ export default function WorkbenchPage() {
   const { 
     experimentState, 
     labLogs,
+    inventoryChemicals,
+    inventoryEquipment,
     safetyGogglesOn, 
     setSafetyGogglesOn,
-    handleAddEquipment,
+    handleAddEquipmentToWorkbench,
     handleAddChemical,
     handleAddIndicator,
     handleTitrate,
@@ -86,9 +84,9 @@ export default function WorkbenchPage() {
           maxSize={isMobile ? 40 : 25}
         >
           <InventoryPanel
-            equipment={INITIAL_EQUIPMENT}
-            chemicals={INITIAL_CHEMICALS}
-            onAddEquipment={handleAddEquipment}
+            equipment={inventoryEquipment}
+            chemicals={inventoryChemicals}
+            onAddEquipment={handleAddEquipmentToWorkbench}
             onAddChemical={handleAddChemical}
             onAddIndicator={handleAddIndicator}
             isCollapsed={!isInventoryPanelVisible}

@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ExperimentState, LabLog, Chemical, Equipment } from '@/lib/experiment';
-import { calculatePH } from '@/lib/experiment';
+import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 
 const initialExperimentState: ExperimentState = {
@@ -18,11 +18,15 @@ const initialExperimentState: ExperimentState = {
 type ExperimentContextType = {
   experimentState: ExperimentState;
   labLogs: LabLog[];
+  inventoryChemicals: Chemical[];
+  inventoryEquipment: Equipment[];
   safetyGogglesOn: boolean;
   setSafetyGogglesOn: (on: boolean) => void;
   addLog: (text: string, isCustom?: boolean) => void;
-  handleAddEquipment: (equipment: Equipment) => void;
+  handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
+  handleAddEquipmentToInventory: (equipment: Equipment) => void;
   handleAddChemical: (chemical: Chemical, target: 'beaker' | 'burette') => void;
+  handleAddChemicalToInventory: (chemical: Chemical) => void;
   handleAddIndicator: (chemical: Chemical) => void;
   handleTitrate: (volume: number) => void;
   handleAddCustomLog: (note: string) => void;
@@ -36,6 +40,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const [labLogs, setLabLogs] = useState<LabLog[]>([]);
   const [safetyGogglesOn, setSafetyGogglesOn] = useState(true);
   const { toast } = useToast();
+
+  const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>(INITIAL_CHEMICALS);
+  const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>(INITIAL_EQUIPMENT);
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
@@ -77,7 +84,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     return newState;
   }, [addLog]);
 
-  const handleAddEquipment = useCallback((equipment: Equipment) => {
+  const handleAddEquipmentToWorkbench = useCallback((equipment: Equipment) => {
     if (!handleSafetyCheck()) return;
     setExperimentState((prevState) => {
       if (prevState.equipment.find((e) => e.id === equipment.id)) {
@@ -88,6 +95,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       return { ...prevState, equipment: [...prevState.equipment, equipment] };
     });
   }, [addLog, handleSafetyCheck, toast]);
+
+  const handleAddEquipmentToInventory = useCallback((equipment: Equipment) => {
+    setInventoryEquipment((prev) => {
+      if (prev.find((e) => e.id === equipment.id)) {
+        toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` });
+        return prev;
+      }
+      toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
+      return [...prev, equipment];
+    });
+  }, [toast]);
   
   const handleAddChemical = useCallback((chemical: Chemical, target: 'beaker' | 'burette') => {
       if (!handleSafetyCheck()) return;
@@ -114,6 +132,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         return updatePhAndColor(newState);
       });
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
+
+  const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
+    setInventoryChemicals((prev) => {
+      if (prev.find((c) => c.id === chemical.id)) {
+        toast({ title: 'Already in Inventory', description: `${chemical.name} is already in your inventory.` });
+        return prev;
+      }
+      toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
+      return [...prev, chemical];
+    });
+  }, [toast]);
   
   const handleAddIndicator = useCallback((chemical: Chemical) => {
     if (!handleSafetyCheck()) return;
@@ -157,6 +186,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleResetExperiment = () => {
     setExperimentState(initialExperimentState);
     setLabLogs([]);
+    setInventoryChemicals(INITIAL_CHEMICALS);
+    setInventoryEquipment(INITIAL_EQUIPMENT);
     toast({
       title: 'Experiment Reset',
       description: 'The lab has been reset to its initial state.',
@@ -166,21 +197,25 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo(() => ({
     experimentState,
     labLogs,
+    inventoryChemicals,
+    inventoryEquipment,
     safetyGogglesOn,
     setSafetyGogglesOn,
     addLog,
-    handleAddEquipment,
+    handleAddEquipmentToWorkbench,
+    handleAddEquipmentToInventory,
     handleAddChemical,
+    handleAddChemicalToInventory,
     handleAddIndicator,
     handleTitrate,
     handleAddCustomLog,
     handleResetExperiment,
-  }), [experimentState, labLogs, safetyGogglesOn, addLog, handleAddEquipment, handleAddChemical, handleAddIndicator, handleTitrate, handleAddCustomLog, handleResetExperiment]);
+  }), [experimentState, labLogs, inventoryChemicals, inventoryEquipment, safetyGogglesOn, addLog, handleAddEquipmentToWorkbench, handleAddEquipmentToInventory, handleAddChemical, handleAddChemicalToInventory, handleAddIndicator, handleTitrate, handleAddCustomLog, handleResetExperiment]);
 
   return (
     <ExperimentContext.Provider value={value}>
       {children}
-    </ExperimentContext.Provider>
+    </Experiment.Provider>
   );
 }
 

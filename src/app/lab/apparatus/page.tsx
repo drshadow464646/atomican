@@ -42,7 +42,7 @@ export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(true);
   const [results, setResults] = useState<ApparatusSearchOutput | null>(null);
-  const { handleAddEquipment } = useExperiment();
+  const { handleAddEquipmentToInventory } = useExperiment();
   const { toast } = useToast();
 
   const performSearch = async (query: string) => {
@@ -130,7 +130,7 @@ export default function ApparatusPage() {
                 </CardDescription>
               </CardHeader>
               <CardFooter>
-                 <Button className="w-full" onClick={() => handleAddEquipment(item as Equipment)}>
+                 <Button className="w-full" onClick={() => handleAddEquipmentToInventory(item as Equipment)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add
                 </Button>
