@@ -112,36 +112,32 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleAddChemical = useCallback((chemical: Chemical) => {
     if (!handleSafetyCheck()) return;
 
+    const hasBurette = experimentState.equipment.some(e => e.type === 'burette');
+    const hasBeaker = experimentState.equipment.some(e => e.type === 'beaker');
+    const canAddBase = chemical.type === 'base' && hasBurette && !experimentState.burette;
+    const canAddAcid = chemical.type === 'acid' && hasBeaker && !experimentState.beaker;
+
+    if (!canAddBase && !canAddAcid) {
+      toast({
+        title: 'Cannot Add Chemical',
+        description: `Please add the appropriate empty equipment (beaker for acid, burette for base) to the workbench first.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setExperimentState((prevState) => {
-        const newState = { ...prevState };
-        
-        // Logic to decide where to add the chemical
-        const hasBurette = newState.equipment.some(e => e.type === 'burette');
-        const hasBeaker = newState.equipment.some(e => e.type === 'beaker');
-
-        // Titrants (bases) go in the burette if available
-        if (chemical.type === 'base' && hasBurette && !newState.burette) {
-            newState.burette = { chemical, volume: 50 };
-            addLog(`Filled the burette with 50ml of ${chemical.name}.`);
-        } 
-        // Analytes (acids) go in the beaker if available
-        else if (chemical.type === 'acid' && hasBeaker && !newState.beaker) {
-            newState.beaker = { solutions: [{ chemical, volume: 50 }], indicator: null };
-            addLog(`Added 50ml of ${chemical.name} to the beaker.`);
-        } 
-        // Fallback logic
-        else {
-            toast({
-                title: 'Cannot Add Chemical',
-                description: `Please add the appropriate empty equipment (beaker for acid, burette for base) to the workbench first.`,
-                variant: 'destructive'
-            });
-            return prevState;
-        }
-
-        return updatePhAndColor(newState);
+      const newState = { ...prevState };
+      if (canAddBase) {
+        newState.burette = { chemical, volume: 50 };
+        addLog(`Filled the burette with 50ml of ${chemical.name}.`);
+      } else if (canAddAcid) {
+        newState.beaker = { solutions: [{ chemical, volume: 50 }], indicator: null };
+        addLog(`Added 50ml of ${chemical.name} to the beaker.`);
+      }
+      return updatePhAndColor(newState);
     });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
+  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
