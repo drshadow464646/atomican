@@ -96,15 +96,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [addLog, handleSafetyCheck, toast]);
 
   const handleAddEquipmentToInventory = useCallback((equipment: Equipment) => {
-    setInventoryEquipment((prev) => {
-      if (prev.find((e) => e.id === equipment.id)) {
-        toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` });
-        return prev;
-      }
-      toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
-      return [...prev, equipment];
-    });
-  }, [toast]);
+    if (inventoryEquipment.find((e) => e.id === equipment.id)) {
+      toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` });
+      return;
+    }
+    toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` });
+    setInventoryEquipment(prev => [...prev, equipment]);
+  }, [inventoryEquipment, toast]);
   
   const handleAddChemical = useCallback((chemical: Chemical, target: 'beaker' | 'burette') => {
       if (!handleSafetyCheck()) return;
@@ -133,15 +131,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
-    setInventoryChemicals((prev) => {
-      if (prev.find((c) => c.id === chemical.id)) {
+    if (inventoryChemicals.find((c) => c.id === chemical.id)) {
         toast({ title: 'Already in Inventory', description: `${chemical.name} is already in your inventory.` });
-        return prev;
-      }
-      toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
-      return [...prev, chemical];
-    });
-  }, [toast]);
+        return;
+    }
+    toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` });
+    setInventoryChemicals(prev => [...prev, chemical]);
+  }, [inventoryChemicals, toast]);
   
   const handleAddIndicator = useCallback((chemical: Chemical) => {
     if (!handleSafetyCheck()) return;
