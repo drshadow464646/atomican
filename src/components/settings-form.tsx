@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,57 +24,19 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Palette, User, Sun, Moon, Laptop, Sparkles, Waves, Type } from 'lucide-react';
-
-type Settings = {
-  displayName: string;
-  appearanceMode: 'light' | 'dark' | 'system';
-  baseGradient: 'moon' | 'sunset' | 'dawn';
-  uiMotionLevel: 'low' | 'medium' | 'high';
-  typographyMode: 'default' | 'serif' | 'monospace';
-};
-
-const defaultSettings: Settings = {
-  displayName: 'Astera',
-  appearanceMode: 'system',
-  baseGradient: 'moon',
-  uiMotionLevel: 'medium',
-  typographyMode: 'default',
-};
+import { useSettings, defaultSettings } from '@/hooks/use-settings';
 
 export function SettingsForm() {
   const { toast } = useToast();
-  const { setTheme } = useTheme();
-
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const { settings, setSettings } = useSettings();
   const [isClient, setIsClient] = useState(false);
 
+  // When the component mounts, we know we're on the client.
   useEffect(() => {
-    const savedSettings = localStorage.getItem('labSettings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
     setIsClient(true);
   }, []);
-  
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('labSettings', JSON.stringify(settings));
-      
-      setTheme(settings.appearanceMode);
-      
-      document.body.dataset.gradient = settings.baseGradient;
-      document.body.dataset.motionLevel = settings.uiMotionLevel;
 
-      document.body.classList.remove('font-serif', 'font-mono');
-      if (settings.typographyMode === 'serif') {
-        document.body.classList.add('font-serif');
-      } else if (settings.typographyMode === 'monospace') {
-        document.body.classList.add('font-mono');
-      }
-    }
-  }, [settings, isClient, setTheme]);
-  
-  const handleInputChange = (key: keyof Settings, value: string) => {
+  const handleInputChange = (key: keyof typeof settings, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -86,7 +47,7 @@ export function SettingsForm() {
       description: 'Your preferences have been reset to the defaults.',
     });
   }
-
+  
   if (!isClient) {
     return (
       <div className="space-y-8">
