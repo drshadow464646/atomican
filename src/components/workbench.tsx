@@ -149,7 +149,7 @@ export function Workbench({ state, onTitrate }: WorkbenchProps) {
   
   return (
     <Card className={cn(
-      "h-full border-0 rounded-none bg-gradient-to-br from-slate-100 to-slate-300 dark:from-slate-800 dark:to-slate-900 flex flex-col"
+      "h-full border-0 rounded-none bg-slate-200 dark:bg-slate-900 flex flex-col"
       )}>
       <CardHeader>
         <CardTitle className='flex items-center gap-2'>
