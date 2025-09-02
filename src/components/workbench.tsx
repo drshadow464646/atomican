@@ -159,6 +159,11 @@ export function Workbench({
     <div className="h-full flex flex-col">
       <Card 
         className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
+        style={{
+          backgroundImage: 'url(/tile.svg)',
+          backgroundSize: '300px',
+          backgroundRepeat: 'repeat',
+        }}
       >
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-foreground'>
@@ -168,11 +173,11 @@ export function Workbench({
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div className="relative w-full flex-1 flex items-center justify-center p-4 md:p-8">
-                <div 
-                  className={cn(
-                      "relative w-full h-full rounded-lg",
-                      state.equipment.length === 0 && "flex items-center justify-center"
-                  )}
+                <div
+                    className="relative w-full h-full rounded-2xl border border-white/10 bg-black/20 p-4 shadow-2xl backdrop-blur-md"
+                    style={{
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+                    }}
                 >
                     {state.equipment.length > 0 ? (
                         <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end justify-items-center p-4">
@@ -217,3 +222,5 @@ export function Workbench({
     </div>
   );
 }
+
+    
