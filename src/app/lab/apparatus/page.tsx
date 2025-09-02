@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2 } from 'lucide-react';
@@ -40,21 +40,16 @@ function getIconForEquipment(item: Equipment) {
 
 export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<ApparatusSearchOutput | null>(null);
+  const [isSearching, setIsSearching] = useState(true);
+  const [results, setResults] = useState<ApparatusSearchOutput | null>(null);
   const { handleAddEquipment } = useExperiment();
   const { toast } = useToast();
 
-  const debouncedSearch = useDebouncedCallback(async (query: string) => {
-    if (!query || query.length < 3) {
-      setSearchResults(null);
-      setIsSearching(false);
-      return;
-    }
+  const performSearch = async (query: string) => {
     setIsSearching(true);
     try {
-      const results = await searchApparatus(query);
-      setSearchResults(results);
+      const searchResults = await searchApparatus(query);
+      setResults(searchResults);
     } catch (error) {
       console.error("Apparatus search failed:", error);
       toast({
@@ -62,25 +57,34 @@ export default function ApparatusPage() {
         description: 'Could not retrieve equipment results at this time.',
         variant: 'destructive',
       });
-      setSearchResults(null);
+      setResults(null);
     } finally {
       setIsSearching(false);
     }
+  }
+
+  // Fetch common items on initial load
+  useEffect(() => {
+    performSearch('common lab equipment');
+  }, []);
+
+
+  const debouncedSearch = useDebouncedCallback(async (query: string) => {
+    if (!query || query.length < 3) {
+      // If search is cleared, show common items again
+      performSearch('common lab equipment');
+      return;
+    }
+    performSearch(query);
   }, 500);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchTerm(query);
-    if (query.length === 0) {
-      setIsSearching(false);
-      setSearchResults(null);
-    } else if(query.length >= 3) {
-      setIsSearching(true);
-      debouncedSearch(query);
-    }
+    debouncedSearch(query);
   };
   
-  const equipmentToDisplay = searchResults ? searchResults.equipment : [];
+  const equipmentToDisplay = results ? results.equipment : [];
 
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
@@ -105,6 +109,13 @@ export default function ApparatusPage() {
             {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin" />}
           </div>
         </div>
+        
+        {isSearching && equipmentToDisplay.length === 0 && (
+          <div className="text-center col-span-full py-16">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground mt-4">Fetching equipment...</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {equipmentToDisplay.map(item => (
@@ -128,16 +139,11 @@ export default function ApparatusPage() {
           ))}
         </div>
         
-        {!isSearching && searchTerm.length >= 3 && equipmentToDisplay.length === 0 && (
+        {!isSearching && equipmentToДisplay.length === 0 && (
             <div className="text-center col-span-full py-16">
                 <p className="text-muted-foreground">No equipment found matching your search.</p>
             </div>
         )}
-         {!isSearching && searchTerm.length < 3 && (
-            <div className="text-center col-span-full py-16">
-                <p className="text-muted-foreground">Enter 3 or more characters to start a search.</p>
-            </div>
-         )}
       </div>
     </div>
   );

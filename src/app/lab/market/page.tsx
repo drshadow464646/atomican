@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,20 +13,15 @@ import { searchChemicals, ChemicalSearchOutput } from '@/ai/flows/chemical-searc
 
 export default function MarketPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<ChemicalSearchOutput | null>(null);
+  const [isSearching, setIsSearching] = useState(true);
+  const [results, setResults] = useState<ChemicalSearchOutput | null>(null);
   const { toast } = useToast();
 
-  const debouncedSearch = useDebouncedCallback(async (query: string) => {
-    if (!query || query.length < 3) {
-      setSearchResults(null);
-      setIsSearching(false);
-      return;
-    }
+  const performSearch = async (query: string) => {
     setIsSearching(true);
     try {
-      const results = await searchChemicals(query);
-      setSearchResults(results);
+      const searchResults = await searchChemicals(query);
+      setResults(searchResults);
     } catch (error) {
       console.error("Chemical search failed:", error);
       toast({
@@ -34,22 +29,31 @@ export default function MarketPage() {
         description: 'Could not retrieve chemical results at this time.',
         variant: 'destructive',
       });
-      setSearchResults(null);
+      setResults(null);
     } finally {
       setIsSearching(false);
     }
+  };
+
+  // Fetch common items on initial load
+  useEffect(() => {
+    performSearch('common lab chemicals');
+  }, []);
+
+
+  const debouncedSearch = useDebouncedCallback(async (query: string) => {
+    if (!query || query.length < 3) {
+      // If search is cleared, show common items again
+      performSearch('common lab chemicals');
+      return;
+    }
+    performSearch(query);
   }, 500);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchTerm(query);
-    if (query.length === 0) {
-      setIsSearching(false);
-      setSearchResults(null);
-    } else if(query.length >= 3) {
-      setIsSearching(true);
-      debouncedSearch(query);
-    }
+    debouncedSearch(query);
   };
 
 
@@ -64,7 +68,7 @@ export default function MarketPage() {
     });
   };
 
-  const chemicalsToDisplay = searchResults ? searchResults.chemicals : [];
+  const chemicalsToDisplay = results ? results.chemicals : [];
 
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
@@ -89,6 +93,13 @@ export default function MarketPage() {
              {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin" />}
           </div>
         </div>
+
+        {isSearching && chemicalsToDisplay.length === 0 && (
+          <div className="text-center col-span-full py-16">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground mt-4">Fetching chemicals...</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {chemicalsToDisplay.map(chem => (
@@ -119,16 +130,11 @@ export default function MarketPage() {
             </Card>
           ))}
         </div>
-         {!isSearching && searchTerm.length >= 3 && chemicalsToDisplay.length === 0 && (
+         {!isSearching && chemicalsToDisplay.length === 0 && (
             <div className="text-center col-span-full py-16">
                 <p className="text-muted-foreground">No chemicals found matching your search.</p>
             </div>
         )}
-         {!isSearching && searchTerm.length < 3 && (
-            <div className="text-center col-span-full py-16">
-                <p className="text-muted-foreground">Enter 3 or more characters to start a search.</p>
-            </div>
-         )}
       </div>
     </div>
   );
