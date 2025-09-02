@@ -2,18 +2,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus } from 'lucide-react';
 import type { Equipment } from '@/lib/experiment';
 import { ALL_EQUIPMENT } from '@/lib/experiment';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useExperiment } from '@/hooks/use-experiment';
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
   'beaker-250': <Beaker className="h-10 w-10 text-primary" />,
-  burette: <Pipette className="h-10 w-10 text-primary" />, // Using Pipette as a stand-in
+  'burette-50': <Pipette className="h-10 w-10 text-primary" />,
   pipette: <Pipette className="h-10 w-10 text-primary" />,
-  'graduated-cylinder': <TestTube className="h-10 w-10 text-primary" />, // Using TestTube
+  'graduated-cylinder': <TestTube className="h-10 w-10 text-primary" />,
   'erlenmeyer-flask': <FlaskConical className="h-10 w-10 text-primary" />,
   thermometer: <Thermometer className="h-10 w-10 text-primary" />,
   'ph-meter': <Wind className="h-10 w-10 text-primary" />, // Stand-in
@@ -24,6 +26,7 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
 
 export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const { handleAddEquipment } = useExperiment();
 
   const filteredEquipment = ALL_EQUIPMENT.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,6 +73,12 @@ export default function ApparatusPage() {
                   {item.description}
                 </p>
               </CardContent>
+              <CardFooter>
+                 <Button className="w-full" onClick={() => handleAddEquipment(item)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add to Workbench
+                </Button>
+              </CardFooter>
             </Card>
           ))}
         </div>
