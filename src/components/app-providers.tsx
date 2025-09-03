@@ -2,26 +2,21 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { SettingsProvider, useSettings } from '@/hooks/use-settings';
+import { SettingsProvider } from '@/hooks/use-settings';
 import { ThemeProvider } from '@/components/theme-provider';
 
-function AppContent({ children }: { children: React.ReactNode }) {
-    const { isSettingsLoaded } = useSettings();
+export function AppProviders({ children }: { children: React.ReactNode }) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Render null on the server and during the initial client render
-    if (!isMounted || !isSettingsLoaded) {
+    // Render null on the server and during the initial client render to avoid hydration mismatch
+    if (!isMounted) {
         return null;
     }
 
-    return <>{children}</>;
-}
-
-export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
         <SettingsProvider>
           <ThemeProvider
@@ -30,7 +25,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
               enableSystem
               disableTransitionOnChange
           >
-            <AppContent>{children}</AppContent>
+            {children}
           </ThemeProvider>
         </SettingsProvider>
     );
