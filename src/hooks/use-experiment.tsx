@@ -208,7 +208,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
             } else {
-                setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the burette.`, variant: 'destructive' }), 0);
+                setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the burette. It might be full or incompatible.`, variant: 'destructive' }), 0);
             }
         }
 
@@ -268,16 +268,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
 
     const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + volume));
+    const actualVolumePoured = newVolumeAdded - experimentState.volumeAdded;
 
-    if (newVolumeAdded === experimentState.volumeAdded && volume > 0) {
+    if (actualVolumePoured <= 0 && volume > 0) {
         setTimeout(() => toast({ title: 'Notice', description: 'Burette is empty.' }), 0);
         return;
     }
 
     setExperimentState(prevState => {
         if (!prevState.burette) return prevState;
-        if (volume > 0) {
-            addLog(`Added ${volume.toFixed(1)}ml of ${prevState.burette.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
+        if (actualVolumePoured > 0) {
+            addLog(`Added ${actualVolumePoured.toFixed(1)}ml of ${prevState.burette.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
         }
         const newState = { ...prevState, volumeAdded: newVolumeAdded };
         return updatePhAndColor(newState);
@@ -370,3 +371,5 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
