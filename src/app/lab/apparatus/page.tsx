@@ -13,41 +13,45 @@ import type { Equipment } from '@/lib/experiment';
 import { ALL_APPARATUS, COMMON_APPARATUS_IDS } from '@/lib/apparatus-catalog';
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
-  'beaker': <Beaker className="h-10 w-10 text-primary" />,
-  'burette': <Pipette className="h-10 w-10 text-primary" />,
-  'pipette': <Pipette className="h-10 w-10 text-primary" />,
-  'graduated-cylinder': <TestTube className="h-10 w-10 text-primary" />,
-  'erlenmeyer-flask': <FlaskConical className="h-10 w-10 text-primary" />,
-  'volumetric-flask': <FlaskConical className="h-10 w-10 text-primary" />,
-  'test-tube': <TestTube className="h-10 w-10 text-primary" />,
-  'measurement': <Thermometer className="h-10 w-10 text-primary" />,
-  'heating': <Flame className="h-10 w-10 text-primary" />,
-  'microscopy': <Microscope className="h-10 w-10 text-primary" />,
-  'other': <Beaker className="h-10 w-10 text-primary" />,
-  'funnel': <Wind className="h-10 w-10 text-primary" />, // Using Wind as a stand-in for Funnel
+  glassware: <Beaker className="h-10 w-10 text-primary" />,
+  funnel: <Wind className="h-10 w-10 text-primary" />, // Using Wind as a stand-in
+  heating: <Flame className="h-10 w-10 text-primary" />,
+  vacuum: <Wind className="h-10 w-10 text-primary" />, // Using Wind as a stand-in
+  measurement: <Scale className="h-10 w-10 text-primary" />,
+  safety: <Beaker className="h-10 w-10 text-primary" />, // Placeholder
+  other: <TestTube className="h-10 w-10 text-primary" />,
 };
 
-function getIconForEquipment(item: Equipment) {
-    if (equipmentIcons[item.type]) {
-        return equipmentIcons[item.type];
-    }
-    // Fallback for specific IDs if type doesn't match
-    if (item.id.includes('ph-meter')) return <Thermometer className="h-10 w-10 text-primary" />;
-    if (item.id.includes('balance')) return <Scale className="h-10 w-10 text-primary" />;
-    if (item.id.includes('stirrer')) return <Wind className="h-10 w-10 text-primary" />;
-    return <Beaker className="h-10 w-10 text-primary" />;
+
+function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | 'size'>): React.ReactNode {
+  // More specific icons first
+  if (item.id.includes('beaker')) return <Beaker className="h-10 w-10 text-primary" />;
+  if (item.id.includes('erlenmeyer') || item.id.includes('flask')) return <FlaskConical className="h-10 w-10 text-primary" />;
+  if (item.id.includes('burette') || item.id.includes('pipette')) return <Pipette className="h-10 w-10 text-primary" />;
+  if (item.id.includes('cylinder') || item.id.includes('tube')) return <TestTube className="h-10 w-10 text-primary" />;
+  if (item.id.includes('ph-meter') || item.id.includes('thermometer')) return <Thermometer className="h-10 w-10 text-primary" />;
+  if (item.id.includes('balance')) return <Scale className="h-10 w-10 text-primary" />;
+  if (item.id.includes('microscope')) return <Microscope className="h-10 w-10 text-primary" />;
+
+  // Fallback to type
+  if (equipmentIcons[item.type]) {
+    return equipmentIcons[item.type];
+  }
+
+  // Final fallback
+  return <Beaker className="h-10 w-10 text-primary" />;
 }
 
 export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<Equipment[]>([]);
+  const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size'>[]>([]);
   const { handleAddEquipmentToInventory } = useExperiment();
 
   const filterApparatus = (query: string) => {
     setIsSearching(true);
     if (!query) {
-      setResults(ALL_APPARATUS.filter(item => COMMON_APPARATUS_IDS.includes(item.id)) as Equipment[]);
+      setResults(ALL_APPARATUS.filter(item => COMMON_APPARATUS_IDS.includes(item.id)));
     } else {
       const lowerCaseQuery = query.toLowerCase();
       const filtered = ALL_APPARATUS.filter(item => 
@@ -55,7 +59,7 @@ export default function ApparatusPage() {
         item.description.toLowerCase().includes(lowerCaseQuery) ||
         item.type.toLowerCase().includes(lowerCaseQuery)
       );
-      setResults(filtered as Equipment[]);
+      setResults(filtered);
     }
     setIsSearching(false);
   };
