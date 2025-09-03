@@ -33,25 +33,28 @@ const prompt = ai.definePrompt({
   input: { schema: z.string() },
   output: { schema: ApparatusSearchOutputSchema },
   prompt: `You are an expert lab technician acting as a laboratory equipment catalog search engine.
-  A user will provide a search query. This could be a name (e.g., "beaker"), a function (e.g., "heating"), or a general category (e.g., "glassware").
-  You MUST use the user's query to find matching laboratory apparatus from a comprehensive catalog.
-  Return a list of 5-10 pieces of equipment that are a direct match for the query.
+  A user will provide a search query. Your task is to find matching laboratory apparatus from the comprehensive catalog listed below.
+  
+  **IMPORTANT RULE:** You MUST ONLY return equipment that is a direct match for the user's search query. If the query is "magnetic stirrer", you MUST return "Magnetic stirrer". If no items match, return an empty list. Do NOT return random or unrelated items.
 
   **User Search Query:** {{input}}
 
-  Filter your results based on this query. For each piece of equipment, provide a unique ID, its common name, its general type, its volume/capacity if applicable, and a brief description of its use.
+  Filter your results based *only* on this query. For each piece of equipment, provide a unique ID, its common name, its general type, its volume/capacity if applicable, and a brief description of its use.
   
   Your internal catalog is comprehensive and includes, but is not limited to:
-  - Glassware: Beakers (various sizes), Erlenmeyer flasks, Volumetric flasks, Graduated cylinders, Test tubes, Burettes, Pipettes (volumetric, Mohr), Funnels (Büchner, thistle tube, separatory), Petri dishes, Watch glasses, Retorts.
-  - Heating: Bunsen burners, Hot plates, Heating mantles, Crucibles, Wire gauze.
+  - Glassware: Beakers (various sizes), Erlenmeyer flasks, Volumetric flasks, Graduated cylinders, Test tubes, Burettes, Pipettes (volumetric, Mohr), Funnels, Thistle Tubes, Büchner Funnels, Separatory Funnels, Petri dishes, Watch glasses, Retorts.
+  - Heating: Bunsen burners, Hot plates, Heating mantles, Crucibles, Wire gauze, Magnetic Stirrers.
   - Measurement: pH meters, Balances (analytical, top-loading), Thermometers, Spectrophotometers, Calorimeters.
   - Support & Holding: Ring stands, Utility clamps, Buret clamps, Test tube racks, Tongs (beaker, crucible).
   - Distillation: Condensers (Liebig, Graham, Allihn), Distillation flasks, Receiving flasks.
   - Microscopy: Compound microscopes, Dissecting microscopes, Slides, Cover slips.
   - Other: Mortar and pestle, Spatulas, Stirring rods, Wash bottles, Gas syringes.
 
-  For a query like "heating", you should return items like "Bunsen burner", "Hot plate", etc.
-  For a query like "thistle tube", you should return "Thistle Tube".
+  **EXAMPLES:**
+  - If the user query is "heating", you should return items like "Bunsen burner", "Hot plate", etc.
+  - If the user query is "thistle tube", you MUST return only "Thistle Tube".
+  - If the user query is "magnetic stirrer", you MUST return only "Magnetic Stirrer".
+  - If the user query is "beaker", you should return "Beaker" with various sizes.
   `,
 });
 
