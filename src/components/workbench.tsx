@@ -93,7 +93,7 @@ const EquipmentDisplay = ({
     const handleResizeMouseMove = (e: MouseEvent) => {
         if (!resizingRef.current) return;
         const deltaY = e.clientY - resizingRef.current.initialMouseY;
-        const newSize = Math.max(0.5, Math.min(2.5, resizingRef.current.initialSize - deltaY / 100));
+        const newSize = Math.max(0.5, Math.min(2.5, resizingRef.current.initialSize + deltaY / 100));
         onResize(item.id, newSize);
     };
 
