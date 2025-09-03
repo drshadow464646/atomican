@@ -270,8 +270,6 @@ export function Workbench({
                   </>
               ) : (
                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                        <p className="text-lg font-medium">Your workbench is ready.</p>
-                        <p className="text-sm">Add equipment and chemicals from the inventory to begin.</p>
                   </div>
               )}
             </div>
