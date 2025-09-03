@@ -30,7 +30,7 @@ type ExperimentContextType = {
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
-  handleRemoveSelectedEquipment: () => void;
+  handleRemoveSelectedEquipment: (id: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
   handleSelectEquipment: (equipmentId: string | null) => void;
@@ -120,9 +120,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       addLog(`Added ${equipment.name} to the workbench.`);
       const newEquipment: Equipment = { 
         ...equipment, 
-        id: `${equipment.id}-${Date.now()}`, // Make ID unique
+        id: `${equipment.type}-${Date.now()}`, // Make ID unique but keep type prefix
         size: 1, // Default size
-        position: { x: Math.random() * 200 + 50, y: Math.random() * 200 + 50 }, // Random position
+        position: { x: Math.random() * 200 + 50, y: Math.random() * 100 + 20 }, // Random position
         isSelected: false,
       }; 
       return { ...prevState, equipment: [...prevState.equipment, newEquipment] };
@@ -138,9 +138,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
      setTimeout(() => toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` }), 0);
   }, [inventoryEquipment, toast]);
   
-  const handleRemoveSelectedEquipment = useCallback(() => {
+  const handleRemoveSelectedEquipment = useCallback((id: string) => {
     setExperimentState(prevState => {
-      const equipmentToRemove = prevState.equipment.find(e => e.isSelected);
+      const equipmentToRemove = prevState.equipment.find(e => e.id === id);
       if (!equipmentToRemove) return prevState;
 
       addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
@@ -207,7 +207,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             }
         }
         else if (equipmentOnWorkbench.type === 'burette') {
-            if (heldItem.type === 'acid' || heldItem.type === 'base') {
+            if ((heldItem.type === 'acid' || heldItem.type === 'base')) {
                 newState.burette = { chemical: heldItem, volume: 50 };
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
@@ -261,8 +261,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const sourceEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === sourceId);
     const targetEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === targetId);
 
-    const sourceEquipmentDef = ALL_EQUIPMENT.find(e => e.id === sourceEquipmentOnWorkbench?.id.split('-')[0]);
-    const targetEquipmentDef = ALL_EQUIPMENT.find(e => e.id === targetEquipmentOnWorkbench?.id.split('-')[0]);
+    const sourceEquipmentDef = ALL_EQUIPMENT.find(e => e.type === sourceEquipmentOnWorkbench?.type);
+    const targetEquipmentDef = ALL_EQUIPMENT.find(e => e.type === targetEquipmentOnWorkbench?.type);
 
     if (!sourceEquipmentDef || !targetEquipmentDef) {
       setTimeout(() => toast({ title: 'Invalid Action', description: 'Source or target equipment not found.', variant: 'destructive' }), 0);
@@ -397,3 +397,5 @@ export function useExperiment() {
   }
   return context;
 }
+
+    

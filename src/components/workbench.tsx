@@ -3,9 +3,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, ZoomIn, Trash2, Hand } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
-import { Slider } from './ui/slider';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -59,6 +58,8 @@ const EquipmentDisplay = ({
   onMouseDown,
   onSelect,
   onDrop,
+  onRemove,
+  onResize,
   isHoverTarget,
 }: { 
   item: Equipment, 
@@ -66,14 +67,42 @@ const EquipmentDisplay = ({
   onMouseDown: (e: React.MouseEvent, id: string) => void,
   onSelect: (id: string) => void,
   onDrop: (id: string) => void,
+  onRemove: (id: string) => void,
+  onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
 }) => {
     const beakerSolution = state.beaker?.solutions[0];
-    const buretteSolution = state.burette;
     const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
     
     const size = item.size ?? 1;
     const iconClass = "text-muted-foreground/50 transition-all";
+    
+    const resizeHandleRef = useRef<HTMLDivElement>(null);
+    const resizingRef = useRef<{ initialSize: number; initialMouseY: number } | null>(null);
+
+    const handleResizeMouseDown = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        resizingRef.current = {
+            initialSize: size,
+            initialMouseY: e.clientY,
+        };
+        document.addEventListener('mousemove', handleResizeMouseMove);
+        document.addEventListener('mouseup', handleResizeMouseUp);
+    };
+
+    const handleResizeMouseMove = (e: MouseEvent) => {
+        if (!resizingRef.current) return;
+        const deltaY = e.clientY - resizingRef.current.initialMouseY;
+        const newSize = Math.max(0.5, Math.min(2.5, resizingRef.current.initialSize - deltaY / 100));
+        onResize(item.id, newSize);
+    };
+
+    const handleResizeMouseUp = () => {
+        resizingRef.current = null;
+        document.removeEventListener('mousemove', handleResizeMouseMove);
+        document.removeEventListener('mouseup', handleResizeMouseUp);
+    };
+
 
     const renderContent = () => {
         const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
@@ -93,7 +122,7 @@ const EquipmentDisplay = ({
         <div 
             id={item.id}
             className={cn(
-                "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-all duration-200 rounded-lg",
+                "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-all duration-200 rounded-lg group",
                 item.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
                 isHoverTarget && "ring-2 ring-accent ring-offset-2 ring-offset-background shadow-2xl",
             )}
@@ -103,6 +132,7 @@ const EquipmentDisplay = ({
                 touchAction: 'none', // prevent default touch actions
             }}
             onMouseDown={(e) => {
+              if (resizeHandleRef.current?.contains(e.target as Node)) return;
               onSelect(item.id);
               onMouseDown(e, item.id);
             }}
@@ -111,6 +141,28 @@ const EquipmentDisplay = ({
               onDrop(item.id);
             }}
         >
+            {item.isSelected && (
+              <>
+                <Button 
+                    size="icon" 
+                    variant="destructive" 
+                    className="absolute -top-3 -right-3 h-6 w-6 rounded-full z-20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(item.id);
+                    }}
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+                <div 
+                    ref={resizeHandleRef}
+                    className="absolute -bottom-2 -right-2 h-5 w-5 bg-primary rounded-full z-20 cursor-nwse-resize flex items-center justify-center"
+                    onMouseDown={handleResizeMouseDown}
+                >
+                    <Scaling className="h-3 w-3 text-primary-foreground" />
+                </div>
+              </>
+            )}
             <div className="flex-1 flex flex-col items-center justify-center pointer-events-none">
                 {renderContent()}
             </div>
@@ -128,6 +180,7 @@ export function Workbench({
     onDropOnApparatus,
     onPour,
     heldItem,
+    onRemoveSelectedEquipment
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
@@ -137,8 +190,8 @@ export function Workbench({
     onDropOnApparatus: (equipmentId: string) => void;
     onPour: (sourceId: string, targetId: string) => void;
     heldItem: Chemical | null;
+    onRemoveSelectedEquipment: (id: string) => void;
 }) {
-  const [titrationAmount, setTitrationAmount] = useState(1);
   const workbenchRef = useRef<HTMLDivElement>(null);
   const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number } } | null>(null);
   const [hoveredEquipment, setHoveredEquipment] = useState<string | null>(null);
@@ -233,7 +286,7 @@ export function Workbench({
               ref={workbenchRef}
               className="relative w-full flex-1"
               onClick={(e) => {
-                if (e.target === workbenchRef.current) {
+                if (e.target === workbenchRef.current || e.target === document.getElementById('lab-slab')) {
                   onSelectEquipment(null);
                 }
               }}
@@ -261,6 +314,8 @@ export function Workbench({
                                 onMouseDown={handleMouseDown}
                                 onSelect={onSelectEquipment}
                                 onDrop={onDropOnApparatus}
+                                onRemove={onRemoveSelectedEquipment}
+                                onResize={onResizeEquipment}
                                 isHoverTarget={(!!heldItem || !!draggedItemRef.current) && hoveredEquipment === item.id && draggedItemRef.current?.id !== item.id}
                             />
                           </div>
@@ -272,25 +327,17 @@ export function Workbench({
               )}
             </div>
           
-          <div className="w-full max-w-2xl mt-4">
-              {hasBeaker && hasBurette && !heldItem && !selectedEquipment ? (
+            <div className="w-full max-w-md mt-4">
+              {!selectedEquipment && hasBurette && hasBeaker && (
                  <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">Titration Control</p>
-                    <div className="flex items-center gap-4 w-full">
-                        <Slider 
-                          value={[titrationAmount]}
-                          onValueChange={(value) => setTitrationAmount(value[0])}
-                          min={0.1}
-                          max={10}
-                          step={0.1}
-                          disabled={!hasBurette || !hasBeaker}
-                        />
-                        <Button onClick={() => onTitrate(titrationAmount)} disabled={!hasBurette || !hasBeaker} className='w-48' variant="secondary">
-                            Add {titrationAmount.toFixed(1)}ml
-                        </Button>
+                     <div className="flex items-center gap-4 w-full px-4">
+                         <Button onClick={() => onTitrate(0.1)} className='flex-1' variant="outline">Add 0.1ml</Button>
+                         <Button onClick={() => onTitrate(1)} className='flex-1' variant="secondary">Add 1ml</Button>
+                         <Button onClick={() => onTitrate(5)} className='flex-1' variant="default">Add 5ml</Button>
                     </div>
                 </div>
-              ) : null}
+              )}
             </div>
 
         </CardContent>
@@ -298,3 +345,5 @@ export function Workbench({
     </div>
   );
 }
+
+    

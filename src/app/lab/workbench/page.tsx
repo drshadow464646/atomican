@@ -68,8 +68,9 @@ export default function WorkbenchPage() {
       if (e.key === 'Escape' && heldItem) {
         handleClearHeldItem();
       }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && experimentState.equipment.some(eq => eq.isSelected)) {
-        handleRemoveSelectedEquipment();
+      const selectedId = experimentState.equipment.find(eq => eq.isSelected)?.id;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        handleRemoveSelectedEquipment(selectedId);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -151,9 +152,12 @@ export default function WorkbenchPage() {
                 onDropOnApparatus={handleDropOnApparatus}
                 onPour={handlePourBetweenEquipment}
                 heldItem={heldItem}
+                onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
             />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
   );
 }
+
+    
