@@ -207,7 +207,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             }
         }
         else if (equipmentDefinition?.type === 'burette') {
-            if ((heldItem.type === 'base' || heldItem.type === 'acid') && !prevState.burette) {
+            if (heldItem.type === 'base' || heldItem.type === 'acid') {
                 newState.burette = { chemical: heldItem, volume: 50 };
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
@@ -375,6 +375,8 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
 
     
 
