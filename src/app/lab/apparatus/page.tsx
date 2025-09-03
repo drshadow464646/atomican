@@ -26,6 +26,7 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
   'heating': <Flame className="h-10 w-10 text-primary" />,
   'microscopy': <Microscope className="h-10 w-10 text-primary" />,
   'other': <Beaker className="h-10 w-10 text-primary" />,
+  'funnel': <Wind className="h-10 w-10 text-primary" />, // Using Wind as a stand-in for Funnel
 };
 
 function getIconForEquipment(item: Equipment) {
@@ -33,8 +34,9 @@ function getIconForEquipment(item: Equipment) {
         return equipmentIcons[item.type];
     }
     // Fallback for specific IDs if type doesn't match
-    if (item.id.includes('ph-meter')) return <Wind className="h-10 w-10 text-primary" />;
+    if (item.id.includes('ph-meter')) return <Thermometer className="h-10 w-10 text-primary" />;
     if (item.id.includes('balance')) return <Scale className="h-10 w-10 text-primary" />;
+    if (item.id.includes('stirrer')) return <Wind className="h-10 w-10 text-primary" />;
     return <Beaker className="h-10 w-10 text-primary" />;
 }
 
@@ -128,11 +130,11 @@ export default function ApparatusPage() {
             <Card key={item.id} className="flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
               <CardHeader className="items-center text-center">
                 <div className="p-4 bg-primary/10 rounded-full mb-2">
-                    {getIconForEquipment(item)}
+                    {getIconForEquipment(item as Equipment)}
                 </div>
                 <CardTitle className="text-xl">{item.name}</CardTitle>
                 <CardDescription>
-                  <Badge variant="secondary">{item.type}</Badge>
+                  <Badge variant="secondary">{item.id}</Badge>
                 </CardDescription>
               </CardHeader>
               <CardFooter>
