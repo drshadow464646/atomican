@@ -39,12 +39,6 @@ const menuItems = [
     tooltip: 'Explore lab tools'
   },
   {
-    href: '/lab/practicals',
-    icon: '📋',
-    label: 'Past Practicals',
-    tooltip: 'Review your experiments'
-  },
-  {
     href: '/lab/settings',
     icon: '⚙️',
     label: 'Settings',
@@ -98,23 +92,6 @@ export function LabSidebar() {
           )
         })}
       </SidebarMenu>
-      
-      <SidebarFooter>
-         <Separator className="my-1" />
-         <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith('/lab/profile')}
-              tooltip={{ children: 'Profile', side: 'right' }}
-               className="font-medium text-foreground/70 hover:text-foreground hover:bg-muted"
-            >
-              <Link href="/lab/profile">
-                <User />
-                <span>Profile</span>
-              </Link>
-            </SidebarMenuButton>
-         </SidebarMenuItem>
-      </SidebarFooter>
     </Sidebar>
   );
 }
