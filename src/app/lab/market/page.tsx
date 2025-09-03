@@ -76,7 +76,7 @@ export default function MarketPage() {
             <Input
               type="search"
               placeholder="Search by name, formula, or type (e.g. 'strong acids')"
-              className="w-full pl-10"
+              className="w-full pl-10 pr-10"
               value={searchTerm}
               onChange={handleSearchChange}
             />
