@@ -146,12 +146,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       const newEquipment = prevState.equipment.filter(e => e.id !== equipmentId);
       let newBeaker = prevState.beaker;
       let newBurette = prevState.burette;
-      if (equipmentToRemove?.type === 'beaker') {
-        newBeaker = null;
+
+      if (equipmentToRemove) {
+          const equipmentDefinition = ALL_EQUIPMENT.find(e => equipmentToRemove.id.startsWith(e.id));
+          if (equipmentDefinition?.type === 'beaker') {
+            newBeaker = null;
+          }
+          if (equipmentDefinition?.type === 'burette') {
+            newBurette = null;
+          }
       }
-      if (equipmentToRemove?.type === 'burette') {
-        newBurette = null;
-      }
+
       return {
         ...prevState,
         equipment: newEquipment,
@@ -193,7 +198,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         const newState = { ...prevState };
         let success = false;
 
-        if (equipmentDefinition?.type === 'beaker') {
+        if (equipmentDefinition.type === 'beaker') {
             if ((heldItem.type === 'acid' || heldItem.type === 'base') && !prevState.beaker) {
                 newState.beaker = { solutions: [{ chemical: heldItem, volume: 50 }], indicator: null };
                 addLog(`Added 50ml of ${heldItem.name} to the beaker.`);
@@ -206,8 +211,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                  setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' }), 0);
             }
         }
-        else if (equipmentDefinition?.type === 'burette') {
-            if (heldItem.type === 'base' || heldItem.type === 'acid') {
+        else if (equipmentDefinition.type === 'burette') {
+            if ((heldItem.type === 'acid' || heldItem.type === 'base')) {
                 newState.burette = { chemical: heldItem, volume: 50 };
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
@@ -258,10 +263,18 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handlePour = useCallback((volume: number, sourceId?: string, targetId?: string) => {
     if (!handleSafetyCheck()) return;
 
-    const sourceEquipment = experimentState.equipment.find(e => e.id === sourceId);
-    const targetEquipment = experimentState.equipment.find(e => e.id === targetId);
+    const sourceEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === sourceId);
+    const targetEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === targetId);
+
+    if (!sourceEquipmentOnWorkbench || !targetEquipmentOnWorkbench) {
+        setTimeout(() => toast({ title: 'Invalid Action', description: 'Source or target equipment not found.', variant: 'destructive' }), 0);
+        return;
+    }
+
+    const sourceDefinition = ALL_EQUIPMENT.find(e => sourceEquipmentOnWorkbench.id.startsWith(e.id));
+    const targetDefinition = ALL_EQUIPMENT.find(e => targetEquipmentOnWorkbench.id.startsWith(e.id));
     
-    if (sourceEquipment?.type !== 'burette' || targetEquipment?.type !== 'beaker') {
+    if (sourceDefinition?.type !== 'burette' || targetDefinition?.type !== 'beaker') {
       setTimeout(() => toast({ title: 'Invalid Action', description: 'Can only pour from a burette into a beaker.', variant: 'destructive' }), 0);
       return;
     }
