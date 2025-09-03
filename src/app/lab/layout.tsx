@@ -4,12 +4,13 @@
 import { LabHeader } from '@/components/lab-header';
 import { SettingsForm } from '@/components/settings-form';
 import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
+import { cn } from '@/lib/utils';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { safetyGogglesOn, setSafetyGogglesOn, handleResetExperiment } = useExperiment();
+  const { safetyGogglesOn, setSafetyGogglesOn, handleResetExperiment, heldItem } = useExperiment();
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className={cn("flex flex-col h-screen", heldItem && "cursor-copy")}>
       <LabHeader
         safetyGogglesOn={safetyGogglesOn}
         onGoggleToggle={setSafetyGogglesOn}

@@ -80,10 +80,7 @@ export default function WorkbenchPage() {
 
 
   return (
-    <div className={cn(
-      "flex flex-col h-full bg-transparent text-foreground",
-       heldItem && "cursor-copy"
-    )}>
+    <div className="flex flex-col h-full bg-transparent text-foreground">
       <ResizablePanelGroup 
         direction={"vertical"} 
         className="flex-1"
