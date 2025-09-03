@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
 
 type LabHeaderProps = {
   safetyGogglesOn: boolean;
@@ -37,20 +36,13 @@ const menuItems = [
 
 export function LabHeader({ safetyGogglesOn, onGoggleToggle, onResetExperiment }: LabHeaderProps) {
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-  
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-6">
         <Link href="/lab/workbench" className="flex items-center gap-2">
             <span className="text-2xl">🌌</span>
-            {isClient && 
-              <h1 className="text-xl font-semibold">LabSphere</h1>
-            }
+            <h1 className="text-xl font-semibold">LabSphere</h1>
         </Link>
         <nav className="hidden md:flex items-center gap-4">
             {menuItems.map(item => {

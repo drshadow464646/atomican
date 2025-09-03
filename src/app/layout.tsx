@@ -28,8 +28,8 @@ export default function RootLayout({
           fontSans.variable
         )}>
         <AppProviders>
-            {children}
-            <Toaster />
+          {children}
+          <Toaster />
         </AppProviders>
       </body>
     </html>

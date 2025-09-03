@@ -1,22 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
 import { SettingsProvider } from '@/hooks/use-settings';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeApplier } from './theme-applier';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    if (!isMounted) {
-        return null;
-    }
-
     return (
         <SettingsProvider>
           <ThemeProvider
