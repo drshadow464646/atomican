@@ -39,6 +39,7 @@ export default function WorkbenchPage() {
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,
+    handlePourBetweenEquipment,
     heldItem,
     handlePickUpChemical,
     handleClearHeldItem,
@@ -126,6 +127,7 @@ export default function WorkbenchPage() {
             onMoveEquipment={handleMoveEquipment}
             onSelectEquipment={handleSelectEquipment}
             onDropOnApparatus={handleDropOnApparatus}
+            onPour={handlePourBetweenEquipment}
             heldItem={heldItem}
           />
         </ResizablePanel>

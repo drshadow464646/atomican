@@ -36,7 +36,8 @@ type ExperimentContextType = {
   handleSelectEquipment: (equipmentId: string | null) => void;
   handleDropOnApparatus: (equipmentId: string) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
-  handleTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
+  handleTitrate: (volume: number) => void;
+  handlePourBetweenEquipment: (sourceId: string, targetId: string) => void;
   handleAddCustomLog: (note: string) => void;
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
@@ -147,14 +148,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       let newBeaker = prevState.beaker;
       let newBurette = prevState.burette;
 
-      if (equipmentToRemove) {
-          const equipmentDefinition = ALL_EQUIPMENT.find(e => equipmentToRemove.id.startsWith(e.id));
-          if (equipmentDefinition?.type === 'beaker') {
-            newBeaker = null;
-          }
-          if (equipmentDefinition?.type === 'burette') {
-            newBurette = null;
-          }
+      if (equipmentToRemove?.type === 'beaker') {
+        newBeaker = null;
+      }
+      if (equipmentToRemove?.type === 'burette') {
+        newBurette = null;
       }
 
       return {
@@ -190,15 +188,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const equipmentOnWorkbench = experimentState.equipment.find(e => e.id === equipmentId);
     if (!equipmentOnWorkbench) return;
 
-    const equipmentDefinition = ALL_EQUIPMENT.find(e => equipmentOnWorkbench.id.startsWith(e.id));
-    if (!equipmentDefinition) return;
-
-
     setExperimentState(prevState => {
         const newState = { ...prevState };
         let success = false;
 
-        if (equipmentDefinition.type === 'beaker') {
+        if (equipmentOnWorkbench.type === 'beaker') {
             if ((heldItem.type === 'acid' || heldItem.type === 'base') && !prevState.beaker) {
                 newState.beaker = { solutions: [{ chemical: heldItem, volume: 50 }], indicator: null };
                 addLog(`Added 50ml of ${heldItem.name} to the beaker.`);
@@ -211,8 +205,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                  setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' }), 0);
             }
         }
-        else if (equipmentDefinition.type === 'burette') {
-            if ((heldItem.type === 'acid' || heldItem.type === 'base')) {
+        else if (equipmentOnWorkbench.type === 'burette') {
+            if (heldItem.type === 'acid' || heldItem.type === 'base') {
                 newState.burette = { chemical: heldItem, volume: 50 };
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
@@ -260,30 +254,54 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setTimeout(() => toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` }), 0);
   }, [inventoryChemicals, toast]);
   
-  const handlePour = useCallback((volume: number, sourceId?: string, targetId?: string) => {
+  const handlePourBetweenEquipment = useCallback((sourceId: string, targetId: string) => {
     if (!handleSafetyCheck()) return;
 
     const sourceEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === sourceId);
     const targetEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === targetId);
 
     if (!sourceEquipmentOnWorkbench || !targetEquipmentOnWorkbench) {
-        setTimeout(() => toast({ title: 'Invalid Action', description: 'Source or target equipment not found.', variant: 'destructive' }), 0);
-        return;
+      setTimeout(() => toast({ title: 'Invalid Action', description: 'Source or target equipment not found.', variant: 'destructive' }), 0);
+      return;
     }
-
-    const sourceDefinition = ALL_EQUIPMENT.find(e => sourceEquipmentOnWorkbench.id.startsWith(e.id));
-    const targetDefinition = ALL_EQUIPMENT.find(e => targetEquipmentOnWorkbench.id.startsWith(e.id));
     
-    if (sourceDefinition?.type !== 'burette' || targetDefinition?.type !== 'beaker') {
+    if (sourceEquipmentOnWorkbench.type !== 'burette' || targetEquipmentOnWorkbench.type !== 'beaker') {
       setTimeout(() => toast({ title: 'Invalid Action', description: 'Can only pour from a burette into a beaker.', variant: 'destructive' }), 0);
       return;
     }
 
     if (!experimentState.beaker || !experimentState.burette) {
-        setTimeout(() => toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' }), 0);
+      setTimeout(() => toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' }), 0);
+      return;
+    }
+    
+    // Pour a small, fixed amount for the drag-and-drop action
+    const pourVolume = 5;
+
+    const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + pourVolume));
+    const actualVolumePoured = newVolumeAdded - experimentState.volumeAdded;
+
+    if (actualVolumePoured <= 0) {
+        setTimeout(() => toast({ title: 'Notice', description: 'Burette is empty.' }), 0);
         return;
     }
 
+    setExperimentState(prevState => {
+        if (!prevState.burette) return prevState;
+        addLog(`Added ${actualVolumePoured.toFixed(1)}ml of ${prevState.burette.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
+        const newState = { ...prevState, volumeAdded: newVolumeAdded };
+        return updatePhAndColor(newState);
+    });
+  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
+  
+  const handleTitrate = useCallback((volume: number) => {
+    if (!handleSafetyCheck()) return;
+    
+    if (!experimentState.beaker || !experimentState.burette) {
+        setTimeout(() => toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' }), 0);
+        return;
+    }
+    
     const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + volume));
     const actualVolumePoured = newVolumeAdded - experimentState.volumeAdded;
 
@@ -301,21 +319,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         return updatePhAndColor(newState);
     });
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
-  
-  const handleTitrate = useCallback((volume: number, sourceId?: string, targetId?: string) => {
-      const burette = experimentState.equipment.find(e => e.type === 'burette');
-      const beaker = experimentState.equipment.find(e => e.type === 'beaker');
-
-      // If source and target are not provided, find them on the workbench
-      const source = sourceId ?? burette?.id;
-      const target = targetId ?? beaker?.id;
-      
-      if (!source || !target) {
-           setTimeout(() => toast({ title: 'Error', description: 'Burette or beaker not found on workbench.', variant: 'destructive' }), 0);
-           return;
-      }
-      handlePour(volume, source, target);
-  }, [handlePour, experimentState.equipment, toast]);
 
 
   const handleAddCustomLog = useCallback((note: string) => {
@@ -347,6 +350,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDropOnApparatus,
     handleAddChemicalToInventory,
     handleTitrate,
+    handlePourBetweenEquipment,
     handleAddCustomLog,
     handleResetExperiment,
     handlePickUpChemical,
@@ -368,6 +372,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDropOnApparatus,
     handleAddChemicalToInventory,
     handleTitrate,
+    handlePourBetweenEquipment,
     handleAddCustomLog,
     handleResetExperiment,
     handlePickUpChemical,
@@ -388,9 +393,3 @@ export function useExperiment() {
   }
   return context;
 }
-
-    
-
-    
-
-    

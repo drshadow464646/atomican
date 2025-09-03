@@ -127,6 +127,7 @@ export function Workbench({
     onMoveEquipment,
     onSelectEquipment,
     onDropOnApparatus,
+    onPour,
     heldItem,
 }: { 
     state: ExperimentState, 
@@ -136,6 +137,7 @@ export function Workbench({
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
     onSelectEquipment: (id: string | null) => void;
     onDropOnApparatus: (equipmentId: string) => void;
+    onPour: (sourceId: string, targetId: string) => void;
     heldItem: Chemical | null;
 }) {
   const [titrationAmount, setTitrationAmount] = useState(1);
@@ -193,11 +195,11 @@ export function Workbench({
 
   const handleMouseUp = useCallback(() => {
     if (draggedItemRef.current && hoveredEquipment) {
-      onTitrate(5, draggedItemRef.current.id, hoveredEquipment);
+      onPour(draggedItemRef.current.id, hoveredEquipment);
     }
     draggedItemRef.current = null;
     setHoveredEquipment(null);
-  }, [hoveredEquipment, onTitrate]);
+  }, [hoveredEquipment, onPour]);
 
   // Attach and clean up global event listeners
   useEffect(() => {
