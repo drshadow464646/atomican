@@ -73,21 +73,20 @@ export const INITIAL_CHEMICALS: Chemical[] = [
 
 
 export function calculatePH(state: ExperimentState): number {
-  if (!state.beaker) return 7;
+  if (!state.beaker || !state.beaker.solutions.length) return 7;
 
-  const acidSolution = state.beaker.solutions.find(s => s.chemical.type === 'acid');
-  const baseSolutionInBeaker = state.beaker.solutions.find(s => s.chemical.type === 'base');
+  const analyteSolution = state.beaker.solutions[0];
   const titrant = state.burette;
   
-  if (!titrant) return 7; // Can't calculate pH without a titrant
+  if (!titrant || !analyteSolution) return 7;
 
   // Titrating base into acid
-  if (acidSolution && titrant.chemical.type === 'base') {
-    if (!acidSolution.chemical.concentration || !titrant.chemical.concentration) return 7;
+  if (analyteSolution.chemical.type === 'acid' && titrant.chemical.type === 'base') {
+    if (!analyteSolution.chemical.concentration || !titrant.chemical.concentration) return 7;
 
-    const initialMolesH = (acidSolution.volume / 1000) * acidSolution.chemical.concentration;
+    const initialMolesH = (analyteSolution.volume / 1000) * analyteSolution.chemical.concentration;
     const addedMolesOH = (state.volumeAdded / 1000) * titrant.chemical.concentration;
-    const totalVolumeL = (acidSolution.volume + state.volumeAdded) / 1000;
+    const totalVolumeL = (analyteSolution.volume + state.volumeAdded) / 1000;
 
     if (addedMolesOH < initialMolesH) {
       const remainingMolesH = initialMolesH - addedMolesOH;
@@ -104,19 +103,19 @@ export function calculatePH(state: ExperimentState): number {
   }
 
   // Titrating acid into base
-  if (baseSolutionInBeaker && titrant.chemical.type === 'acid') {
-    if (!baseSolutionInBeaker.chemical.concentration || !titrant.chemical.concentration) return 7;
+  if (analyteSolution.chemical.type === 'base' && titrant.chemical.type === 'acid') {
+    if (!analyteSolution.chemical.concentration || !titrant.chemical.concentration) return 7;
 
-    const initialMolesOH = (baseSolutionInBeaker.volume / 1000) * baseSolutionInBeaker.chemical.concentration;
+    const initialMolesOH = (analyteSolution.volume / 1000) * analyteSolution.chemical.concentration;
     const addedMolesH = (state.volumeAdded / 1000) * titrant.chemical.concentration;
-    const totalVolumeL = (baseSolutionInBeaker.volume + state.volumeAdded) / 1000;
+    const totalVolumeL = (analyteSolution.volume + state.volumeAdded) / 1000;
     
     if (addedMolesH < initialMolesOH) {
         const remainingMolesOH = initialMolesOH - addedMolesH;
         const concentrationOH = remainingMolesOH / totalVolumeL;
         const pOH = -Math.log10(concentrationOH);
         return 14 - pOH;
-    } else if (addedMolesH > initialMolesH) {
+    } else if (addedMolesH > initialMolesOH) {
         const excessMolesH = addedMolesH - initialMolesH;
         const concentrationH = excessMolesH / totalVolumeL;
         return -Math.log10(concentrationH);
@@ -127,3 +126,5 @@ export function calculatePH(state: ExperimentState): number {
 
   return 7; // Default pH if conditions aren't met
 }
+
+    

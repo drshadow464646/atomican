@@ -185,12 +185,16 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const equipmentOnWorkbench = experimentState.equipment.find(e => e.id === equipmentId);
     if (!equipmentOnWorkbench) return;
 
+    const equipmentDefinition = ALL_EQUIPMENT.find(e => equipmentOnWorkbench.id.startsWith(e.id));
+    if (!equipmentDefinition) return;
+
+
     setExperimentState(prevState => {
         const newState = { ...prevState };
         let success = false;
 
-        if (equipmentOnWorkbench.type === 'beaker') {
-            if (heldItem.type === 'acid' && !prevState.beaker) {
+        if (equipmentDefinition?.type === 'beaker') {
+            if ((heldItem.type === 'acid' || heldItem.type === 'base') && !prevState.beaker) {
                 newState.beaker = { solutions: [{ chemical: heldItem, volume: 50 }], indicator: null };
                 addLog(`Added 50ml of ${heldItem.name} to the beaker.`);
                 success = true;
@@ -202,8 +206,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                  setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' }), 0);
             }
         }
-        else if (equipmentOnWorkbench.type === 'burette') {
-            if (heldItem.type === 'base' && !prevState.burette) {
+        else if (equipmentDefinition?.type === 'burette') {
+            if ((heldItem.type === 'base' || heldItem.type === 'acid') && !prevState.burette) {
                 newState.burette = { chemical: heldItem, volume: 50 };
                 addLog(`Filled the burette with 50ml of ${heldItem.name}.`);
                 success = true;
@@ -371,5 +375,7 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
 
     
