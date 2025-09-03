@@ -30,7 +30,7 @@ type ExperimentContextType = {
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
   handleAddEquipmentToInventory: (equipment: Equipment) => void;
-  handleRemoveEquipmentFromWorkbench: (equipmentId: string) => void;
+  handleRemoveSelectedEquipment: () => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
   handleSelectEquipment: (equipmentId: string | null) => void;
@@ -138,13 +138,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
      setTimeout(() => toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` }), 0);
   }, [inventoryEquipment, toast]);
   
-  const handleRemoveEquipmentFromWorkbench = useCallback((equipmentId: string) => {
+  const handleRemoveSelectedEquipment = useCallback(() => {
     setExperimentState(prevState => {
-      const equipmentToRemove = prevState.equipment.find(e => e.id === equipmentId);
-      if (equipmentToRemove) {
-        addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
-      }
-      const newEquipment = prevState.equipment.filter(e => e.id !== equipmentId);
+      const equipmentToRemove = prevState.equipment.find(e => e.isSelected);
+      if (!equipmentToRemove) return prevState;
+
+      addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
+      
+      const newEquipment = prevState.equipment.filter(e => e.id !== equipmentToRemove.id);
       let newBeaker = prevState.beaker;
       let newBurette = prevState.burette;
 
@@ -260,12 +261,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const sourceEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === sourceId);
     const targetEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === targetId);
 
-    if (!sourceEquipmentOnWorkbench || !targetEquipmentOnWorkbench) {
+    const sourceEquipmentDef = ALL_EQUIPMENT.find(e => e.id === sourceEquipmentOnWorkbench?.id.split('-')[0]);
+    const targetEquipmentDef = ALL_EQUIPMENT.find(e => e.id === targetEquipmentOnWorkbench?.id.split('-')[0]);
+
+    if (!sourceEquipmentDef || !targetEquipmentDef) {
       setTimeout(() => toast({ title: 'Invalid Action', description: 'Source or target equipment not found.', variant: 'destructive' }), 0);
       return;
     }
     
-    if (sourceEquipmentOnWorkbench.type !== 'burette' || targetEquipmentOnWorkbench.type !== 'beaker') {
+    if (sourceEquipmentDef.type !== 'burette' || targetEquipmentDef.type !== 'beaker') {
       setTimeout(() => toast({ title: 'Invalid Action', description: 'Can only pour from a burette into a beaker.', variant: 'destructive' }), 0);
       return;
     }
@@ -343,7 +347,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
-    handleRemoveEquipmentFromWorkbench,
+    handleRemoveSelectedEquipment,
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,
@@ -365,7 +369,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
-    handleRemoveEquipmentFromWorkbench,
+    handleRemoveSelectedEquipment,
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,

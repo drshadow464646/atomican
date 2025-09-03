@@ -122,7 +122,6 @@ const EquipmentDisplay = ({
 export function Workbench({ 
     state, 
     onTitrate,
-    onRemoveEquipment,
     onResizeEquipment,
     onMoveEquipment,
     onSelectEquipment,
@@ -132,7 +131,6 @@ export function Workbench({
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
-    onRemoveEquipment: (id: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
     onSelectEquipment: (id: string | null) => void;
@@ -275,25 +273,7 @@ export function Workbench({
             </div>
           
           <div className="w-full max-w-2xl mt-4">
-              {selectedEquipment ? (
-                <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
-                    <p className="text-base font-bold text-foreground">Editing: {selectedEquipment.name}</p>
-                    <div className="flex items-center gap-4 w-full">
-                        <ZoomIn className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                        <Slider
-                            value={[selectedEquipment.size ?? 1]}
-                            onValueChange={(value) => onResizeEquipment(selectedEquipment.id, value[0])}
-                            min={0.5}
-                            max={1.5}
-                            step={0.1}
-                        />
-                        <Button variant="destructive" size="sm" onClick={() => onRemoveEquipment(selectedEquipment.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Remove
-                        </Button>
-                    </div>
-                </div>
-              ) : hasBeaker && hasBurette && !heldItem ? (
+              {hasBeaker && hasBurette && !heldItem && !selectedEquipment ? (
                  <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">Titration Control</p>
                     <div className="flex items-center gap-4 w-full">

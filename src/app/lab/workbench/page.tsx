@@ -31,7 +31,7 @@ export default function WorkbenchPage() {
     handleDropOnApparatus,
     handleTitrate,
     handleAddCustomLog,
-    handleRemoveEquipmentFromWorkbench,
+    handleRemoveSelectedEquipment,
     handleResizeEquipment,
     handleMoveEquipment,
     handleSelectEquipment,
@@ -68,12 +68,15 @@ export default function WorkbenchPage() {
       if (e.key === 'Escape' && heldItem) {
         handleClearHeldItem();
       }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && experimentState.equipment.some(eq => eq.isSelected)) {
+        handleRemoveSelectedEquipment();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [heldItem, handleClearHeldItem]);
+  }, [heldItem, handleClearHeldItem, experimentState.equipment, handleRemoveSelectedEquipment]);
 
 
   return (
@@ -142,7 +145,6 @@ export default function WorkbenchPage() {
             <Workbench 
                 state={experimentState} 
                 onTitrate={handleTitrate}
-                onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
                 onResizeEquipment={handleResizeEquipment}
                 onMoveEquipment={handleMoveEquipment}
                 onSelectEquipment={handleSelectEquipment}
