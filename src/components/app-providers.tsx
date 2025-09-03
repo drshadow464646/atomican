@@ -7,14 +7,19 @@ import { ThemeProvider } from '@/components/theme-provider';
 
 function AppContent({ children }: { children: React.ReactNode }) {
     const { isSettingsLoaded } = useSettings();
+    const [isMounted, setIsMounted] = useState(false);
 
-    if (!isSettingsLoaded) {
-        return null; // or a loading spinner
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Render null on the server and during the initial client render
+    if (!isMounted || !isSettingsLoaded) {
+        return null;
     }
 
     return <>{children}</>;
 }
-
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     return (

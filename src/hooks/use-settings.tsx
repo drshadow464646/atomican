@@ -39,8 +39,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
     } catch (error) {
         console.error("Failed to parse settings from localStorage", error);
+    } finally {
+        setIsSettingsLoaded(true);
     }
-    setIsSettingsLoaded(true);
   }, []);
 
   useEffect(() => {

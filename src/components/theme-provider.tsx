@@ -12,7 +12,6 @@ function ThemeApplier() {
 
   React.useEffect(() => {
     if (isSettingsLoaded) {
-      // Apply theme settings to the body element
       setTheme(settings.appearanceMode);
       document.body.dataset.gradient = settings.baseGradient;
       document.body.dataset.motionLevel = settings.uiMotionLevel;
