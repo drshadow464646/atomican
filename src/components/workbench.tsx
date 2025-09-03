@@ -91,6 +91,7 @@ const EquipmentDisplay = ({
 
     return (
         <div 
+            id={item.id}
             className={cn(
                 "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-all duration-200 rounded-lg",
                 item.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
@@ -126,7 +127,7 @@ export function Workbench({
     heldItem,
 }: { 
     state: ExperimentState, 
-    onTitrate: (volume: number) => void;
+    onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
     onRemoveEquipment: (id: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
@@ -143,7 +144,7 @@ export function Workbench({
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
   const selectedEquipment = state.equipment.find(e => e.isSelected);
-
+  
   const handleMouseDown = (e: React.MouseEvent, id: string) => {
     if (heldItem) return; // Don't drag if holding a chemical
     const workbenchRect = workbenchRef.current?.getBoundingClientRect();
@@ -161,6 +162,22 @@ export function Workbench({
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!draggedItemRef.current || !workbenchRef.current) return;
+    
+    // Check for equipment under cursor during drag
+    const draggedItemId = draggedItemRef.current.id;
+    let targetId: string | null = null;
+    const allEquipment = Array.from(workbenchRef.current.querySelectorAll('[id^="beaker-"], [id^="burette-"]'));
+
+    for (const elem of allEquipment) {
+        if (elem.id !== draggedItemId) {
+            const rect = elem.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                targetId = elem.id;
+                break;
+            }
+        }
+    }
+    setHoveredEquipment(targetId);
 
     const workbenchRect = workbenchRef.current.getBoundingClientRect();
     const newX = e.clientX - workbenchRect.left - draggedItemRef.current.offset.x;
@@ -171,8 +188,12 @@ export function Workbench({
 
 
   const handleMouseUp = useCallback(() => {
+    if (draggedItemRef.current && hoveredEquipment) {
+      onTitrate(5, draggedItemRef.current.id, hoveredEquipment);
+    }
     draggedItemRef.current = null;
-  }, []);
+    setHoveredEquipment(null);
+  }, [hoveredEquipment, onTitrate]);
 
   const handleMouseLeave = useCallback(() => {
     draggedItemRef.current = null;
@@ -214,7 +235,8 @@ export function Workbench({
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
             <div 
               ref={workbenchRef}
-              className="relative w-full flex-1 rounded-2xl bg-gray-400/20 shadow-inner"
+              className="relative w-full flex-1 rounded-2xl shadow-inner"
+              style={{ background: 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), repeating-linear-gradient(0deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px)'}}
               onClick={(e) => {
                 if (e.target === workbenchRef.current) {
                   onSelectEquipment(null);
@@ -223,11 +245,12 @@ export function Workbench({
             >
               {state.equipment.length > 0 ? (
                   <>
+                    <div className="absolute inset-4 rounded-xl bg-background/70 shadow-xl backdrop-blur-sm border border-black/5"></div>
                       {state.equipment.map(item => (
                           <div
                             key={item.id}
-                            onMouseEnter={() => { if (heldItem) setHoveredEquipment(item.id)}}
-                            onMouseLeave={() => { if (heldItem) setHoveredEquipment(null)}}
+                            onMouseEnter={() => { if (heldItem || draggedItemRef.current) setHoveredEquipment(item.id)}}
+                            onMouseLeave={() => { if (heldItem || draggedItemRef.current) setHoveredEquipment(null)}}
                           >
                             <EquipmentDisplay 
                                 item={item} 
@@ -235,7 +258,7 @@ export function Workbench({
                                 onMouseDown={handleMouseDown}
                                 onSelect={onSelectEquipment}
                                 onDrop={onDropOnApparatus}
-                                isHoverTarget={!!heldItem && hoveredEquipment === item.id}
+                                isHoverTarget={(!!heldItem || !!draggedItemRef.current) && hoveredEquipment === item.id && draggedItemRef.current?.id !== item.id}
                             />
                           </div>
                       ))}

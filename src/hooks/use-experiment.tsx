@@ -36,7 +36,7 @@ type ExperimentContextType = {
   handleSelectEquipment: (equipmentId: string | null) => void;
   handleDropOnApparatus: (equipmentId: string) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
-  handleTitrate: (volume: number) => void;
+  handleTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
   handleAddCustomLog: (note: string) => void;
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
@@ -245,8 +245,16 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setTimeout(() => toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` }), 0);
   }, [inventoryChemicals, toast]);
   
-  const handleTitrate = useCallback((volume: number) => {
+  const handlePour = useCallback((volume: number, sourceId?: string, targetId?: string) => {
     if (!handleSafetyCheck()) return;
+
+    const source = sourceId ? ALL_EQUIPMENT.find(e => e.id === sourceId) : state.equipment.find(e => e.type === 'burette');
+    const target = targetId ? ALL_EQUIPMENT.find(e => e.id === targetId) : state.equipment.find(e => e.type === 'beaker');
+
+    if (source?.type !== 'burette' || target?.type !== 'beaker') {
+      setTimeout(() => toast({ title: 'Invalid Action', description: 'Can only pour from a burette into a beaker.', variant: 'destructive' }), 0);
+      return;
+    }
 
     if (!experimentState.beaker || !experimentState.burette) {
         setTimeout(() => toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' }), 0);
@@ -255,19 +263,24 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + volume));
 
-    if (newVolumeAdded === experimentState.volumeAdded && volume !== 0) {
-        setTimeout(() => toast({ title: 'Notice', description: volume > 0 ? 'Burette is empty.' : 'Cannot remove solution.' }), 0);
+    if (newVolumeAdded === experimentState.volumeAdded && volume > 0) {
+        setTimeout(() => toast({ title: 'Notice', description: 'Burette is empty.' }), 0);
         return;
     }
 
     setExperimentState(prevState => {
-        if (volume !== 0) {
+        if (volume > 0) {
             addLog(`Added ${volume.toFixed(1)}ml of ${prevState.burette!.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
         }
         const newState = { ...prevState, volumeAdded: newVolumeAdded };
         return updatePhAndColor(newState);
     });
   }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
+  
+  const handleTitrate = useCallback((volume: number, sourceId?: string, targetId?: string) => {
+    handlePour(volume, sourceId, targetId);
+  }, [handlePour]);
+
 
   const handleAddCustomLog = useCallback((note: string) => {
     if(note.trim()) {
