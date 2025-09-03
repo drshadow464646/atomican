@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
 import type { ExperimentState, LabLog, Chemical, Equipment } from '@/lib/experiment';
 import { calculatePH, INITIAL_CHEMICALS } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
+import { getInitialInventoryEquipment } from '@/lib/apparatus-catalog';
 
 let logIdCounter = 0;
 const getUniqueLogId = () => {
@@ -29,7 +30,7 @@ type ExperimentContextType = {
   heldItem: Chemical | null;
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Equipment) => void;
-  handleAddEquipmentToInventory: (equipment: Equipment) => void;
+  handleAddEquipmentToInventory: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size'>) => void;
   handleRemoveSelectedEquipment: (id: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
@@ -53,7 +54,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const { toast } = useToast();
 
   const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>(INITIAL_CHEMICALS);
-  const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>([]);
+  const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>(getInitialInventoryEquipment());
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
@@ -128,12 +129,18 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     });
   }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
 
-  const handleAddEquipmentToInventory = useCallback((equipment: Equipment) => {
+  const handleAddEquipmentToInventory = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size'>) => {
     if (inventoryEquipment.find((e) => e.id === equipment.id)) {
        setTimeout(() => toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` }), 0);
       return;
     }
-    setInventoryEquipment(prev => [...prev, equipment]);
+    const newInventoryItem: Equipment = {
+        ...equipment,
+        position: { x: 0, y: 0 },
+        size: 1,
+        isSelected: false,
+    };
+    setInventoryEquipment(prev => [...prev, newInventoryItem]);
      setTimeout(() => toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` }), 0);
   }, [inventoryEquipment, toast]);
   

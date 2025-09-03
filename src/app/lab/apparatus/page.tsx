@@ -9,10 +9,8 @@ import { useExperiment } from '@/hooks/use-experiment';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDebouncedCallback } from 'use-debounce';
-import { searchApparatus, type ApparatusSearchOutput } from '@/ai/flows/apparatus-search';
-import { useToast } from '@/hooks/use-toast';
 import type { Equipment } from '@/lib/experiment';
-
+import { ALL_APPARATUS, COMMON_APPARATUS_IDS } from '@/lib/apparatus-catalog';
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
   'beaker': <Beaker className="h-10 w-10 text-primary" />,
@@ -42,51 +40,40 @@ function getIconForEquipment(item: Equipment) {
 
 export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(true);
-  const [results, setResults] = useState<ApparatusSearchOutput | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [results, setResults] = useState<Equipment[]>([]);
   const { handleAddEquipmentToInventory } = useExperiment();
-  const { toast } = useToast();
 
-  const performSearch = async (query: string) => {
+  const filterApparatus = (query: string) => {
     setIsSearching(true);
-    try {
-      const searchResults = await searchApparatus(query);
-      setResults(searchResults);
-    } catch (error) {
-      console.error("Apparatus search failed:", error);
-      toast({
-        title: 'Search Failed',
-        description: 'Could not retrieve equipment results at this time.',
-        variant: 'destructive',
-      });
-      setResults(null);
-    } finally {
-      setIsSearching(false);
+    if (!query) {
+      setResults(ALL_APPARATUS.filter(item => COMMON_APPARATUS_IDS.includes(item.id)) as Equipment[]);
+    } else {
+      const lowerCaseQuery = query.toLowerCase();
+      const filtered = ALL_APPARATUS.filter(item => 
+        item.name.toLowerCase().includes(lowerCaseQuery) ||
+        item.description.toLowerCase().includes(lowerCaseQuery) ||
+        item.type.toLowerCase().includes(lowerCaseQuery)
+      );
+      setResults(filtered as Equipment[]);
     }
-  }
+    setIsSearching(false);
+  };
 
-  // Fetch common items on initial load
   useEffect(() => {
-    performSearch('common lab equipment');
+    // Show common items on initial load
+    filterApparatus('');
   }, []);
 
-
-  const debouncedSearch = useDebouncedCallback(async (query: string) => {
-    if (!query || query.length < 3) {
-      // If search is cleared, show common items again
-      performSearch('common lab equipment');
-      return;
-    }
-    performSearch(query);
-  }, 500);
+  const debouncedSearch = useDebouncedCallback((query: string) => {
+    filterApparatus(query);
+  }, 300);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchTerm(query);
     debouncedSearch(query);
   };
-  
-  const equipmentToDisplay = results ? results.equipment : [];
 
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
@@ -104,51 +91,46 @@ export default function ApparatusPage() {
             <Input
               type="search"
               placeholder="Search for equipment (e.g., 'beaker', 'heating')"
-              className="w-full pl-10 pr-10"
+              className="w-full pl-10"
               value={searchTerm}
               onChange={handleSearchChange}
             />
-             {isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="h-5 w-5">
-                    <Loader2 className="h-full w-full animate-spin" />
-                </div>
-              </div>
-            )}
           </div>
         </div>
         
-        {isSearching && equipmentToDisplay.length === 0 && (
+        {isSearching && (
           <div className="text-center col-span-full py-16">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground mt-4">Fetching equipment...</p>
+              <p className="text-muted-foreground mt-4">Searching...</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {equipmentToDisplay.map(item => (
-            <Card key={item.id} className="flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
-              <CardHeader className="items-center text-center">
-                <div className="p-4 bg-primary/10 rounded-full mb-2">
-                    {getIconForEquipment(item as Equipment)}
-                </div>
-                <CardTitle className="text-xl">{item.name}</CardTitle>
-                <CardDescription>
-                  <Badge variant="secondary">{item.id}</Badge>
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                 <Button className="w-full" onClick={() => handleAddEquipmentToInventory(item as Equipment)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        {!isSearching && results.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {results.map(item => (
+              <Card key={item.id} className="flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+                <CardHeader className="items-center text-center">
+                  <div className="p-4 bg-primary/10 rounded-full mb-2">
+                      {getIconForEquipment(item)}
+                  </div>
+                  <CardTitle className="text-xl">{item.name}</CardTitle>
+                  <CardDescription>
+                    <Badge variant="secondary">{item.type}</Badge>
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button className="w-full" onClick={() => handleAddEquipmentToInventory(item)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
         
-        {!isSearching && equipmentToDisplay.length === 0 && (
-            <div className="text-center col-span-full py-16">
+        {!isSearching && results.length === 0 && (
+            <div className="w-full text-center col-span-full py-16">
                 <p className="text-muted-foreground">No equipment found matching your search.</p>
             </div>
         )}
