@@ -85,7 +85,12 @@ export default function WorkbenchPage() {
         direction={"vertical"} 
         className="flex-1"
       >
-        <ResizablePanel defaultSize={35} minSize={20}>
+        <ResizablePanel 
+            defaultSize={35} 
+            minSize={20}
+            collapsible={true}
+            collapsedSize={0}
+        >
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel
                   collapsible
