@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Inter } from "next/font/google"
 import { cn } from '@/lib/utils';
 import { AppProviders } from '@/components/app-providers';
+import { ThemeApplier } from '@/components/theme-applier';
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -28,6 +29,7 @@ export default function RootLayout({
           fontSans.variable
         )}>
         <AppProviders>
+            <ThemeApplier />
             {children}
             <Toaster />
         </AppProviders>
