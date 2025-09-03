@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2 } from 'lucide-react';
 import { useExperiment } from '@/hooks/use-experiment';
@@ -97,8 +97,8 @@ export default function ApparatusPage() {
         </header>
 
         <div className="mb-8 max-w-lg mx-auto">
-          <div className="relative flex items-center">
-            <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search for equipment (e.g., 'beaker', 'heating')"
@@ -107,10 +107,8 @@ export default function ApparatusPage() {
               onChange={handleSearchChange}
             />
             {isSearching && (
-              <div className="absolute right-3">
-                 <div className="h-5 w-5">
-                    <Loader2 className="h-full w-full animate-spin" />
-                 </div>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-5 w-5 animate-spin" />
               </div>
             )}
           </div>
