@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useCallback, useTransition, useEffect } from 'react';
-import { LabHeader } from '@/components/lab-header';
 import { InventoryPanel } from '@/components/inventory-panel';
 import { Workbench } from '@/components/workbench';
 import { GuidancePanel } from '@/components/guidance-panel';
@@ -28,13 +27,10 @@ export default function WorkbenchPage() {
     labLogs,
     inventoryChemicals,
     inventoryEquipment,
-    safetyGogglesOn, 
-    setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleDropOnApparatus,
     handleTitrate,
     handleAddCustomLog,
-    handleResetExperiment,
     handleRemoveEquipmentFromWorkbench,
     handleResizeEquipment,
     handleMoveEquipment,
@@ -82,14 +78,9 @@ export default function WorkbenchPage() {
 
   return (
     <div className={cn(
-      "flex flex-col h-screen bg-transparent text-foreground",
+      "flex flex-col h-full bg-transparent text-foreground",
        heldItem && "cursor-copy"
     )}>
-      <LabHeader 
-        safetyGogglesOn={safetyGogglesOn} 
-        onGoggleToggle={setSafetyGogglesOn}
-        onResetExperiment={handleResetExperiment}
-      />
       <ResizablePanelGroup 
         direction={"vertical"} 
         className="flex-1"
@@ -159,5 +150,3 @@ export default function WorkbenchPage() {
     </div>
   );
 }
-
-

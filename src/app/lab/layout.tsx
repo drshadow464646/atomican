@@ -1,28 +1,41 @@
 
 'use client';
 
-import { LabSidebar } from '@/components/lab-sidebar';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { LabHeader } from '@/components/lab-header';
 import { SettingsForm } from '@/components/settings-form';
-import { ExperimentProvider } from '@/hooks/use-experiment';
+import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const { safetyGogglesOn, setSafetyGogglesOn, handleResetExperiment } = useExperiment();
+
+  return (
+    <div className="flex flex-col h-screen">
+      <LabHeader
+        safetyGogglesOn={safetyGogglesOn}
+        onGoggleToggle={setSafetyGogglesOn}
+        onResetExperiment={handleResetExperiment}
+      />
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
+      <div className="hidden">
+        <SettingsForm />
+      </div>
+    </div>
+  );
+}
+
 
 export default function LabLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <ExperimentProvider>
-      <SidebarProvider>
-        <LabSidebar />
-        <SidebarInset>
-          {children}
-        </SidebarInset>
-        <div className="hidden">
-          <SettingsForm />
-        </div>
-      </SidebarProvider>
+      <LayoutContent>
+        {children}
+      </LayoutContent>
     </ExperimentProvider>
   );
 }
