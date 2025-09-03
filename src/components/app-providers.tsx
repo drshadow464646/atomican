@@ -2,20 +2,21 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { SettingsProvider } from '@/hooks/use-settings';
+import { SettingsProvider, useSettings } from '@/hooks/use-settings';
 import { ThemeProvider } from '@/components/theme-provider';
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
-    const [isMounted, setIsMounted] = useState(false);
+function AppContent({ children }: { children: React.ReactNode }) {
+    const { isSettingsLoaded } = useSettings();
 
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    if (!isMounted) {
-        return null;
+    if (!isSettingsLoaded) {
+        return null; // or a loading spinner
     }
 
+    return <>{children}</>;
+}
+
+
+export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
         <SettingsProvider>
           <ThemeProvider
@@ -24,7 +25,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
               enableSystem
               disableTransitionOnChange
           >
-            {children}
+            <AppContent>{children}</AppContent>
           </ThemeProvider>
         </SettingsProvider>
     );
