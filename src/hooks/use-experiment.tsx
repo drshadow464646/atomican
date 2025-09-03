@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ExperimentState, LabLog, Chemical, Equipment } from '@/lib/experiment';
-import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT } from '@/lib/experiment';
+import { calculatePH, INITIAL_CHEMICALS, ALL_EQUIPMENT } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 
 let logIdCounter = 0;
@@ -53,7 +53,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const { toast } = useToast();
 
   const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>(INITIAL_CHEMICALS);
-  const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>(INITIAL_EQUIPMENT);
+  const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>(ALL_EQUIPMENT);
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
@@ -351,5 +351,7 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
 
     
