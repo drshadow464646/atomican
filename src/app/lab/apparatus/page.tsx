@@ -108,7 +108,9 @@ export default function ApparatusPage() {
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-5 w-5 animate-spin" />
+                 <div className="h-5 w-5">
+                    <Loader2 className="h-full w-full animate-spin" />
+                 </div>
               </div>
             )}
           </div>
