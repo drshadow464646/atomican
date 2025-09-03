@@ -178,7 +178,6 @@ export function Workbench({
     onMoveEquipment,
     onSelectEquipment,
     onDropOnApparatus,
-    onPour,
     heldItem,
     onRemoveSelectedEquipment
 }: { 
@@ -188,7 +187,6 @@ export function Workbench({
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
     onSelectEquipment: (id: string | null) => void;
     onDropOnApparatus: (equipmentId: string) => void;
-    onPour: (sourceId: string, targetId: string) => void;
     heldItem: Chemical | null;
     onRemoveSelectedEquipment: (id: string) => void;
 }) {
@@ -219,37 +217,37 @@ export function Workbench({
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!draggedItemRef.current || !workbenchRef.current) return;
     
-    const draggedItemId = draggedItemRef.current.id;
-    let targetId: string | null = null;
-    
-    const equipmentElements = Array.from(workbenchRef.current.children).filter(
-      (child) => child.id && child.id !== draggedItemId && child.id !== 'lab-slab'
-    );
+    // Only detect hover targets if holding a chemical
+    if (heldItem) {
+        const draggedItemId = draggedItemRef.current.id;
+        let targetId: string | null = null;
+        const equipmentElements = Array.from(workbenchRef.current.children).filter(
+          (child) => child.id && child.id !== draggedItemId && child.id !== 'lab-slab'
+        );
 
-    for (const elem of equipmentElements) {
-        const rect = elem.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-            targetId = elem.id;
-            break;
+        for (const elem of equipmentElements) {
+            const rect = elem.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                targetId = elem.id;
+                break;
+            }
         }
+        setHoveredEquipment(targetId);
     }
-    setHoveredEquipment(targetId);
+    
 
     const workbenchRect = workbenchRef.current.getBoundingClientRect();
     const newX = e.clientX - workbenchRect.left - draggedItemRef.current.offset.x;
     const newY = e.clientY - workbenchRect.top - draggedItemRef.current.offset.y;
 
     onMoveEquipment(draggedItemRef.current.id, { x: newX, y: newY });
-  }, [onMoveEquipment]);
+  }, [onMoveEquipment, heldItem]);
 
 
   const handleMouseUp = useCallback(() => {
-    if (draggedItemRef.current && hoveredEquipment) {
-      onPour(draggedItemRef.current.id, hoveredEquipment);
-    }
     draggedItemRef.current = null;
     setHoveredEquipment(null);
-  }, [hoveredEquipment, onPour]);
+  }, []);
 
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
@@ -305,8 +303,8 @@ export function Workbench({
                       {state.equipment.map(item => (
                           <div
                             key={item.id}
-                            onMouseEnter={() => { if (heldItem || draggedItemRef.current) setHoveredEquipment(item.id)}}
-                            onMouseLeave={() => { if (heldItem || draggedItemRef.current) setHoveredEquipment(null)}}
+                            onMouseEnter={() => { if (heldItem) setHoveredEquipment(item.id)}}
+                            onMouseLeave={() => { if (heldItem) setHoveredEquipment(null)}}
                           >
                             <EquipmentDisplay 
                                 item={item} 
@@ -316,7 +314,7 @@ export function Workbench({
                                 onDrop={onDropOnApparatus}
                                 onRemove={onRemoveSelectedEquipment}
                                 onResize={onResizeEquipment}
-                                isHoverTarget={(!!heldItem || !!draggedItemRef.current) && hoveredEquipment === item.id && draggedItemRef.current?.id !== item.id}
+                                isHoverTarget={(!!heldItem) && hoveredEquipment === item.id}
                             />
                           </div>
                       ))}

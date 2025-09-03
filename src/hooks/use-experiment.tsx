@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ExperimentState, LabLog, Chemical, Equipment } from '@/lib/experiment';
-import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT, ALL_EQUIPMENT } from '@/lib/experiment';
+import { calculatePH, INITIAL_CHEMICALS, INITIAL_EQUIPMENT } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 
 let logIdCounter = 0;
@@ -37,7 +37,6 @@ type ExperimentContextType = {
   handleDropOnApparatus: (equipmentId: string) => void;
   handleAddChemicalToInventory: (chemical: Chemical) => void;
   handleTitrate: (volume: number) => void;
-  handlePourBetweenEquipment: (sourceId: string, targetId: string) => void;
   handleAddCustomLog: (note: string) => void;
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
@@ -255,49 +254,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setTimeout(() => toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` }), 0);
   }, [inventoryChemicals, toast]);
   
-  const handlePourBetweenEquipment = useCallback((sourceId: string, targetId: string) => {
-    if (!handleSafetyCheck()) return;
-
-    const sourceEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === sourceId);
-    const targetEquipmentOnWorkbench = experimentState.equipment.find(e => e.id === targetId);
-
-    const sourceEquipmentDef = ALL_EQUIPMENT.find(e => e.type === sourceEquipmentOnWorkbench?.type);
-    const targetEquipmentDef = ALL_EQUIPMENT.find(e => e.type === targetEquipmentOnWorkbench?.type);
-
-    if (!sourceEquipmentDef || !targetEquipmentDef) {
-      setTimeout(() => toast({ title: 'Invalid Action', description: 'Source or target equipment not found.', variant: 'destructive' }), 0);
-      return;
-    }
-    
-    if (sourceEquipmentDef.type !== 'burette' || targetEquipmentDef.type !== 'beaker') {
-      setTimeout(() => toast({ title: 'Invalid Action', description: 'Can only pour from a burette into a beaker.', variant: 'destructive' }), 0);
-      return;
-    }
-
-    if (!experimentState.beaker || !experimentState.burette) {
-      setTimeout(() => toast({ title: 'Error', description: 'Ensure both beaker and burette are set up with solutions.', variant: 'destructive' }), 0);
-      return;
-    }
-    
-    // Pour a small, fixed amount for the drag-and-drop action
-    const pourVolume = 5;
-
-    const newVolumeAdded = Math.max(0, Math.min(experimentState.burette.volume, experimentState.volumeAdded + pourVolume));
-    const actualVolumePoured = newVolumeAdded - experimentState.volumeAdded;
-
-    if (actualVolumePoured <= 0) {
-        setTimeout(() => toast({ title: 'Notice', description: 'Burette is empty.' }), 0);
-        return;
-    }
-
-    setExperimentState(prevState => {
-        if (!prevState.burette) return prevState;
-        addLog(`Added ${actualVolumePoured.toFixed(1)}ml of ${prevState.burette.chemical.name}. Total added: ${newVolumeAdded.toFixed(1)}ml.`);
-        const newState = { ...prevState, volumeAdded: newVolumeAdded };
-        return updatePhAndColor(newState);
-    });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, experimentState]);
-  
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
     
@@ -354,7 +310,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDropOnApparatus,
     handleAddChemicalToInventory,
     handleTitrate,
-    handlePourBetweenEquipment,
     handleAddCustomLog,
     handleResetExperiment,
     handlePickUpChemical,
@@ -376,7 +331,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDropOnApparatus,
     handleAddChemicalToInventory,
     handleTitrate,
-    handlePourBetweenEquipment,
     handleAddCustomLog,
     handleResetExperiment,
     handlePickUpChemical,
