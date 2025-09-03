@@ -106,7 +106,10 @@ const EquipmentDisplay = ({
               onSelect(item.id);
               onMouseDown(e, item.id);
             }}
-            onClick={() => onDrop(item.id)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent workbench click
+              onDrop(item.id);
+            }}
         >
             <div className="flex-1 flex flex-col items-center justify-center pointer-events-none">
                 {renderContent()}
@@ -166,15 +169,16 @@ export function Workbench({
     // Check for equipment under cursor during drag
     const draggedItemId = draggedItemRef.current.id;
     let targetId: string | null = null;
-    const allEquipment = Array.from(workbenchRef.current.querySelectorAll('[id^="beaker-"], [id^="burette-"]'));
+    
+    const equipmentElements = Array.from(workbenchRef.current.children).filter(
+      (child) => child.id && child.id !== draggedItemId
+    );
 
-    for (const elem of allEquipment) {
-        if (elem.id !== draggedItemId) {
-            const rect = elem.getBoundingClientRect();
-            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                targetId = elem.id;
-                break;
-            }
+    for (const elem of equipmentElements) {
+        const rect = elem.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            targetId = elem.id;
+            break;
         }
     }
     setHoveredEquipment(targetId);
@@ -195,22 +199,19 @@ export function Workbench({
     setHoveredEquipment(null);
   }, [hoveredEquipment, onTitrate]);
 
-  const handleMouseLeave = useCallback(() => {
-    draggedItemRef.current = null;
-  }, []);
-
   // Attach and clean up global event listeners
   useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mouseleave', handleMouseLeave);
+    const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
+    const handleGlobalMouseUp = () => handleMouseUp();
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [handleMouseMove, handleMouseUp, handleMouseLeave]);
+  }, [handleMouseMove, handleMouseUp]);
 
   return (
     <div className="h-full flex flex-col">
@@ -236,7 +237,7 @@ export function Workbench({
             <div 
               ref={workbenchRef}
               className="relative w-full flex-1 rounded-2xl shadow-inner"
-              style={{ background: 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), repeating-linear-gradient(0deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px)'}}
+              style={{ background: 'repeating-linear-gradient(0deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px)'}}
               onClick={(e) => {
                 if (e.target === workbenchRef.current) {
                   onSelectEquipment(null);
