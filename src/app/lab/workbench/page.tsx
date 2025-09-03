@@ -91,71 +91,72 @@ export default function WorkbenchPage() {
         onResetExperiment={handleResetExperiment}
       />
       <ResizablePanelGroup 
-        direction={isMobile ? "vertical" : "horizontal"} 
+        direction={"vertical"} 
         className="flex-1"
       >
-        <ResizablePanel
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => setIsInventoryPanelVisible(false)}
-          onExpand={() => setIsInventoryPanelVisible(true)}
-          className={cn(
-            'transition-all duration-300 ease-in-out',
-            !isInventoryPanelVisible && 'w-0 min-w-0'
-          )}
-          defaultSize={isMobile ? 30 : 20}
-          minSize={15}
-          maxSize={isMobile ? 40 : 25}
-        >
-          <InventoryPanel
-            equipment={inventoryEquipment}
-            chemicals={inventoryChemicals}
-            onAddEquipment={handleAddEquipmentToWorkbench}
-            onPickUpChemical={handlePickUpChemical}
-            isCollapsed={!isInventoryPanelVisible}
-            heldItem={heldItem}
-          />
+        <ResizablePanel defaultSize={65} minSize={30}>
+            <Workbench 
+                state={experimentState} 
+                onTitrate={handleTitrate}
+                onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
+                onResizeEquipment={handleResizeEquipment}
+                onMoveEquipment={handleMoveEquipment}
+                onSelectEquipment={handleSelectEquipment}
+                onDropOnApparatus={handleDropOnApparatus}
+                onPour={handlePourBetweenEquipment}
+                heldItem={heldItem}
+            />
         </ResizablePanel>
-        <ResizableHandle withHandle className={cn(!isInventoryPanelVisible && 'hidden')}/>
-        
-        <ResizablePanel defaultSize={isMobile ? 40 : 55} minSize={30}>
-          <Workbench 
-            state={experimentState} 
-            onTitrate={handleTitrate}
-            onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
-            onResizeEquipment={handleResizeEquipment}
-            onMoveEquipment={handleMoveEquipment}
-            onSelectEquipment={handleSelectEquipment}
-            onDropOnApparatus={handleDropOnApparatus}
-            onPour={handlePourBetweenEquipment}
-            heldItem={heldItem}
-          />
-        </ResizablePanel>
-
-        <ResizableHandle withHandle className={cn(!isGuidancePanelVisible && 'hidden')} />
-        <ResizablePanel
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => setIsGuidancePanelVisible(false)}
-          onExpand={() => setIsGuidancePanelVisible(true)}
-          className={cn(
-            'transition-all duration-300 ease-in-out',
-            !isGuidancePanelVisible && 'w-0 min-w-0'
-          )}
-           defaultSize={isMobile ? 30 : 25}
-           minSize={15}
-           maxSize={isMobile ? 50 : 30}
-        >
-          <GuidancePanel
-            logs={labLogs}
-            onGetSuggestion={handleGetSuggestion}
-            suggestion={aiSuggestion}
-            isSuggestionLoading={isSuggestionLoading}
-            isCollapsed={!isGuidancePanelVisible}
-            onAddCustomLog={handleAddCustomLog}
-          />
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={35} minSize={20}>
+            <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel
+                  collapsible
+                  collapsedSize={0}
+                  onCollapse={() => setIsInventoryPanelVisible(false)}
+                  onExpand={() => setIsInventoryPanelVisible(true)}
+                  className={cn(
+                    'transition-all duration-300 ease-in-out',
+                    !isInventoryPanelVisible && 'w-0 min-w-0'
+                  )}
+                  defaultSize={50}
+                  minSize={30}
+                >
+                  <InventoryPanel
+                    equipment={inventoryEquipment}
+                    chemicals={inventoryChemicals}
+                    onAddEquipment={handleAddEquipmentToWorkbench}
+                    onPickUpChemical={handlePickUpChemical}
+                    isCollapsed={!isInventoryPanelVisible}
+                    heldItem={heldItem}
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle className={cn(!isInventoryPanelVisible && 'hidden')}/>
+                <ResizablePanel
+                  collapsible
+                  collapsedSize={0}
+                  onCollapse={() => setIsGuidancePanelVisible(false)}
+                  onExpand={() => setIsGuidancePanelVisible(true)}
+                  className={cn(
+                    'transition-all duration-300 ease-in-out',
+                    !isGuidancePanelVisible && 'w-0 min-w-0'
+                  )}
+                   defaultSize={50}
+                   minSize={30}
+                >
+                  <GuidancePanel
+                    logs={labLogs}
+                    onGetSuggestion={handleGetSuggestion}
+                    suggestion={aiSuggestion}
+                    isSuggestionLoading={isSuggestionLoading}
+                    isCollapsed={!isGuidancePanelVisible}
+                    onAddCustomLog={handleAddCustomLog}
+                  />
+                </ResizablePanel>
+            </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
   );
 }
+
