@@ -106,9 +106,11 @@ export default function ApparatusPage() {
               value={searchTerm}
               onChange={handleSearchChange}
             />
-            {isSearching && (
-              <div className="absolute right-3">
-                <Loader2 className="h-5 w-5 animate-spin" />
+             {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="h-5 w-5">
+                    <Loader2 className="h-full w-full animate-spin" />
+                </div>
               </div>
             )}
           </div>

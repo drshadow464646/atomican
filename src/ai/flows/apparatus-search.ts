@@ -36,6 +36,7 @@ const prompt = ai.definePrompt({
   A user will provide a search query. Your task is to find matching laboratory apparatus from the comprehensive catalog listed below.
   
   **IMPORTANT RULE:** You MUST ONLY return equipment that is a direct match for the user's search query. If the query is "magnetic stirrer", you MUST return "Magnetic stirrer". If no items match, return an empty list. Do NOT return random or unrelated items.
+  If the user asks for "common lab equipment", provide a list of 8-12 essential items like beakers, flasks, and cylinders.
 
   **User Search Query:** {{input}}
 
