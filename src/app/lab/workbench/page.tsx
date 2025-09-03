@@ -94,20 +94,6 @@ export default function WorkbenchPage() {
         direction={"vertical"} 
         className="flex-1"
       >
-        <ResizablePanel defaultSize={65} minSize={30}>
-            <Workbench 
-                state={experimentState} 
-                onTitrate={handleTitrate}
-                onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
-                onResizeEquipment={handleResizeEquipment}
-                onMoveEquipment={handleMoveEquipment}
-                onSelectEquipment={handleSelectEquipment}
-                onDropOnApparatus={handleDropOnApparatus}
-                onPour={handlePourBetweenEquipment}
-                heldItem={heldItem}
-            />
-        </ResizablePanel>
-        <ResizableHandle withHandle />
         <ResizablePanel defaultSize={35} minSize={20}>
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel
@@ -155,8 +141,23 @@ export default function WorkbenchPage() {
                 </ResizablePanel>
             </ResizablePanelGroup>
         </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={65} minSize={30}>
+            <Workbench 
+                state={experimentState} 
+                onTitrate={handleTitrate}
+                onRemoveEquipment={handleRemoveEquipmentFromWorkbench}
+                onResizeEquipment={handleResizeEquipment}
+                onMoveEquipment={handleMoveEquipment}
+                onSelectEquipment={handleSelectEquipment}
+                onDropOnApparatus={handleDropOnApparatus}
+                onPour={handlePourBetweenEquipment}
+                heldItem={heldItem}
+            />
+        </ResizablePanel>
       </ResizablePanelGroup>
     </div>
   );
 }
+
 
