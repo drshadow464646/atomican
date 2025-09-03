@@ -168,12 +168,11 @@ export function Workbench({
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!draggedItemRef.current || !workbenchRef.current) return;
     
-    // Check for equipment under cursor during drag
     const draggedItemId = draggedItemRef.current.id;
     let targetId: string | null = null;
     
     const equipmentElements = Array.from(workbenchRef.current.children).filter(
-      (child) => child.id && child.id !== draggedItemId
+      (child) => child.id && child.id !== draggedItemId && child.id !== 'lab-slab'
     );
 
     for (const elem of equipmentElements) {
@@ -201,7 +200,6 @@ export function Workbench({
     setHoveredEquipment(null);
   }, [hoveredEquipment, onPour]);
 
-  // Attach and clean up global event listeners
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
     const handleGlobalMouseUp = () => handleMouseUp();
@@ -218,10 +216,7 @@ export function Workbench({
   return (
     <div className="h-full flex flex-col">
       <Card 
-        className="h-full rounded-none flex flex-col text-card-foreground bg-card/50"
-        style={{
-          backgroundColor: 'hsl(var(--muted))',
-        }}
+        className="h-full rounded-none flex flex-col text-card-foreground bg-card/50 border-0"
       >
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-foreground'>
@@ -235,20 +230,27 @@ export function Workbench({
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground">
+        <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground bg-muted">
             <div 
               ref={workbenchRef}
-              className="relative w-full flex-1 rounded-2xl shadow-inner"
-              style={{ background: 'repeating-linear-gradient(0deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, hsl(var(--border)) 0, hsl(var(--border)) 1px, transparent 1px, transparent 40px)'}}
+              className="relative w-full flex-1"
               onClick={(e) => {
                 if (e.target === workbenchRef.current) {
                   onSelectEquipment(null);
                 }
               }}
             >
+              <div 
+                id="lab-slab" 
+                className="absolute inset-4 rounded-xl bg-background/70 shadow-2xl backdrop-blur-sm border border-black/10"
+                style={{
+                  backgroundSize: '40px 40px',
+                  backgroundImage: 'repeating-linear-gradient(0deg, hsl(var(--border) / 0.5) 0, hsl(var(--border) / 0.5) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, hsl(var(--border) / 0.5) 0, hsl(var(--border) / 0.5) 1px, transparent 1px, transparent 40px)',
+                  boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3), inset 0 0 10px rgba(255,255,255,0.05)'
+                }}
+              ></div>
               {state.equipment.length > 0 ? (
                   <>
-                    <div className="absolute inset-4 rounded-xl bg-background/70 shadow-xl backdrop-blur-sm border border-black/5"></div>
                       {state.equipment.map(item => (
                           <div
                             key={item.id}
