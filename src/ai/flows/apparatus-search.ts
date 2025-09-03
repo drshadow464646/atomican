@@ -40,6 +40,18 @@ const prompt = ai.definePrompt({
   **User Search Query:** {{input}}
 
   Filter your results based on this query. For each piece of equipment, provide a unique ID, its common name, its general type, its volume/capacity if applicable, and a brief description of its use.
+  
+  Your internal catalog is comprehensive and includes, but is not limited to:
+  - Glassware: Beakers (various sizes), Erlenmeyer flasks, Volumetric flasks, Graduated cylinders, Test tubes, Burettes, Pipettes (volumetric, Mohr), Funnels (Büchner, thistle tube, separatory), Petri dishes, Watch glasses, Retorts.
+  - Heating: Bunsen burners, Hot plates, Heating mantles, Crucibles, Wire gauze.
+  - Measurement: pH meters, Balances (analytical, top-loading), Thermometers, Spectrophotometers, Calorimeters.
+  - Support & Holding: Ring stands, Utility clamps, Buret clamps, Test tube racks, Tongs (beaker, crucible).
+  - Distillation: Condensers (Liebig, Graham, Allihn), Distillation flasks, Receiving flasks.
+  - Microscopy: Compound microscopes, Dissecting microscopes, Slides, Cover slips.
+  - Other: Mortar and pestle, Spatulas, Stirring rods, Wash bottles, Gas syringes.
+
+  For a query like "heating", you should return items like "Bunsen burner", "Hot plate", etc.
+  For a query like "thistle tube", you should return "Thistle Tube".
   `,
 });
 
