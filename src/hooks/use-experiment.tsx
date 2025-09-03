@@ -121,8 +121,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       const newEquipment: Equipment = { 
         ...equipment, 
         id: `${equipment.type}-${Date.now()}`, // Make ID unique but keep type prefix
-        size: 1, // Default size
-        position: { x: Math.random() * 200 + 50, y: Math.random() * 100 + 20 }, // Random position
+        size: 0.8, // Start with a smaller size
+        position: { x: 250 + (Math.random() * 50 - 25), y: 100 + (Math.random() * 50 - 25) }, // Center on slab with slight randomness
         isSelected: false,
       }; 
       return { ...prevState, equipment: [...prevState.equipment, newEquipment] };
