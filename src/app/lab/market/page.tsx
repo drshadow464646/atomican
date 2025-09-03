@@ -95,6 +95,12 @@ export default function MarketPage() {
           </div>
         )}
 
+        {!isSearching && chemicalsToDisplay.length === 0 && (
+          <div className="text-center col-span-full py-16">
+              <p className="text-muted-foreground">No chemicals found matching your search.</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {chemicalsToDisplay.map(chem => (
             <Card key={chem.id} className="flex flex-col">
@@ -124,11 +130,6 @@ export default function MarketPage() {
             </Card>
           ))}
         </div>
-         {!isSearching && chemicalsToDisplay.length === 0 && (
-            <div className="text-center col-span-full py-16">
-                <p className="text-muted-foreground">No chemicals found matching your search.</p>
-            </div>
-        )}
       </div>
     </div>
   );

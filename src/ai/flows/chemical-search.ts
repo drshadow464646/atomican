@@ -33,15 +33,20 @@ const prompt = ai.definePrompt({
   input: { schema: z.string() },
   output: { schema: ChemicalSearchOutputSchema },
   prompt: `You are an expert chemist acting as a chemical database search engine.
-  A user will provide a search query. This could be a name (common or IUPAC), formula, CAS number, or a general category.
-  You MUST use the user's query to find matching chemicals from a comprehensive catalog.
-  Return a list of 5-10 chemicals that are a direct match for the query.
+A user will provide a search query. This could be a name (common or IUPAC), formula, CAS number, or a general category.
 
-  **User Search Query:** {{input}}
+**IMPORTANT RULE:** You MUST use the user's query to find matching chemicals from a comprehensive catalog.
+You MUST ONLY return chemicals that are a direct match for the user's search query.
+If the user query is "copper sulphate", you should return "Copper(II) Sulfate", not Sodium Chloride.
+If the user query is "strong acids", you must return a list of strong acids like HCl, H2SO4, etc.
+If the user query is for "common lab chemicals", you can return a general list of common chemicals.
+If no chemicals match the query, you MUST return an empty list.
 
-  Filter your results based on this query. For example, if the query is "Thulium(III) chloride", you should return "Thulium(III) chloride" and related compounds, not Hydrochloric Acid.
-  For each chemical, provide a unique ID (e.g. "thulium-iii-chloride"), its common name, chemical formula, its general type, and concentration if it's a solution.
-  `,
+**User Search Query:** {{input}}
+
+For each chemical, provide a unique ID (e.g., "copper-ii-sulfate"), its common name, chemical formula, its general type, and concentration if it's a solution.
+Return a list of 5-10 relevant results.
+`,
 });
 
 const chemicalSearchFlow = ai.defineFlow(
@@ -54,11 +59,13 @@ const chemicalSearchFlow = ai.defineFlow(
     try {
       const { output } = await prompt(query);
       if (!output) {
+          console.log('AI returned no output, returning empty list.');
           return { chemicals: [] };
       }
       return output;
     } catch (error) {
       console.error('Chemical search flow failed:', error);
+      // On error, return an empty list to prevent the app from crashing.
       return { chemicals: [] };
     }
   }
