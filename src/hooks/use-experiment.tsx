@@ -110,7 +110,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Equipment) => {
     if (!handleSafetyCheck()) return;
 
-    if (experimentState.equipment.find((e) => e.id === equipment.id)) {
+    if (experimentState.equipment.some((e) => e.type === equipment.type)) {
       setTimeout(() => toast({ title: 'Notice', description: `${equipment.name} is already on the workbench.` }), 0);
       return;
     }
@@ -170,18 +170,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleDropOnApparatus = useCallback((equipmentId: string) => {
     if (!handleSafetyCheck() || !heldItem) return;
 
-    const targetEquipment = experimentState.equipment.find(e => e.id === equipmentId);
-    if (!targetEquipment) return;
+    const equipmentOnWorkbench = experimentState.equipment.find(e => e.id === equipmentId);
+    if (!equipmentOnWorkbench) return;
     
-    // Find the equipment definition which contains the type
-    const equipmentDefinition = ALL_EQUIPMENT.find(e => e.id === targetEquipment.id);
+    // The type property is on the base definition, not the instance on the workbench
+    const equipmentDefinition = ALL_EQUIPMENT.find(e => e.id === equipmentOnWorkbench.id);
     if (!equipmentDefinition) return;
 
     setExperimentState(prevState => {
         const newState = { ...prevState };
         let success = false;
 
-        // Drop into Beaker
         if (equipmentDefinition.type === 'beaker') {
             if (heldItem.type === 'acid' && !prevState.beaker) {
                 newState.beaker = { solutions: [{ chemical: heldItem, volume: 50 }], indicator: null };
@@ -195,7 +194,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                  setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to the beaker.`, variant: 'destructive' }), 0);
             }
         }
-        // Drop into Burette
         else if (equipmentDefinition.type === 'burette') {
             if (heldItem.type === 'base' && !prevState.burette) {
                 newState.burette = { chemical: heldItem, volume: 50 };
@@ -248,10 +246,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handlePour = useCallback((volume: number, sourceId?: string, targetId?: string) => {
     if (!handleSafetyCheck()) return;
 
-    const source = sourceId ? ALL_EQUIPMENT.find(e => e.id === sourceId) : state.equipment.find(e => e.type === 'burette');
-    const target = targetId ? ALL_EQUIPMENT.find(e => e.id === targetId) : state.equipment.find(e => e.type === 'beaker');
+    const sourceDef = sourceId ? ALL_EQUIPMENT.find(e => e.id === sourceId) : ALL_EQUIPMENT.find(e => e.type === 'burette' && experimentState.equipment.some(item => item.id === e.id));
+    const targetDef = targetId ? ALL_EQUIPMENT.find(e => e.id === targetId) : ALL_EQUIPMENT.find(e => e.type === 'beaker' && experimentState.equipment.some(item => item.id === e.id));
 
-    if (source?.type !== 'burette' || target?.type !== 'beaker') {
+    if (sourceDef?.type !== 'burette' || targetDef?.type !== 'beaker') {
       setTimeout(() => toast({ title: 'Invalid Action', description: 'Can only pour from a burette into a beaker.', variant: 'destructive' }), 0);
       return;
     }
