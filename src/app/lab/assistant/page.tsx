@@ -63,32 +63,38 @@ export default function ProcedurePage() {
               <CardTitle>{procedure.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div>
+              {procedure.title !== 'Error' ? (
+                <>
+                  <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><FlaskConical className="h-5 w-5" />Required Apparatus</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                        {procedure.requiredApparatus.map((item, index) => <li key={index}>{item}</li>)}
+                      {procedure.requiredApparatus.map((item, index) => <li key={index}>{item}</li>)}
                     </ul>
-                </div>
-                <div>
+                  </div>
+                  <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><ChevronsRight className="h-5 w-5" />Required Chemicals</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                        {procedure.requiredChemicals.map((item, index) => <li key={index}>{item}</li>)}
+                      {procedure.requiredChemicals.map((item, index) => <li key={index}>{item}</li>)}
                     </ul>
-                </div>
-                <div>
-                    <h3 className="font-semibold flex items-center gap-2 mb-2"><List className="h-5 w-5" />Procedure</h3>
-                    <ol className="list-decimal list-inside space-y-3">
-                        {procedure.steps.map((step, index) => (
-                        <li key={index} className="pl-2">
-                           {step}
-                        </li>
-                        ))}
-                    </ol>
-                </div>
+                  </div>
+                </>
+              ) : null}
+              <div>
+                <h3 className="font-semibold flex items-center gap-2 mb-2"><List className="h-5 w-5" />Procedure</h3>
+                <ol className="list-decimal list-inside space-y-3">
+                  {procedure.steps.map((step, index) => (
+                    <li key={index} className="pl-2">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </CardContent>
-             <CardFooter>
-                <p className="text-xs text-muted-foreground">Note: This is an AI-generated procedure. Always follow safety guidelines.</p>
-             </CardFooter>
+            {procedure.title !== 'Error' && (
+              <CardFooter>
+                  <p className="text-xs text-muted-foreground">Note: This is an AI-generated procedure. Always follow safety guidelines.</p>
+              </CardFooter>
+            )}
           </Card>
         )}
       </div>
