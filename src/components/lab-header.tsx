@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen, Menu } from 'lucide-react';
+import { Glasses, RefreshCw, Pen, Menu, Bot } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -30,6 +30,11 @@ const menuItems = [
   {
     href: '/lab/workbench',
     label: 'Workbench',
+  },
+  {
+    href: '/lab/assistant',
+    label: 'AI Assistant',
+    icon: Bot,
   },
   {
     href: '/lab/market',
@@ -110,13 +115,14 @@ export function LabHeader({
               onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
               className="text-lg font-semibold"
               autoFocus
+              placeholder="Untitled Experiment"
             />
           ) : (
             <div 
               className="flex items-center gap-2 cursor-pointer group"
               onClick={() => setIsEditingTitle(true)}
             >
-              <h2 className="text-lg font-semibold truncate" title={experimentTitle}>{experimentTitle}</h2>
+              <h2 className="text-lg font-semibold truncate" title={experimentTitle}>{experimentTitle || "Untitled Experiment"}</h2>
               <Pen className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
@@ -129,10 +135,11 @@ export function LabHeader({
                         key={item.href}
                         href={item.href}
                         className={cn(
-                            "text-sm font-medium transition-colors hover:text-primary",
+                            "text-sm font-medium transition-colors hover:text-primary flex items-center gap-1",
                             isActive ? "text-primary" : "text-muted-foreground"
                         )}
                     >
+                        {item.icon && <item.icon className="h-4 w-4" />}
                         {item.label}
                     </Link>
                 )
