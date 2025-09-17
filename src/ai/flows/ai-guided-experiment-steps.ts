@@ -30,7 +30,10 @@ export async function generateExperimentSteps(input: GenerateExperimentStepsInpu
 const prompt = ai.definePrompt({
   name: 'experimentStepsGenerationPrompt',
   input: {schema: GenerateExperimentStepsInputSchema},
-  output: {schema: GenerateExperimentStepsOutputSchema},
+  output: {
+    schema: GenerateExperimentStepsOutputSchema,
+    format: 'json',
+  },
   prompt: `You are a virtual chemistry lab assistant that designs experiment procedures for students.
   The user will provide a goal for an experiment. Your task is to generate a clear, concise, step-by-step procedure to achieve this goal in a virtual lab setting.
 
@@ -39,6 +42,8 @@ const prompt = ai.definePrompt({
   Based on this goal, generate a suitable title, a list of required chemicals, a list of required apparatus, and the procedural steps.
   The steps should be simple, direct, and easy to follow. Assume standard lab equipment is available.
   Focus on the core actions of the experiment.
+
+  Your response MUST be in the format of the specified JSON schema.
   `,
 });
 
