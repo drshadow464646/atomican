@@ -32,19 +32,20 @@ const prompt = ai.definePrompt({
   input: { schema: z.string() },
   output: { schema: ChemicalSearchOutputSchema },
   prompt: `You are an expert chemist acting as a chemical database search engine.
-A user will provide a search query. This could be a name (common or IUPAC), formula, CAS number, or a general category.
+A user will provide a search query. This could be a common name (e.g., "Hydrochloric Acid"), an IUPAC name, a chemical formula (e.g., "hcl"), a CAS number, or a general category (e.g., "strong acids").
 
-**IMPORTANT RULE:** You MUST use the user's query to find matching chemicals from a comprehensive catalog.
-You MUST ONLY return chemicals that are a direct match for the user's search query.
-If the user query is "copper sulphate", you should return "Copper(II) Sulfate", not Sodium Chloride.
-If the user query is "strong acids", you must return a list of strong acids like HCl, H2SO4, etc.
-If the user query is for "common lab chemicals", you can return a general list of common chemicals.
-If no chemicals match the query, you MUST return an empty list.
+You must use the user's query to find matching chemicals from a comprehensive internal database of common laboratory chemicals.
+
+Here are some examples of how to handle queries:
+- If the user query is "hcl" or "hydrochloric acid", you should return "Hydrochloric Acid".
+- If the user query is "strong acids", you must return a list of strong acids like HCl, H2SO4, etc.
+- If the user query is for "common lab chemicals", you can return a general list of 5-10 common chemicals.
+- If no chemicals reasonably match the query, you MUST return an empty list.
 
 **User Search Query:** {{input}}
 
-For each chemical, provide a unique ID (e.g., "copper-ii-sulfate"), its common name, chemical formula, its general type, and concentration if it's a solution.
-Return a list of 5-10 relevant results.
+For each chemical found, provide a unique ID (e.g., "hcl"), its common name, chemical formula, its general type, and concentration if it's a solution.
+Return a list of up to 10 relevant results.
 `,
 });
 
@@ -63,7 +64,7 @@ const chemicalSearchFlow = ai.defineFlow(
       }
       return output;
     } catch (error) {
-      console.error('Chemical search flow failed:', error);
+      console.error('An error occurred in the chemical search flow:', error);
       // On error, return an empty list to prevent the app from crashing.
       return { chemicals: [] };
     }
