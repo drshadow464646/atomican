@@ -41,7 +41,7 @@ export const ALL_APPARATUS: Omit<Equipment, 'position' | 'isSelected' | 'size' |
   { id: 'rotary-vane-pump', name: 'Rotary Vane Pump', type: 'vacuum', description: 'A mechanical pump for achieving medium vacuum ("rotovap").' },
   { id: 'schlenk-line', name: 'Schlenk Line', type: 'vacuum', description: 'A dual manifold for working with air-sensitive reagents under vacuum or inert gas.' },
   { id: 'glove-box', name: 'Glove Box', type: 'vacuum', description: 'An isolated chamber for working in a completely inert atmosphere.' },
-  { id: 'cold-trap', name 'Cold Trap', type: 'vacuum', description: 'A device to condense vapors before they reach the vacuum pump.' },
+  { id: 'cold-trap', name: 'Cold Trap', type: 'vacuum', description: 'A device to condense vapors before they reach the vacuum pump.' },
   { id: 'pressure-regulator', name: 'Gas Regulator', type: 'vacuum', description: 'A two-stage regulator for controlling gas pressure from a cylinder.' },
   { id: 'bubbler', name: 'Bubbler', type: 'vacuum', description: 'Monitors gas flow and prevents over-pressurization of a system.' },
 
@@ -57,7 +57,7 @@ export const ALL_APPARATUS: Omit<Equipment, 'position' | 'isSelected' | 'size' |
 
   // == Safety & Storage ==
   { id: 'fume-hood', name: 'Fume Hood', type: 'safety', description: 'A ventilated enclosure for safely working with hazardous fumes.' },
-  { id:semicolon'safety-goggles', name: 'Safety Goggles', type: 'safety', description: 'Required eye protection for all lab work.' },
+  { id: 'safety-goggles', name: 'Safety Goggles', type: 'safety', description: 'Required eye protection for all lab work.' },
   { id: 'lab-coat', name: 'Lab Coat', type: 'safety', description: 'A coat to protect clothing and skin from spills.'},
   { id: 'fire-extinguisher', name: 'Fire Extinguisher', type: 'safety', description: 'For putting out small fires (Class ABC).' },
   { id: 'safety-shower', name: 'Safety Shower & Eyewash', type: 'safety', description: 'For emergency use in case of chemical contact.' },
