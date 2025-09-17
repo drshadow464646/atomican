@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen } from 'lucide-react';
+import { Glasses, RefreshCw, Pen, Menu } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -11,6 +11,12 @@ import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 import { useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type LabHeaderProps = {
   experimentTitle: string;
@@ -39,6 +45,33 @@ const menuItems = [
   },
 ];
 
+function MobileNav() {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="icon" className="md:hidden">
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Open Menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left">
+        <nav className="grid gap-6 text-lg font-medium mt-6">
+          <Link href="/lab/workbench" className="flex items-center gap-2 text-lg font-semibold">
+              <span className="text-2xl">🌌</span>
+              <span className="sr-only">LabSphere</span>
+          </Link>
+          {menuItems.map(item => (
+            <Link key={item.href} href={item.href} className="text-muted-foreground hover:text-foreground">
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+
 export function LabHeader({ 
   experimentTitle,
   onTitleChange,
@@ -49,6 +82,7 @@ export function LabHeader({
   const pathname = usePathname();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState(experimentTitle);
+  const isMobile = useIsMobile();
   
   const debouncedTitleChange = useDebouncedCallback((value: string) => {
     onTitleChange(value);
@@ -61,12 +95,13 @@ export function LabHeader({
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 md:gap-6">
+        {isMobile && <MobileNav />}
         <Link href="/lab/workbench" className="flex items-center gap-2">
             <span className="text-2xl">🌌</span>
-            <h1 className="text-xl font-semibold hidden md:block">LabSphere</h1>
+            <h1 className="text-xl font-semibold hidden sm:block">LabSphere</h1>
         </Link>
-        <div className="flex-1 min-w-0">
+        <div className="hidden md:flex flex-1 min-w-0">
           {isEditingTitle ? (
             <Input 
               value={localTitle}
@@ -86,7 +121,7 @@ export function LabHeader({
             </div>
           )}
         </div>
-        <nav className="hidden lg:flex items-center gap-4">
+        <nav className="hidden md:flex items-center gap-4">
             {menuItems.map(item => {
                 const isActive = pathname.startsWith(item.href);
                 return (
