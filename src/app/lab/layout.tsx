@@ -29,6 +29,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={cn("flex flex-col h-screen", (heldItem || heldEquipment) && "cursor-copy")}>
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
       <LabHeader
         experimentTitle={experimentState.title}
         onTitleChange={setExperimentTitle}
@@ -36,9 +39,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
       />
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
       <div className="hidden">
         <SettingsForm />
       </div>
