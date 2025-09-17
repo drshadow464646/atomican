@@ -115,14 +115,14 @@ export function LabHeader({
               onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
               className="text-lg font-semibold"
               autoFocus
-              placeholder="Untitled Experiment"
+              placeholder=""
             />
           ) : (
             <div 
               className="flex items-center gap-2 cursor-pointer group"
               onClick={() => setIsEditingTitle(true)}
             >
-              <h2 className="text-lg font-semibold truncate" title={experimentTitle}>{experimentTitle || "Untitled Experiment"}</h2>
+              <h2 className="text-lg font-semibold truncate h-6" title={experimentTitle}>{experimentTitle}</h2>
               <Pen className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
