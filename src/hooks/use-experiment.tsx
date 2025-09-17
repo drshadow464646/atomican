@@ -133,16 +133,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleSelectEquipment = useCallback((equipmentId: string | null, e: React.MouseEvent | MouseEvent) => {
     e.stopPropagation();
 
-    // If we are holding equipment and click on another, it's a pour action
     if (heldEquipment && equipmentId && heldEquipment.id !== equipmentId) {
         handleInitiatePour(equipmentId);
         return;
     }
 
-    // Otherwise, it's a selection or drag-start action
     setExperimentState(prevState => {
       const equip = prevState.equipment.find(eq => eq.id === equipmentId);
-      if (equip && e.nativeEvent instanceof MouseEvent) {
+      
+      if (equip && e.nativeEvent instanceof MouseEvent && e.currentTarget) {
           const workbenchRect = (e.currentTarget as HTMLElement).closest('.relative.w-full.flex-1')?.getBoundingClientRect();
           if (workbenchRect) {
               draggedItemRef.current = {
@@ -154,6 +153,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
               };
           }
       }
+
       return {
         ...prevState,
         equipment: prevState.equipment.map(e => ({
