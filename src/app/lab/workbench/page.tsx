@@ -62,41 +62,33 @@ export default function WorkbenchPage() {
   return (
     <div className="flex flex-col h-full bg-transparent text-foreground">
       <ResizablePanelGroup 
-        direction={"vertical"} 
+        direction={"horizontal"} 
         className="flex-1"
       >
-        <ResizablePanel 
-            defaultSize={35} 
-            minSize={20}
-            collapsible={true}
-            collapsedSize={0}
+        <ResizablePanel
+          defaultSize={25}
+          minSize={20}
+          maxSize={40}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setIsInventoryPanelVisible(false)}
+          onExpand={() => setIsInventoryPanelVisible(true)}
+          className={cn(
+            'transition-all duration-300 ease-in-out',
+            !isInventoryPanelVisible && 'w-0 min-w-0'
+          )}
         >
-            <ResizablePanelGroup direction="horizontal">
-                <ResizablePanel
-                  collapsible
-                  collapsedSize={0}
-                  onCollapse={() => setIsInventoryPanelVisible(false)}
-                  onExpand={() => setIsInventoryPanelVisible(true)}
-                  className={cn(
-                    'transition-all duration-300 ease-in-out',
-                    !isInventoryPanelVisible && 'w-0 min-w-0'
-                  )}
-                  defaultSize={100}
-                  minSize={30}
-                >
-                  <InventoryPanel
-                    equipment={inventoryEquipment}
-                    chemicals={inventoryChemicals}
-                    onAddEquipment={handleAddEquipmentToWorkbench}
-                    onPickUpChemical={handlePickUpChemical}
-                    isCollapsed={!isInventoryPanelVisible}
-                    heldItem={heldItem}
-                  />
-                </ResizablePanel>
-            </ResizablePanelGroup>
+          <InventoryPanel
+            equipment={inventoryEquipment}
+            chemicals={inventoryChemicals}
+            onAddEquipment={handleAddEquipmentToWorkbench}
+            onPickUpChemical={handlePickUpChemical}
+            isCollapsed={!isInventoryPanelVisible}
+            heldItem={heldItem}
+          />
         </ResizablePanel>
         <ResizableHandle withHandle suppressHydrationWarning />
-        <ResizablePanel defaultSize={65} minSize={30}>
+        <ResizablePanel defaultSize={75}>
             <Workbench 
                 state={experimentState} 
                 onTitrate={handleTitrate}
