@@ -9,46 +9,41 @@ import { Droplets, Plus, Search, Loader2 } from 'lucide-react';
 import type { Chemical } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
-import { searchChemicals } from '@/ai/flows/chemical-search';
 import { useExperiment } from '@/hooks/use-experiment';
+import { ALL_CHEMICALS, COMMON_CHEMICAL_IDS } from '@/lib/chemical-catalog';
 
 export default function MarketPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(true); // Start with searching true for initial load
+  const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Chemical[]>([]);
   const { toast } = useToast();
   const { handleAddChemicalToInventory } = useExperiment();
 
-  const performSearch = async (query: string) => {
+  const filterChemicals = (query: string) => {
     setIsSearching(true);
-    try {
-      const aiResults = await searchChemicals(query);
-      setResults(aiResults.chemicals);
-    } catch (error) {
-      console.error("Chemical search failed:", error);
-      toast({
-        title: 'AI Search Failed',
-        description: 'Could not retrieve chemical results.',
-        variant: 'destructive',
-      });
-      setResults([]);
-    } finally {
-      setIsSearching(false);
+    if (!query) {
+      setResults(ALL_CHEMICALS.filter(chem => COMMON_CHEMICAL_IDS.includes(chem.id)));
+    } else {
+      const lowerCaseQuery = query.toLowerCase();
+      const filtered = ALL_CHEMICALS.filter(chem =>
+        chem.name.toLowerCase().includes(lowerCaseQuery) ||
+        chem.formula.toLowerCase().includes(lowerCaseQuery) ||
+        chem.type.toLowerCase().includes(lowerCaseQuery) ||
+        chem.id.toLowerCase().includes(lowerCaseQuery)
+      );
+      setResults(filtered);
     }
+    setIsSearching(false);
   };
 
-  const debouncedSearch = useDebouncedCallback(async (query: string) => {
-    if (!query) {
-      await performSearch('common lab chemicals');
-      return;
-    }
-    await performSearch(query);
-  }, 300);
-
-  // Load initial common chemicals
   useEffect(() => {
-    performSearch('common lab chemicals');
+    // Show common items on initial load
+    filterChemicals('');
   }, []);
+
+  const debouncedSearch = useDebouncedCallback((query: string) => {
+    filterChemicals(query);
+  }, 300);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -67,12 +62,12 @@ export default function MarketPage() {
         </header>
 
         <div className="mb-8 max-w-lg mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <div className="relative flex items-center">
+            <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search by name, formula, or type (e.g. 'hcl', 'strong acids')"
-              className="w-full pl-10 pr-10"
+              className="w-full pl-10"
               value={searchTerm}
               onChange={handleSearchChange}
             />
@@ -84,16 +79,10 @@ export default function MarketPage() {
           </div>
         </div>
 
-        {isSearching && results.length === 0 && (
+        {isSearching && (
           <div className="text-center col-span-full py-16">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
               <p className="text-muted-foreground mt-4">Searching catalog...</p>
-          </div>
-        )}
-
-        {!isSearching && results.length === 0 && (
-          <div className="text-center col-span-full py-16">
-              <p className="text-muted-foreground">No chemicals found matching your search.</p>
           </div>
         )}
 
@@ -126,6 +115,12 @@ export default function MarketPage() {
                 </CardFooter>
               </Card>
             ))}
+          </div>
+        )}
+
+        {!isSearching && results.length === 0 && (
+          <div className="text-center col-span-full py-16">
+              <p className="text-muted-foreground">No chemicals found matching your search.</p>
           </div>
         )}
       </div>
