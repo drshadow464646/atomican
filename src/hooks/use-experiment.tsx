@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -13,7 +14,7 @@ const getUniqueLogId = () => {
 };
 
 const initialExperimentState: ExperimentState = {
-  title: 'Untitled Experiment',
+  title: '',
   equipment: [],
   volumeAdded: 0,
   ph: null,
