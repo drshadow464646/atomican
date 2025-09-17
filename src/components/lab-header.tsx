@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen, Menu, Bot } from 'lucide-react';
+import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -17,6 +17,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Tooltip, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { TooltipContent } from '@radix-ui/react-tooltip';
 
 type LabHeaderProps = {
   experimentTitle: string;
@@ -30,6 +32,7 @@ const menuItems = [
   {
     href: '/lab/workbench',
     label: 'Workbench',
+    icon: LayoutGrid,
   },
   {
     href: '/lab/assistant',
@@ -39,18 +42,22 @@ const menuItems = [
   {
     href: '/lab/market',
     label: 'Chemical Market',
+    icon: Store,
   },
   {
     href: '/lab/apparatus',
     label: 'Apparatus',
+    icon: Library,
   },
   {
     href: '/lab/settings',
     label: 'Settings',
+    icon: SettingsIcon,
   },
 ];
 
 function MobileNav() {
+  const pathname = usePathname();
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -60,16 +67,27 @@ function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left">
-        <nav className="grid gap-6 text-lg font-medium mt-6">
-          <Link href="/lab/workbench" className="flex items-center gap-2 text-lg font-semibold">
+        <nav className="grid gap-4 text-lg font-medium mt-6">
+          <Link href="/lab/workbench" className="flex items-center gap-2 text-lg font-semibold mb-4">
               <span className="text-2xl">🌌</span>
-              <span className="sr-only">LabSphere</span>
+              <span>LabSphere</span>
           </Link>
-          {menuItems.map(item => (
-            <Link key={item.href} href={item.href} className="text-muted-foreground hover:text-foreground">
-              {item.label}
-            </Link>
-          ))}
+          {menuItems.map(item => {
+            const isActive = pathname.startsWith(item.href);
+            return (
+                <Link 
+                    key={item.href} 
+                    href={item.href} 
+                    className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                        isActive && "bg-muted text-primary"
+                    )}
+                >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                </Link>
+            )
+          })}
         </nav>
       </SheetContent>
     </Sheet>
@@ -113,7 +131,7 @@ export function LabHeader({
               onChange={handleTitleChange}
               onBlur={() => setIsEditingTitle(false)}
               onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
-              className="text-lg font-semibold"
+              className="h-8 text-lg font-semibold"
               autoFocus
               placeholder=""
             />
@@ -122,28 +140,38 @@ export function LabHeader({
               className="flex items-center gap-2 cursor-pointer group"
               onClick={() => setIsEditingTitle(true)}
             >
-              <h2 className="text-lg font-semibold truncate h-6" title={experimentTitle}>{experimentTitle}</h2>
+              <h2 className="text-lg font-semibold truncate h-6" title={experimentTitle}>{experimentTitle || ""}</h2>
               <Pen className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
         </div>
-        <nav className="hidden md:flex items-center gap-4">
+        <nav className="hidden md:flex items-center gap-2">
+           <TooltipProvider>
             {menuItems.map(item => {
                 const isActive = pathname.startsWith(item.href);
                 return (
-                    <Link 
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-primary flex items-center gap-1",
-                            isActive ? "text-primary" : "text-muted-foreground"
-                        )}
-                    >
-                        {item.icon && <item.icon className="h-4 w-4" />}
-                        {item.label}
-                    </Link>
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link 
+                          href={item.href}
+                      >
+                         <Button
+                            variant={isActive ? "secondary" : "ghost"}
+                            size="icon"
+                            className="rounded-lg"
+                         >
+                            <item.icon className="h-5 w-5" />
+                            <span className="sr-only">{item.label}</span>
+                         </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={5}>
+                        <p>{item.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )
             })}
+           </TooltipProvider>
         </nav>
       </div>
       <div className='flex items-center gap-2 md:gap-4'>
