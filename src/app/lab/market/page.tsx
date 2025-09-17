@@ -11,66 +11,43 @@ import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
 import { searchChemicals } from '@/ai/flows/chemical-search';
 import { useExperiment } from '@/hooks/use-experiment';
-import { ALL_CHEMICALS } from '@/lib/chemical-catalog';
 
 export default function MarketPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [isSearching, setIsSearching] = useState(true); // Start with searching true for initial load
   const [results, setResults] = useState<Chemical[]>([]);
   const { toast } = useToast();
   const { handleAddChemicalToInventory } = useExperiment();
 
   const performSearch = async (query: string) => {
     setIsSearching(true);
-
-    const lowerCaseQuery = query.toLowerCase();
-    
-    // 1. Local Search First
-    const localResults = ALL_CHEMICALS.filter(chem => 
-        chem.name.toLowerCase().includes(lowerCaseQuery) || 
-        chem.formula.toLowerCase().includes(lowerCaseQuery) ||
-        chem.id.toLowerCase().includes(lowerCaseQuery)
-    );
-
-    if (localResults.length > 0) {
-      setResults(localResults);
+    try {
+      const aiResults = await searchChemicals(query);
+      setResults(aiResults.chemicals);
+    } catch (error) {
+      console.error("Chemical search failed:", error);
+      toast({
+        title: 'AI Search Failed',
+        description: 'Could not retrieve chemical results.',
+        variant: 'destructive',
+      });
+      setResults([]);
+    } finally {
       setIsSearching(false);
-      return;
     }
-
-    // 2. Fallback to AI Search if no local results
-    if (query.length > 2) {
-      try {
-        const aiResults = await searchChemicals(query);
-        setResults(aiResults.chemicals);
-      } catch (error) {
-        console.error("Chemical search failed:", error);
-        toast({
-          title: 'AI Search Failed',
-          description: 'Could not retrieve remote chemical results.',
-          variant: 'destructive',
-        });
-        setResults([]);
-      }
-    } else {
-        setResults([]);
-    }
-
-    setIsSearching(false);
   };
 
   const debouncedSearch = useDebouncedCallback(async (query: string) => {
     if (!query) {
-      setResults(ALL_CHEMICALS.slice(0, 12)); // Show first 12 as default
-      setIsSearching(false);
+      await performSearch('common lab chemicals');
       return;
     }
     await performSearch(query);
   }, 300);
 
-  // Set initial chemicals
+  // Load initial common chemicals
   useEffect(() => {
-    setResults(ALL_CHEMICALS.slice(0, 12));
+    performSearch('common lab chemicals');
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,35 +97,37 @@ export default function MarketPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {results.map(chem => (
-            <Card key={chem.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-md">
-                    <Droplets className="h-6 w-6 text-primary" />
+        {!isSearching && results.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {results.map(chem => (
+              <Card key={chem.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <Droplets className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{chem.name}</CardTitle>
+                      <CardDescription>{chem.formula}</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{chem.name}</CardTitle>
-                    <CardDescription>{chem.formula}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground">
-                  Type: <span className="font-medium text-foreground">{chem.type}</span>
-                  {chem.concentration && `, Conc: ${chem.concentration}M`}
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full" onClick={() => handleAddChemicalToInventory(chem)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add to Inventory
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-sm text-muted-foreground">
+                    Type: <span className="font-medium text-foreground">{chem.type}</span>
+                    {chem.concentration && `, Conc: ${chem.concentration}M`}
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" onClick={() => handleAddChemicalToInventory(chem)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add to Inventory
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
