@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon } from 'lucide-react';
+import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -36,8 +36,8 @@ const menuItems = [
   },
   {
     href: '/lab/assistant',
-    label: 'AI Assistant',
-    icon: Bot,
+    label: 'Procedure',
+    icon: Notebook,
   },
   {
     href: '/lab/market',
@@ -122,7 +122,7 @@ export function LabHeader({
         {isMobile && <MobileNav />}
         <Link href="/lab/workbench" className="flex items-center gap-2">
             <span className="text-2xl">🌌</span>
-            <h1 className="text-xl font-semibold hidden sm:block">LabSphere</h1>
+            <h1 className="text-xl font-semibold sm:block">LabSphere</h1>
         </Link>
         <div className="hidden md:flex flex-1 min-w-0">
           {isEditingTitle ? (

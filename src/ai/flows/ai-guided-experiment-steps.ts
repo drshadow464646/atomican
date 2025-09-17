@@ -1,61 +1,52 @@
 'use server';
 /**
- * @fileOverview Provides AI-driven suggestions for experiment steps in a virtual chemistry lab.
+ * @fileOverview Provides AI-driven generation of experiment steps for a virtual chemistry lab.
  *
- * - getExperimentStepSuggestion - A function that suggests the next step in an experiment.
- * - ExperimentStepSuggestionInput - The input type for the getExperimentStepSuggestion function.
- * - ExperimentStepSuggestionOutput - The return type for the getExperimentStepSuggestion function.
+ * - generateExperimentSteps - A function that creates a step-by-step procedure for a given experiment goal.
+ * - GenerateExperimentStepsInput - The input type for the generateExperimentSteps function.
+ * - GenerateExperimentStepsOutput - The return type for the generateExperimentSteps function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const ExperimentStepSuggestionInputSchema = z.object({
-  currentStep: z.string().describe('The current step the student is on in the experiment.'),
-  experimentData: z
-    .string()
-    .describe('Real-time data from the experiment, including measurements, observations, and previous actions.'),
-  studentActions: z
-    .string()
-    .describe('A description of the actions the student has taken so far in the experiment.'),
+const GenerateExperimentStepsInputSchema = z.object({
+  goal: z.string().describe('The overall goal of the chemistry experiment the user wants to perform.'),
 });
-export type ExperimentStepSuggestionInput = z.infer<typeof ExperimentStepSuggestionInputSchema>;
+export type GenerateExperimentStepsInput = z.infer<typeof GenerateExperimentStepsInputSchema>;
 
-const ExperimentStepSuggestionOutputSchema = z.object({
-  nextStepSuggestion: z
-    .string()
-    .describe('The AI-suggested next step for the student to take in the experiment.'),
-  hint: z.string().optional().describe('A helpful hint or tip for the student to consider.'),
-  rationale:
-      z.string().optional().describe('Explanation of the suggestion.'),
+const GenerateExperimentStepsOutputSchema = z.object({
+  title: z.string().describe('A concise title for the experiment.'),
+  steps: z.array(z.string()).describe('A list of step-by-step instructions to complete the experiment.'),
+  requiredChemicals: z.array(z.string()).describe('A list of required chemical names for this experiment.'),
+  requiredApparatus: z.array(z.string()).describe('A list of required apparatus names for this experiment.'),
 });
-export type ExperimentStepSuggestionOutput = z.infer<typeof ExperimentStepSuggestionOutputSchema>;
+export type GenerateExperimentStepsOutput = z.infer<typeof GenerateExperimentStepsOutputSchema>;
 
-export async function getExperimentStepSuggestion(input: ExperimentStepSuggestionInput): Promise<ExperimentStepSuggestionOutput> {
-  return experimentStepSuggestionFlow(input);
+export async function generateExperimentSteps(input: GenerateExperimentStepsInput): Promise<GenerateExperimentStepsOutput> {
+  return experimentStepsGenerationFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'experimentStepSuggestionPrompt',
-  input: {schema: ExperimentStepSuggestionInputSchema},
-  output: {schema: ExperimentStepSuggestionOutputSchema},
-  prompt: `You are a virtual chemistry lab assistant that assists students by providing the next steps.
+  name: 'experimentStepsGenerationPrompt',
+  input: {schema: GenerateExperimentStepsInputSchema},
+  output: {schema: GenerateExperimentStepsOutputSchema},
+  prompt: `You are a virtual chemistry lab assistant that designs experiment procedures for students.
+  The user will provide a goal for an experiment. Your task is to generate a clear, concise, step-by-step procedure to achieve this goal in a virtual lab setting.
 
-  The current step is: {{{currentStep}}}
-  The student\'s prior actions: {{{studentActions}}}
-  Here is the current experiment data: {{{experimentData}}}
+  Experiment Goal: {{{goal}}}
 
-  Based on this information, what should the student do next? Provide a suggestion for the next step, a hint if applicable, and a rationale for your suggestion.
-  Always be concise and guide the student towards completing the experiment successfully.
-  Do not provide more steps than what is asked, only provide the single immediate next step.
+  Based on this goal, generate a suitable title, a list of required chemicals, a list of required apparatus, and the procedural steps.
+  The steps should be simple, direct, and easy to follow. Assume standard lab equipment is available.
+  Focus on the core actions of the experiment.
   `,
 });
 
-const experimentStepSuggestionFlow = ai.defineFlow(
+const experimentStepsGenerationFlow = ai.defineFlow(
   {
-    name: 'experimentStepSuggestionFlow',
-    inputSchema: ExperimentStepSuggestionInputSchema,
-    outputSchema: ExperimentStepSuggestionOutputSchema,
+    name: 'experimentStepsGenerationFlow',
+    inputSchema: GenerateExperimentStepsInputSchema,
+    outputSchema: GenerateExperimentStepsOutputSchema,
   },
   async input => {
     const {output} = await prompt(input);
