@@ -324,13 +324,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handlePickUpChemical = useCallback((chemical: Chemical) => {
     handleClearHeldItem();
     setHeldItem(chemical);
-    setTimeout(() => {
-      toast({
-        title: `Holding ${chemical.name}`,
-        description: "Click on a piece of equipment to add it.",
-      });
-    }, 0);
-  }, [toast]);
+  }, []);
 
   const handlePickUpEquipment = useCallback((id: string, e: React.MouseEvent | MouseEvent) => {
     e.stopPropagation();
@@ -338,28 +332,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const equipment = experimentState.equipment.find(e => e.id === id);
     if (equipment && equipment.solutions && equipment.solutions.length > 0) {
       setHeldEquipment(equipment);
-      setTimeout(() => {
-        toast({
-          title: `Holding ${equipment.name}`,
-          description: "Click another apparatus to pour.",
-        });
-      }, 0);
     }
-  }, [experimentState.equipment, toast]);
+  }, [experimentState.equipment]);
 
   const handleClearHeldItem = useCallback(() => {
-    if (heldItem || heldEquipment) {
-      if (heldItem) setHeldItem(null);
-      if (heldEquipment) setHeldEquipment(null);
-      setTimeout(() => {
-        toast({
-          title: `Action Canceled`,
-          description: "You are no longer holding an item.",
-          variant: 'default',
-        });
-      }, 0);
-    }
-  }, [toast, heldItem, heldEquipment]);
+    if (heldItem) setHeldItem(null);
+    if (heldEquipment) setHeldEquipment(null);
+  }, [heldItem, heldEquipment]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
@@ -526,3 +505,5 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
