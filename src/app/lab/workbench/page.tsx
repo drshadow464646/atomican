@@ -4,10 +4,7 @@ import { useState, useCallback, useTransition, useEffect } from 'react';
 import { InventoryPanel } from '@/components/inventory-panel';
 import { Workbench } from '@/components/workbench';
 import { GuidancePanel } from '@/components/guidance-panel';
-import { useToast } from '@/hooks/use-toast';
 import {
-  type ExperimentState,
-  type LabLog,
   type AiSuggestion,
 } from '@/lib/experiment';
 import { getSuggestion } from '@/app/actions';
@@ -17,7 +14,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useExperiment } from '@/hooks/use-experiment';
 
 export default function WorkbenchPage() {
@@ -50,7 +46,6 @@ export default function WorkbenchPage() {
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
   const [isGuidancePanelVisible, setIsGuidancePanelVisible] = useState(true);
-  const isMobile = useIsMobile();
 
   const handleGetSuggestion = useCallback(() => {
     startSuggestionTransition(async () => {
@@ -147,7 +142,7 @@ export default function WorkbenchPage() {
                 </ResizablePanel>
             </ResizablePanelGroup>
         </ResizablePanel>
-        <ResizableHandle withHandle />
+        <ResizableHandle withHandle suppressHydrationWarning />
         <ResizablePanel defaultSize={65} minSize={30}>
             <Workbench 
                 state={experimentState} 

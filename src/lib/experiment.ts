@@ -29,13 +29,9 @@ export type Solution = {
 };
 
 export type ExperimentState = {
+  title: string;
   equipment: Equipment[];
   // Legacy state, to be deprecated
-  beaker: {
-    solutions: Solution[];
-    indicator: Chemical | null;
-  } | null;
-  burette: Solution | null;
   volumeAdded: number; // in ml, legacy for simple titration
   ph: number | null; // legacy
   color: string; // legacy
@@ -58,6 +54,9 @@ export function calculatePH(solutions: Solution[]): number {
   let totalVolumeL = 0;
 
   for (const solution of solutions) {
+    // Ignore indicators in pH calculation
+    if (solution.chemical.type === 'indicator') continue;
+
     const volumeL = solution.volume / 1000;
     totalVolumeL += volumeL;
 
@@ -73,10 +72,12 @@ export function calculatePH(solutions: Solution[]): number {
   if (molesH > molesOH) {
     const remainingMolesH = molesH - molesOH;
     const concentrationH = remainingMolesH / totalVolumeL;
+    if (concentrationH <= 0) return 7;
     return -Math.log10(concentrationH);
   } else if (molesOH > molesH) {
     const remainingMolesOH = molesOH - molesH;
     const concentrationOH = remainingMolesOH / totalVolumeL;
+    if (concentrationOH <= 0) return 7;
     const pOH = -Math.log10(concentrationOH);
     return 14 - pOH;
   } else {

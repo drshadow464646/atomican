@@ -8,11 +8,30 @@ import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { safetyGogglesOn, setSafetyGogglesOn, handleResetExperiment, heldItem } = useExperiment();
+  const { 
+    experimentState,
+    safetyGogglesOn, 
+    setSafetyGogglesOn, 
+    handleResetExperiment, 
+    setExperimentTitle,
+    heldItem,
+    heldEquipment
+  } = useExperiment();
+  
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null; // or a loading spinner
+  }
 
   return (
-    <div className={cn("flex flex-col h-screen", heldItem && "cursor-copy")}>
+    <div className={cn("flex flex-col h-screen", (heldItem || heldEquipment) && "cursor-copy")}>
       <LabHeader
+        experimentTitle={experimentState.title}
+        onTitleChange={setExperimentTitle}
         safetyGogglesOn={safetyGogglesOn}
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
@@ -33,15 +52,10 @@ export default function LabLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   return (
     <ExperimentProvider>
-      {isClient ? <LayoutContent>{children}</LayoutContent> : null}
+      <LayoutContent>{children}</LayoutContent>
     </ExperimentProvider>
   );
 }
