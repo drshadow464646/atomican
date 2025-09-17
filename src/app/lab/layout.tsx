@@ -5,6 +5,7 @@ import { LabHeader } from '@/components/lab-header';
 import { SettingsForm } from '@/components/settings-form';
 import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { safetyGogglesOn, setSafetyGogglesOn, handleResetExperiment, heldItem } = useExperiment();
@@ -32,11 +33,15 @@ export default function LabLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <ExperimentProvider>
-      <LayoutContent>
-        {children}
-      </LayoutContent>
+      {isClient ? <LayoutContent>{children}</LayoutContent> : null}
     </ExperimentProvider>
   );
 }
