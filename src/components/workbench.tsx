@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling } from 'lucid
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { Slider } from './ui/slider';
 
 const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercentage: number; size: number }) => {
   const liquidHeight = 95 * (fillPercentage / 100);
@@ -57,8 +57,7 @@ const EquipmentDisplay = ({
   state,
   onSelect,
   onDrop,
-  onPickUp,
-  onPour,
+  onInitiatePour,
   onRemove,
   onResize,
   isHoverTarget,
@@ -68,8 +67,7 @@ const EquipmentDisplay = ({
   state: ExperimentState,
   onSelect: (id: string, e: React.MouseEvent) => void,
   onDrop: (id: string) => void,
-  onPickUp: (id: string, e: React.MouseEvent) => void,
-  onPour: (targetId: string) => void,
+  onInitiatePour: (id: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
@@ -150,15 +148,16 @@ const EquipmentDisplay = ({
             }}
             onMouseDown={(e) => {
               if (resizeHandleRef.current?.contains(e.target as Node)) return;
+              // Don't drag if holding a chemical
               if (hasLiquid) {
-                onPickUp(item.id, e);
+                onSelect(item.id, e);
               }
               onSelect(item.id, e);
             }}
             onClick={(e) => {
               e.stopPropagation(); 
               onDrop(item.id);
-              onPour(item.id);
+              onInitiatePour(item.id);
             }}
         >
             {item.isSelected && !isHeld && (
@@ -200,9 +199,12 @@ export function Workbench({
     onDropOnApparatus,
     onPickUpEquipment,
     onPour,
+    onInitiatePour,
+    onCancelPour,
     heldItem,
     heldEquipment,
     onRemoveSelectedEquipment,
+    pouringState,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
@@ -211,20 +213,23 @@ export function Workbench({
     onSelectEquipment: (id: string | null, e: React.MouseEvent | MouseEvent) => void;
     onDropOnApparatus: (equipmentId: string) => void;
     onPickUpEquipment: (id: string, e: React.MouseEvent) => void;
-    onPour: (targetId: string) => void;
+    onPour: (volume: number) => void;
+    onInitiatePour: (targetId: string) => void;
+    onCancelPour: () => void;
     heldItem: Chemical | null;
     heldEquipment: Equipment | null;
     onRemoveSelectedEquipment: (id: string) => void;
+    pouringState: { sourceId: string; targetId: string; } | null;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
   const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number } } | null>(null);
   const [hoveredEquipment, setHoveredEquipment] = useState<string | null>(null);
-
+  const [pourVolume, setPourVolume] = useState(10);
+  
   const hasBeaker = state.equipment.some((e) => e.type === 'beaker');
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
   const selectedEquipment = state.equipment.find(e => e.isSelected);
-
   const isHoldingSomething = !!heldItem || !!heldEquipment;
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -254,18 +259,20 @@ export function Workbench({
 
 
   const handleMouseUp = useCallback(() => {
+    if (draggedItemRef.current && hoveredEquipment) {
+        onInitiatePour(hoveredEquipment);
+    }
     draggedItemRef.current = null;
     setHoveredEquipment(null);
-  }, []);
+  }, [hoveredEquipment, onInitiatePour]);
   
   const handlePickUp = useCallback((id: string, e: React.MouseEvent) => {
     if (isHoldingSomething) return;
 
     const item = state.equipment.find(i => i.id === id);
-    // Don't drag if holding a chemical or the item is empty
     if (heldItem || !(item?.solutions && item.solutions.length > 0)) return;
 
-    onPickUpEquipment(id, e); // This will set the heldEquipment state
+    onPickUpEquipment(id, e); 
 
     const workbenchRect = workbenchRef.current?.getBoundingClientRect();
     if (!workbenchRect || !item) return;
@@ -278,10 +285,19 @@ export function Workbench({
     };
   }, [state.equipment, isHoldingSomething, onPickUpEquipment, heldItem]);
 
+  const pouringSource = pouringState ? state.equipment.find(e => e.id === pouringState.sourceId) : null;
+  const maxPourVolume = pouringSource?.solutions.reduce((total, s) => total + s.volume, 0) || 0;
+
+  useEffect(() => {
+    if (pouringState) {
+        setPourVolume(Math.min(10, maxPourVolume));
+    }
+  }, [pouringState, maxPourVolume]);
+
 
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
-    const handleGlobalMouseUp = () => handleMouseUp();
+    const handleGlobalMouseUp = (e: MouseEvent) => handleMouseUp();
 
     document.addEventListener('mousemove', handleGlobalMouseMove);
     document.addEventListener('mouseup', handleGlobalMouseUp);
@@ -308,10 +324,10 @@ export function Workbench({
               Holding: {heldItem.name}. Click on an apparatus to add it. (Press Esc to cancel)
             </CardDescription>
           )}
-          {heldEquipment && (
+          {heldEquipment && !pouringState && (
             <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
               <Hand className="h-4 w-4"/>
-              Holding: {heldEquipment.name}. Click on another apparatus to pour. (Press Esc to cancel)
+              Holding: {heldEquipment.name}. Drag and drop on another apparatus to pour. (Press Esc to cancel)
             </CardDescription>
           )}
         </CardHeader>
@@ -348,10 +364,9 @@ export function Workbench({
                             <EquipmentDisplay 
                                 item={item} 
                                 state={state} 
-                                onPickUp={handlePickUp}
                                 onSelect={onSelectEquipment}
                                 onDrop={onDropOnApparatus}
-                                onPour={onPour}
+                                onInitiatePour={onInitiatePour}
                                 onRemove={onRemoveSelectedEquipment}
                                 onResize={onResizeEquipment}
                                 isHoverTarget={(isHoldingSomething) && hoveredEquipment === item.id && item.id !== heldEquipment?.id}
@@ -369,7 +384,26 @@ export function Workbench({
             </div>
           
             <div className="w-full max-w-md mt-4">
-              {!selectedEquipment && hasBurette && hasBeaker && (
+              {pouringState && pouringSource && (
+                <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
+                    <p className="text-sm font-medium text-foreground">Pour from {pouringSource.name}</p>
+                    <div className="flex items-center gap-4 w-full px-4">
+                        <Slider
+                            value={[pourVolume]}
+                            onValueChange={(v) => setPourVolume(v[0])}
+                            min={0}
+                            max={maxPourVolume}
+                            step={Math.max(0.1, maxPourVolume/100)}
+                        />
+                        <span className="text-sm font-mono w-24 text-center">{pourVolume.toFixed(2)} ml</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => onPour(pourVolume)} className='flex-1' variant="default">Pour</Button>
+                        <Button onClick={onCancelPour} className='flex-1' variant="outline">Cancel</Button>
+                    </div>
+                </div>
+              )}
+              {!pouringState && !selectedEquipment && hasBurette && hasBeaker && (
                  <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">Titration Control</p>
                      <div className="flex items-center gap-4 w-full px-4">

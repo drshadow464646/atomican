@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useTransition, useEffect } from 'react';
@@ -41,6 +40,9 @@ export default function WorkbenchPage() {
     handlePickUpEquipment,
     handleClearHeldItem,
     handlePour,
+    pouringState,
+    handleInitiatePour,
+    handleCancelPour,
   } = useExperiment();
 
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion>(null);
@@ -67,8 +69,13 @@ export default function WorkbenchPage() {
   useEffect(() => {
     // Add a global key listener to drop the held item with Escape key
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && (heldItem || heldEquipment)) {
-        handleClearHeldItem();
+      if (e.key === 'Escape') {
+        if (heldItem || heldEquipment) {
+            handleClearHeldItem();
+        }
+        if (pouringState) {
+            handleCancelPour();
+        }
       }
       const selectedId = experimentState.equipment.find(eq => eq.isSelected)?.id;
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
@@ -79,7 +86,7 @@ export default function WorkbenchPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [heldItem, heldEquipment, handleClearHeldItem, experimentState.equipment, handleRemoveSelectedEquipment]);
+  }, [heldItem, heldEquipment, pouringState, handleClearHeldItem, handleCancelPour, experimentState.equipment, handleRemoveSelectedEquipment]);
 
 
   return (
@@ -151,9 +158,12 @@ export default function WorkbenchPage() {
                 onDropOnApparatus={handleDropOnApparatus}
                 onPickUpEquipment={handlePickUpEquipment}
                 onPour={handlePour}
+                onInitiatePour={handleInitiatePour}
+                onCancelPour={handleCancelPour}
                 heldItem={heldItem}
                 heldEquipment={heldEquipment}
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
+                pouringState={pouringState}
             />
         </ResizablePanel>
       </ResizablePanelGroup>
