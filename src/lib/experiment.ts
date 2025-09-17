@@ -10,7 +10,7 @@ export type Chemical = {
 };
 
 export type Equipment = {
-  id: string;
+  id:string;
   name: string;
   type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other' | 'glassware' | 'vacuum' | 'safety';
   volume?: number; // in ml

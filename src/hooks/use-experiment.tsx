@@ -133,19 +133,30 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleSelectEquipment = useCallback((equipmentId: string | null, e: React.MouseEvent | MouseEvent) => {
     e.stopPropagation();
 
+    // If an item is held and we click on another item, initiate a pour
     if (heldEquipment && equipmentId && heldEquipment.id !== equipmentId) {
         handleInitiatePour(equipmentId);
         return;
     }
 
     setExperimentState(prevState => {
+      // If we're clicking to de-select, just update the state
+      if (!equipmentId) {
+          draggedItemRef.current = null; // Stop any dragging
+          return {
+              ...prevState,
+              equipment: prevState.equipment.map(e => ({ ...e, isSelected: false })),
+          };
+      }
+      
       const equip = prevState.equipment.find(eq => eq.id === equipmentId);
       
+      // If an item is clicked, prepare it for being dragged
       if (equip && e.nativeEvent instanceof MouseEvent && e.currentTarget) {
           const workbenchRect = (e.currentTarget as HTMLElement).closest('.relative.w-full.flex-1')?.getBoundingClientRect();
           if (workbenchRect) {
               draggedItemRef.current = {
-                  id: equipmentId!,
+                  id: equipmentId,
                   offset: {
                       x: e.nativeEvent.clientX - workbenchRect.left - equip.position.x,
                       y: e.nativeEvent.clientY - workbenchRect.top - equip.position.y,
@@ -270,6 +281,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       const target = prevState.equipment.find(e => e.id === targetId);
 
       if (!source || !target || !source.solutions || source.solutions.length === 0) {
+        setPouringState(null);
         return prevState;
       }
       
@@ -280,7 +292,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
       if (!target.solutions) target.solutions = [];
       
-      let remainingPourVolume = pourVolumeClamped;
       for (const sourceSolution of source.solutions) {
         const pourFraction = sourceSolution.volume / totalSourceVolume;
         const volToTake = pourFraction * pourVolumeClamped;
@@ -314,8 +325,18 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleInitiatePour = useCallback((targetId: string) => {
     if (!heldEquipment || heldEquipment.id === targetId) return;
-    setPouringState({ sourceId: heldEquipment.id, targetId });
-  }, [heldEquipment]);
+    const target = experimentState.equipment.find(e => e.id === targetId);
+    if (!target) return;
+    
+    // Only allow pouring into certain types of containers
+    const validTargets = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
+    if (validTargets.includes(target.type)) {
+       setPouringState({ sourceId: heldEquipment.id, targetId });
+    } else {
+        setTimeout(() => toast({ title: 'Invalid Action', description: `You cannot pour into a ${target.name}.`, variant: 'destructive' }), 0);
+        handleClearHeldItem();
+    }
+  }, [heldEquipment, experimentState.equipment, toast]);
   
   const handleCancelPour = useCallback(() => {
     setPouringState(null);
@@ -460,7 +481,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleAddCustomLog,
     handleResetExperiment,
     handlePickUpChemical,
-    handleClearHeldItem,
+handleClearHeldItem,
   }), [
     experimentState, 
     labLogs, 
@@ -505,5 +526,3 @@ export function useExperiment() {
   }
   return context;
 }
-
-    

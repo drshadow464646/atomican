@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { InventoryPanel } from '@/components/inventory-panel';
 import { Workbench } from '@/components/workbench';
+import { EquipmentDetailsPanel } from '@/components/equipment-details-panel';
 import { cn } from '@/lib/utils';
 import {
   ResizableHandle,
@@ -58,6 +59,7 @@ export default function WorkbenchPage() {
     };
   }, [heldItem, heldEquipment, pouringState, handleClearHeldItem, handleCancelPour, experimentState.equipment, handleRemoveSelectedEquipment]);
 
+  const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
 
   return (
     <div className="flex flex-col h-full bg-transparent text-foreground">
@@ -88,7 +90,7 @@ export default function WorkbenchPage() {
           />
         </ResizablePanel>
         <ResizableHandle withHandle suppressHydrationWarning />
-        <ResizablePanel defaultSize={75}>
+        <ResizablePanel defaultSize={75} className="relative">
             <Workbench 
                 state={experimentState} 
                 onTitrate={handleTitrate}
@@ -105,6 +107,11 @@ export default function WorkbenchPage() {
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
                 pouringState={pouringState}
             />
+            {selectedEquipment && !heldEquipment && !pouringState && (
+              <div className="absolute top-4 right-4 z-20 w-80">
+                <EquipmentDetailsPanel equipment={selectedEquipment} />
+              </div>
+            )}
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
