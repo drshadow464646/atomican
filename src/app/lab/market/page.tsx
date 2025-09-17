@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
 import { searchChemicals } from '@/ai/flows/chemical-search';
 import { useExperiment } from '@/hooks/use-experiment';
-import { INITIAL_CHEMICALS } from '@/lib/experiment';
+import { ALL_CHEMICALS } from '@/lib/chemical-catalog';
 
 export default function MarketPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +26,7 @@ export default function MarketPage() {
     const lowerCaseQuery = query.toLowerCase();
     
     // 1. Local Search First
-    const localResults = INITIAL_CHEMICALS.filter(chem => 
+    const localResults = ALL_CHEMICALS.filter(chem => 
         chem.name.toLowerCase().includes(lowerCaseQuery) || 
         chem.formula.toLowerCase().includes(lowerCaseQuery) ||
         chem.id.toLowerCase().includes(lowerCaseQuery)
@@ -61,7 +61,7 @@ export default function MarketPage() {
 
   const debouncedSearch = useDebouncedCallback(async (query: string) => {
     if (!query) {
-      setResults(INITIAL_CHEMICALS);
+      setResults(ALL_CHEMICALS.slice(0, 12)); // Show first 12 as default
       setIsSearching(false);
       return;
     }
@@ -70,7 +70,7 @@ export default function MarketPage() {
 
   // Set initial chemicals
   useEffect(() => {
-    setResults(INITIAL_CHEMICALS);
+    setResults(ALL_CHEMICALS.slice(0, 12));
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,7 +143,7 @@ export default function MarketPage() {
               <CardFooter>
                 <Button className="w-full" onClick={() => handleAddChemicalToInventory(chem)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add
+                  Add to Inventory
                 </Button>
               </CardFooter>
             </Card>

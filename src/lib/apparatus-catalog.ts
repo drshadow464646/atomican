@@ -4,21 +4,21 @@ import type { Equipment } from './experiment';
 // This acts as a local database for all available apparatus.
 // It is populated with a comprehensive list based on typical laboratory equipment.
 
-export const ALL_APPARATUS: Omit<Equipment, 'position' | 'isSelected' | 'size'>[] = [
+export const ALL_APPARATUS: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[] = [
   // == Glassware & Small Hardware ==
-  { id: 'beaker-50ml', name: 'Beaker (50ml)', type: 'glassware', volume: 50, description: 'A 50ml beaker for holding and mixing liquids.' },
-  { id: 'beaker-250ml', name: 'Beaker (250ml)', type: 'glassware', volume: 250, description: 'A 250ml beaker for holding and mixing liquids.' },
-  { id: 'beaker-1l', name: 'Beaker (1L)', type: 'glassware', volume: 1000, description: 'A 1L beaker for holding and mixing liquids.' },
-  { id: 'erlenmeyer-flask-250ml', name: 'Erlenmeyer Flask (250ml)', type: 'glassware', volume: 250, description: 'A 250ml conical flask, useful for titrations and heating.' },
-  { id: 'erlenmeyer-flask-500ml', name: 'Erlenmeyer Flask (500ml)', type: 'glassware', volume: 500, description: 'A 500ml conical flask, useful for titrations and heating.' },
-  { id: 'volumetric-flask-100ml', name: 'Volumetric Flask (100ml)', type: 'glassware', volume: 100, description: 'A 100ml flask for preparing solutions to an accurate volume.' },
-  { id: 'volumetric-flask-1l', name: 'Volumetric Flask (1L)', type: 'glassware', volume: 1000, description: 'A 1L flask for preparing solutions to an accurate volume.' },
+  { id: 'beaker-50ml', name: 'Beaker (50ml)', type: 'beaker', volume: 50, description: 'A 50ml beaker for holding and mixing liquids.' },
+  { id: 'beaker-250ml', name: 'Beaker (250ml)', type: 'beaker', volume: 250, description: 'A 250ml beaker for holding and mixing liquids.' },
+  { id: 'beaker-1l', name: 'Beaker (1L)', type: 'beaker', volume: 1000, description: 'A 1L beaker for holding and mixing liquids.' },
+  { id: 'erlenmeyer-flask-250ml', name: 'Erlenmeyer Flask (250ml)', type: 'erlenmeyer-flask', volume: 250, description: 'A 250ml conical flask, useful for titrations and heating.' },
+  { id: 'erlenmeyer-flask-500ml', name: 'Erlenmeyer Flask (500ml)', type: 'erlenmeyer-flask', volume: 500, description: 'A 500ml conical flask, useful for titrations and heating.' },
+  { id: 'volumetric-flask-100ml', name: 'Volumetric Flask (100ml)', type: 'volumetric-flask', volume: 100, description: 'A 100ml flask for preparing solutions to an accurate volume.' },
+  { id: 'volumetric-flask-1l', name: 'Volumetric Flask (1L)', type: 'volumetric-flask', volume: 1000, description: 'A 1L flask for preparing solutions to an accurate volume.' },
   { id: 'round-bottom-flask-250ml', name: 'Round-Bottom Flask (250ml)', type: 'glassware', volume: 250, description: 'A 250ml flask with a round bottom, for heating or vacuum applications.' },
-  { id: 'graduated-cylinder-10ml', name: 'Graduated Cylinder (10ml)', type: 'glassware', volume: 10, description: 'A 10ml cylinder for measuring approximate volumes of liquids.' },
-  { id: 'graduated-cylinder-100ml', name: 'Graduated Cylinder (100ml)', type: 'glassware', volume: 100, description: 'A 100ml cylinder for measuring approximate volumes of liquids.' },
-  { id: 'test-tube', name: 'Test Tube', type: 'glassware', volume: 10, description: 'A small glass tube for holding and observing chemical reactions.' },
-  { id: 'burette-50ml', name: 'Burette (50ml)', type: 'glassware', volume: 50, description: 'A 50ml burette for accurately dispensing variable amounts of a chemical solution.' },
-  { id: 'pipette-10ml', name: 'Volumetric Pipette (10ml)', type: 'glassware', volume: 10, description: 'A 10ml pipette for accurately transferring a specific volume of liquid.' },
+  { id: 'graduated-cylinder-10ml', name: 'Graduated Cylinder (10ml)', type: 'graduated-cylinder', volume: 10, description: 'A 10ml cylinder for measuring approximate volumes of liquids.' },
+  { id: 'graduated-cylinder-100ml', name: 'Graduated Cylinder (100ml)', type: 'graduated-cylinder', volume: 100, description: 'A 100ml cylinder for measuring approximate volumes of liquids.' },
+  { id: 'test-tube', name: 'Test Tube', type: 'test-tube', volume: 10, description: 'A small glass tube for holding and observing chemical reactions.' },
+  { id: 'burette-50ml', name: 'Burette (50ml)', type: 'burette', volume: 50, description: 'A 50ml burette for accurately dispensing variable amounts of a chemical solution.' },
+  { id: 'pipette-10ml', name: 'Volumetric Pipette (10ml)', type: 'pipette', volume: 10, description: 'A 10ml pipette for accurately transferring a specific volume of liquid.' },
   { id: 'liebig-condenser', name: 'Liebig Condenser', type: 'glassware', description: 'A simple condenser used for distillation.' },
   { id: 'allihn-condenser', name: 'Allihn (Bulb) Condenser', type: 'glassware', description: 'A condenser with a series of bulbs to increase surface area, for refluxing.' },
   { id: 'soxhlet-extractor', name: 'Soxhlet Extractor', type: 'glassware', description: 'Apparatus for continuous solid-liquid extraction.'},
@@ -41,7 +41,7 @@ export const ALL_APPARATUS: Omit<Equipment, 'position' | 'isSelected' | 'size'>[
   { id: 'rotary-vane-pump', name: 'Rotary Vane Pump', type: 'vacuum', description: 'A mechanical pump for achieving medium vacuum ("rotovap").' },
   { id: 'schlenk-line', name: 'Schlenk Line', type: 'vacuum', description: 'A dual manifold for working with air-sensitive reagents under vacuum or inert gas.' },
   { id: 'glove-box', name: 'Glove Box', type: 'vacuum', description: 'An isolated chamber for working in a completely inert atmosphere.' },
-  { id: 'cold-trap', name: 'Cold Trap', type: 'vacuum', description: 'A device to condense vapors before they reach the vacuum pump.' },
+  { id: 'cold-trap', name 'Cold Trap', type: 'vacuum', description: 'A device to condense vapors before they reach the vacuum pump.' },
   { id: 'pressure-regulator', name: 'Gas Regulator', type: 'vacuum', description: 'A two-stage regulator for controlling gas pressure from a cylinder.' },
   { id: 'bubbler', name: 'Bubbler', type: 'vacuum', description: 'Monitors gas flow and prevents over-pressurization of a system.' },
 
@@ -57,7 +57,7 @@ export const ALL_APPARATUS: Omit<Equipment, 'position' | 'isSelected' | 'size'>[
 
   // == Safety & Storage ==
   { id: 'fume-hood', name: 'Fume Hood', type: 'safety', description: 'A ventilated enclosure for safely working with hazardous fumes.' },
-  { id: 'safety-goggles', name: 'Safety Goggles', type: 'safety', description: 'Required eye protection for all lab work.' },
+  { id:semicolon'safety-goggles', name: 'Safety Goggles', type: 'safety', description: 'Required eye protection for all lab work.' },
   { id: 'lab-coat', name: 'Lab Coat', type: 'safety', description: 'A coat to protect clothing and skin from spills.'},
   { id: 'fire-extinguisher', name: 'Fire Extinguisher', type: 'safety', description: 'For putting out small fires (Class ABC).' },
   { id: 'safety-shower', name: 'Safety Shower & Eyewash', type: 'safety', description: 'For emergency use in case of chemical contact.' },
@@ -102,5 +102,6 @@ export const getInitialInventoryEquipment = (): Equipment[] => {
     position: { x: 0, y: 0 },
     size: 1,
     isSelected: false,
+    solutions: [],
   }));
 };

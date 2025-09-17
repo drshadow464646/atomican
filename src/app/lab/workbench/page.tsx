@@ -36,8 +36,11 @@ export default function WorkbenchPage() {
     handleMoveEquipment,
     handleSelectEquipment,
     heldItem,
+    heldEquipment,
     handlePickUpChemical,
+    handlePickUpEquipment,
     handleClearHeldItem,
+    handlePour,
   } = useExperiment();
 
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion>(null);
@@ -64,7 +67,7 @@ export default function WorkbenchPage() {
   useEffect(() => {
     // Add a global key listener to drop the held item with Escape key
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && heldItem) {
+      if (e.key === 'Escape' && (heldItem || heldEquipment)) {
         handleClearHeldItem();
       }
       const selectedId = experimentState.equipment.find(eq => eq.isSelected)?.id;
@@ -76,7 +79,7 @@ export default function WorkbenchPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [heldItem, handleClearHeldItem, experimentState.equipment, handleRemoveSelectedEquipment]);
+  }, [heldItem, heldEquipment, handleClearHeldItem, experimentState.equipment, handleRemoveSelectedEquipment]);
 
 
   return (
@@ -146,7 +149,10 @@ export default function WorkbenchPage() {
                 onMoveEquipment={handleMoveEquipment}
                 onSelectEquipment={handleSelectEquipment}
                 onDropOnApparatus={handleDropOnApparatus}
+                onPickUpEquipment={handlePickUpEquipment}
+                onPour={handlePour}
                 heldItem={heldItem}
+                heldEquipment={heldEquipment}
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
             />
         </ResizablePanel>
@@ -154,5 +160,3 @@ export default function WorkbenchPage() {
     </div>
   );
 }
-
-    

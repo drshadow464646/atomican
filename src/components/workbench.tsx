@@ -55,24 +55,37 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
 const EquipmentDisplay = ({ 
   item, 
   state,
-  onMouseDown,
   onSelect,
   onDrop,
+  onPickUp,
+  onPour,
   onRemove,
   onResize,
   isHoverTarget,
+  isHeld,
 }: { 
   item: Equipment, 
   state: ExperimentState,
-  onMouseDown: (e: React.MouseEvent, id: string) => void,
-  onSelect: (id: string) => void,
+  onSelect: (id: string, e: React.MouseEvent) => void,
   onDrop: (id: string) => void,
+  onPickUp: (id: string, e: React.MouseEvent) => void,
+  onPour: (targetId: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
+  isHeld: boolean,
 }) => {
-    const beakerSolution = state.beaker?.solutions[0];
-    const fillPercentage = beakerSolution ? ((beakerSolution.volume + state.volumeAdded) / 250) * 100 : 0;
+    let fillPercentage = 0;
+    const workbenchItem = state.equipment.find(e => e.id === item.id);
+    if(workbenchItem?.solutions && workbenchItem.solutions.length > 0 && workbenchItem.volume) {
+        const totalVolume = workbenchItem.solutions.reduce((sum, s) => sum + s.volume, 0);
+        fillPercentage = (totalVolume / workbenchItem.volume) * 100;
+    } else if (item.type === 'beaker' && state.beaker) {
+        const totalVolume = state.beaker.solutions.reduce((sum, s) => sum + s.volume, 0);
+        fillPercentage = (totalVolume / (item.volume || 250)) * 100;
+    }
+
+    const color = (item.type === 'beaker' ? state.color : workbenchItem?.color) || 'transparent';
     
     const size = item.size ?? 1;
     const iconClass = "text-muted-foreground/50 transition-all";
@@ -108,23 +121,27 @@ const EquipmentDisplay = ({
         const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
         switch (item.type) {
             case 'beaker':
-                return <BeakerIcon color={state.color} fillPercentage={fillPercentage} size={size} />;
+            case 'erlenmeyer-flask':
+            case 'graduated-cylinder':
+            case 'volumetric-flask':
+                return <BeakerIcon color={color} fillPercentage={fillPercentage} size={size} />;
             case 'burette':
                 return <Pipette className={iconClass} style={iconStyle} />;
-            case 'erlenmeyer-flask':
-                 return <FlaskConical className={iconClass} style={iconStyle} />;
             default:
                 return <TestTube className={iconClass} style={iconStyle} />;
         }
     };
 
+    const hasLiquid = (item.solutions && item.solutions.length > 0);
+
     return (
         <div 
             id={item.id}
             className={cn(
-                "absolute flex flex-col items-center justify-center p-2 bg-transparent cursor-grab active:cursor-grabbing transition-all duration-200 rounded-lg group",
-                item.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
+                "absolute flex flex-col items-center justify-center p-2 bg-transparent transition-all duration-200 rounded-lg group",
+                item.isSelected && !isHeld && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
                 isHoverTarget && "ring-2 ring-accent ring-offset-2 ring-offset-background shadow-2xl",
+                isHeld ? "cursor-grabbing opacity-75" : (hasLiquid ? "cursor-grab" : "cursor-pointer")
             )}
             style={{ 
                 left: `${item.position.x}px`, 
@@ -133,15 +150,18 @@ const EquipmentDisplay = ({
             }}
             onMouseDown={(e) => {
               if (resizeHandleRef.current?.contains(e.target as Node)) return;
-              onSelect(item.id);
-              onMouseDown(e, item.id);
+              if (hasLiquid) {
+                onPickUp(item.id, e);
+              }
+              onSelect(item.id, e);
             }}
             onClick={(e) => {
-              e.stopPropagation(); // Prevent workbench click
+              e.stopPropagation(); 
               onDrop(item.id);
+              onPour(item.id);
             }}
         >
-            {item.isSelected && (
+            {item.isSelected && !isHeld && (
               <>
                 <Button 
                     size="icon" 
@@ -178,16 +198,22 @@ export function Workbench({
     onMoveEquipment,
     onSelectEquipment,
     onDropOnApparatus,
+    onPickUpEquipment,
+    onPour,
     heldItem,
-    onRemoveSelectedEquipment
+    heldEquipment,
+    onRemoveSelectedEquipment,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
-    onSelectEquipment: (id: string | null) => void;
+    onSelectEquipment: (id: string | null, e: React.MouseEvent | MouseEvent) => void;
     onDropOnApparatus: (equipmentId: string) => void;
+    onPickUpEquipment: (id: string, e: React.MouseEvent) => void;
+    onPour: (targetId: string) => void;
     heldItem: Chemical | null;
+    heldEquipment: Equipment | null;
     onRemoveSelectedEquipment: (id: string) => void;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
@@ -198,13 +224,51 @@ export function Workbench({
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
   
   const selectedEquipment = state.equipment.find(e => e.isSelected);
-  
-  const handleMouseDown = (e: React.MouseEvent, id: string) => {
-    if (heldItem) return; // Don't drag if holding a chemical
-    const workbenchRect = workbenchRef.current?.getBoundingClientRect();
-    const item = state.equipment.find(i => i.id === id);
-    if (!workbenchRect || !item) return;
 
+  const isHoldingSomething = !!heldItem || !!heldEquipment;
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+      let targetId: string | null = null;
+      if (isHoldingSomething && workbenchRef.current) {
+          const heldId = heldItem ? null : heldEquipment?.id;
+          const equipmentElements = Array.from(workbenchRef.current.children).filter(
+            (child) => child.id && child.id !== heldId && child.id !== 'lab-slab'
+          );
+
+          for (const elem of equipmentElements) {
+              const rect = elem.getBoundingClientRect();
+              if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                  targetId = elem.id;
+                  break;
+              }
+          }
+      }
+      setHoveredEquipment(targetId);
+
+      if (!draggedItemRef.current || !workbenchRef.current) return;
+      const workbenchRect = workbenchRef.current.getBoundingClientRect();
+      const newX = e.clientX - workbenchRect.left - draggedItemRef.current.offset.x;
+      const newY = e.clientY - workbenchRect.top - draggedItemRef.current.offset.y;
+      onMoveEquipment(draggedItemRef.current.id, { x: newX, y: newY });
+  }, [onMoveEquipment, isHoldingSomething, heldItem, heldEquipment]);
+
+
+  const handleMouseUp = useCallback(() => {
+    draggedItemRef.current = null;
+    setHoveredEquipment(null);
+  }, []);
+  
+  const handlePickUp = useCallback((id: string, e: React.MouseEvent) => {
+    if (isHoldingSomething) return;
+
+    const item = state.equipment.find(i => i.id === id);
+    // Don't drag if holding a chemical or the item is empty
+    if (heldItem || !(item?.solutions && item.solutions.length > 0)) return;
+
+    onPickUpEquipment(id, e); // This will set the heldEquipment state
+
+    const workbenchRect = workbenchRef.current?.getBoundingClientRect();
+    if (!workbenchRect || !item) return;
     draggedItemRef.current = {
       id,
       offset: {
@@ -212,42 +276,8 @@ export function Workbench({
         y: e.clientY - workbenchRect.top - item.position.y,
       },
     };
-  };
+  }, [state.equipment, isHoldingSomething, onPickUpEquipment, heldItem]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!draggedItemRef.current || !workbenchRef.current) return;
-    
-    // Only detect hover targets if holding a chemical
-    if (heldItem) {
-        const draggedItemId = draggedItemRef.current.id;
-        let targetId: string | null = null;
-        const equipmentElements = Array.from(workbenchRef.current.children).filter(
-          (child) => child.id && child.id !== draggedItemId && child.id !== 'lab-slab'
-        );
-
-        for (const elem of equipmentElements) {
-            const rect = elem.getBoundingClientRect();
-            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                targetId = elem.id;
-                break;
-            }
-        }
-        setHoveredEquipment(targetId);
-    }
-    
-
-    const workbenchRect = workbenchRef.current.getBoundingClientRect();
-    const newX = e.clientX - workbenchRect.left - draggedItemRef.current.offset.x;
-    const newY = e.clientY - workbenchRect.top - draggedItemRef.current.offset.y;
-
-    onMoveEquipment(draggedItemRef.current.id, { x: newX, y: newY });
-  }, [onMoveEquipment, heldItem]);
-
-
-  const handleMouseUp = useCallback(() => {
-    draggedItemRef.current = null;
-    setHoveredEquipment(null);
-  }, []);
 
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
@@ -278,14 +308,23 @@ export function Workbench({
               Holding: {heldItem.name}. Click on an apparatus to add it. (Press Esc to cancel)
             </CardDescription>
           )}
+          {heldEquipment && (
+            <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
+              <Hand className="h-4 w-4"/>
+              Holding: {heldEquipment.name}. Click on another apparatus to pour. (Press Esc to cancel)
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground bg-muted">
             <div 
               ref={workbenchRef}
-              className="relative w-full flex-1"
+              className={cn(
+                "relative w-full flex-1",
+                (heldItem || heldEquipment) && "cursor-copy"
+              )}
               onClick={(e) => {
                 if (e.target === workbenchRef.current || e.target === document.getElementById('lab-slab')) {
-                  onSelectEquipment(null);
+                  onSelectEquipment(null, e);
                 }
               }}
             >
@@ -303,24 +342,28 @@ export function Workbench({
                       {state.equipment.map(item => (
                           <div
                             key={item.id}
-                            onMouseEnter={() => { if (heldItem) setHoveredEquipment(item.id)}}
-                            onMouseLeave={() => { if (heldItem) setHoveredEquipment(null)}}
+                            onMouseEnter={() => { if (isHoldingSomething) setHoveredEquipment(item.id)}}
+                            onMouseLeave={() => { if (isHoldingSomething) setHoveredEquipment(null)}}
                           >
                             <EquipmentDisplay 
                                 item={item} 
                                 state={state} 
-                                onMouseDown={handleMouseDown}
+                                onPickUp={handlePickUp}
                                 onSelect={onSelectEquipment}
                                 onDrop={onDropOnApparatus}
+                                onPour={onPour}
                                 onRemove={onRemoveSelectedEquipment}
                                 onResize={onResizeEquipment}
-                                isHoverTarget={(!!heldItem) && hoveredEquipment === item.id}
+                                isHoverTarget={(isHoldingSomething) && hoveredEquipment === item.id && item.id !== heldEquipment?.id}
+                                isHeld={heldEquipment?.id === item.id}
                             />
                           </div>
                       ))}
                   </>
               ) : (
                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                     <p className="text-lg mb-2">Workbench is empty</p>
+                     <p className="text-sm">Add equipment from your inventory to get started.</p>
                   </div>
               )}
             </div>
@@ -343,5 +386,3 @@ export function Workbench({
     </div>
   );
 }
-
-    

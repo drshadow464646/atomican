@@ -12,12 +12,15 @@ export type Chemical = {
 export type Equipment = {
   id: string;
   name: string;
-  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other';
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other' | 'glassware' | 'vacuum' | 'safety';
   volume?: number; // in ml
   description: string;
   size: number; // scale factor, e.g., 1 for 100%
   position: { x: number; y: number };
   isSelected: boolean;
+  solutions: Solution[];
+  ph?: number;
+  color?: string;
 };
 
 export type Solution = {
@@ -27,14 +30,15 @@ export type Solution = {
 
 export type ExperimentState = {
   equipment: Equipment[];
+  // Legacy state, to be deprecated
   beaker: {
     solutions: Solution[];
     indicator: Chemical | null;
   } | null;
   burette: Solution | null;
-  volumeAdded: number; // in ml
-  ph: number | null;
-  color: string;
+  volumeAdded: number; // in ml, legacy for simple titration
+  ph: number | null; // legacy
+  color: string; // legacy
 };
 
 export type LabLog = {
@@ -46,64 +50,55 @@ export type LabLog = {
 
 export type AiSuggestion = ExperimentStepSuggestionOutput | null;
 
-export const INITIAL_CHEMICALS: Chemical[] = [
-  { id: 'hcl', name: 'Hydrochloric Acid', formula: 'HCl', type: 'acid', concentration: 0.1 },
-  { id: 'naoh', name: 'Sodium Hydroxide', formula: 'NaOH', type: 'base', concentration: 0.1 },
-  { id: 'phenolphthalein', name: 'Phenolphthalein', formula: 'C20H14O4', type: 'indicator' },
-];
+export function calculatePH(solutions: Solution[]): number {
+  if (!solutions || solutions.length === 0) return 7;
 
+  let molesH = 0;
+  let molesOH = 0;
+  let totalVolumeL = 0;
 
-export function calculatePH(state: ExperimentState): number {
-  if (!state.beaker || !state.beaker.solutions.length) return 7;
+  for (const solution of solutions) {
+    const volumeL = solution.volume / 1000;
+    totalVolumeL += volumeL;
 
-  const analyteSolution = state.beaker.solutions[0];
-  const titrant = state.burette;
-  
-  if (!titrant || !analyteSolution) return 7;
-
-  // Titrating base into acid
-  if (analyteSolution.chemical.type === 'acid' && titrant.chemical.type === 'base') {
-    if (!analyteSolution.chemical.concentration || !titrant.chemical.concentration) return 7;
-
-    const initialMolesH = (analyteSolution.volume / 1000) * analyteSolution.chemical.concentration;
-    const addedMolesOH = (state.volumeAdded / 1000) * titrant.chemical.concentration;
-    const totalVolumeL = (analylohyte.volume + state.volumeAdded) / 1000;
-
-    if (addedMolesOH < initialMolesH) {
-      const remainingMolesH = initialMolesH - addedMolesOH;
-      const concentrationH = remainingMolesH / totalVolumeL;
-      return -Math.log10(concentrationH);
-    } else if (addedMolesOH > initialMolesH) {
-      const excessMolesOH = addedMolesOH - initialMolesH;
-      const concentrationOH = excessMolesOH / totalVolumeL;
-      const pOH = -Math.log10(concentrationOH);
-      return 14 - pOH;
-    } else {
-      return 7; // Equivalence point for strong acid-strong base
+    if (solution.chemical.type === 'acid' && solution.chemical.concentration) {
+      molesH += volumeL * solution.chemical.concentration;
+    } else if (solution.chemical.type === 'base' && solution.chemical.concentration) {
+      molesOH += volumeL * solution.chemical.concentration;
     }
   }
 
-  // Titrating acid into base
-  if (analyteSolution.chemical.type === 'base' && titrant.chemical.type === 'acid') {
-    if (!analyteSolution.chemical.concentration || !titrant.chemical.concentration) return 7;
+  if (totalVolumeL === 0) return 7;
 
-    const initialMolesOH = (analyteSolution.volume / 1000) * analyteSolution.chemical.concentration;
-    const addedMolesH = (state.volumeAdded / 1000) * titrant.chemical.concentration;
-    const totalVolumeL = (analyteSolution.volume + state.volumeAdded) / 1000;
-    
-    if (addedMolesH < initialMolesOH) {
-        const remainingMolesOH = initialMolesOH - addedMolesH;
-        const concentrationOH = remainingMolesOH / totalVolumeL;
-        const pOH = -Math.log10(concentrationOH);
-        return 14 - pOH;
-    } else if (addedMolesH > initialMolesOH) {
-        const excessMolesH = addedMolesH - initialMolesH;
-        const concentrationH = excessMolesH / totalVolumeL;
-        return -Math.log10(concentrationH);
-    } else {
-        return 7; // Equivalence point for strong acid-strong base
-    }
+  if (molesH > molesOH) {
+    const remainingMolesH = molesH - molesOH;
+    const concentrationH = remainingMolesH / totalVolumeL;
+    return -Math.log10(concentrationH);
+  } else if (molesOH > molesH) {
+    const remainingMolesOH = molesOH - molesH;
+    const concentrationOH = remainingMolesOH / totalVolumeL;
+    const pOH = -Math.log10(concentrationOH);
+    return 14 - pOH;
+  } else {
+    return 7; // Equivalence point
   }
+}
 
-  return 7; // Default pH if conditions aren't met
+export function getIndicatorColor(indicatorId: string, ph: number): string {
+    switch(indicatorId) {
+        case 'phenolphthalein':
+            if (ph < 8.2) return 'transparent'; // Colorless
+            if (ph >= 8.2 && ph <= 10) return 'hsl(300 100% 80% / 0.5)'; // Pink
+            return 'hsl(300 100% 60% / 0.7)'; // Fuchsia
+        case 'methyl-orange':
+            if (ph < 3.1) return 'hsl(0 100% 60% / 0.6)'; // Red
+            if (ph >= 3.1 && ph <= 4.4) return 'hsl(30 100% 60% / 0.6)'; // Orange
+            return 'hsl(60 100% 60% / 0.6)'; // Yellow
+        case 'bromothymol-blue':
+            if (ph < 6.0) return 'hsl(60 100% 50% / 0.6)'; // Yellow
+            if (ph >= 6.0 && ph <= 7.6) return 'hsl(120 100% 80% / 0.6)'; // Green
+            return 'hsl(240 100% 60% / 0.6)'; // Blue
+        default:
+            return 'transparent';
+    }
 }
