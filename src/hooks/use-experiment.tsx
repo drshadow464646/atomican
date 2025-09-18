@@ -49,7 +49,7 @@ type ExperimentContextType = {
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
   handleClearHeldItem: () => void;
-  draggedItemRef: React.RefObject<{ id: string; offset: { x: number, y: number }; hasMoved: boolean; }>;
+  draggedItemRef: React.RefObject<{ id: string; offset: { x: number, y: number }; hasMoved: boolean }>;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -210,6 +210,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }));
   }, []);
 
+  const handleClearHeldItem = useCallback(() => {
+    setHeldItem(null);
+    setHeldEquipment(null);
+  }, []);
+
   const handleDropOnApparatus = useCallback((equipmentId: string) => {
     if (!handleSafetyCheck() || !heldItem) return;
 
@@ -334,11 +339,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       setHeldEquipment(equipment);
     }
   }, [experimentState.equipment, pouringState, handleClearHeldItem]);
-
-  const handleClearHeldItem = useCallback(() => {
-    setHeldItem(null);
-    setHeldEquipment(null);
-  }, []);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
