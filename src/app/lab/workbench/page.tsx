@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -30,9 +31,10 @@ export default function WorkbenchPage() {
     handlePickUpEquipment,
     handleClearHeldItem,
     handlePour,
-    pouringState,
     handleInitiatePour,
     handleCancelPour,
+    pouringState,
+    draggedItemRef,
   } = useExperiment();
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
@@ -106,6 +108,7 @@ export default function WorkbenchPage() {
                 heldEquipment={heldEquipment}
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
                 pouringState={pouringState}
+                draggedItemRef={draggedItemRef}
             />
             {selectedEquipment && !heldEquipment && !pouringState && (
               <div className="absolute top-4 right-4 z-20 w-80">

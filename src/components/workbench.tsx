@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -55,8 +56,8 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
 const EquipmentDisplay = ({ 
   item, 
   state,
-  onSelectAndPickup,
-  onDropOrPour,
+  onMouseDown,
+  onMouseUp,
   onRemove,
   onResize,
   isHoverTarget,
@@ -64,8 +65,8 @@ const EquipmentDisplay = ({
 }: { 
   item: Equipment, 
   state: ExperimentState,
-  onSelectAndPickup: (id: string, e: React.MouseEvent) => void,
-  onDropOrPour: (id: string) => void,
+  onMouseDown: (id: string, e: React.MouseEvent) => void,
+  onMouseUp: (id: string, e: React.MouseEvent) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
@@ -127,18 +128,15 @@ const EquipmentDisplay = ({
                 "absolute flex flex-col items-center justify-center p-2 bg-transparent transition-all duration-200 rounded-lg group",
                 item.isSelected && !isHeld && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
                 isHoverTarget && "ring-2 ring-accent ring-offset-2 ring-offset-background shadow-2xl",
-                isHeld ? "cursor-grabbing opacity-75" : "cursor-grab"
+                isHeld ? "cursor-grabbing opacity-75 z-20" : "cursor-grab"
             )}
             style={{ 
                 left: `${item.position.x}px`, 
                 top: `${item.position.y}px`,
                 touchAction: 'none',
             }}
-            onMouseDown={(e) => onSelectAndPickup(item.id, e)}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDropOrPour(item.id);
-            }}
+            onMouseDown={(e) => onMouseDown(item.id, e)}
+            onMouseUp={(e) => onMouseUp(item.id, e)}
         >
             {item.isSelected && !isHeld && (
               <>
@@ -185,14 +183,15 @@ export function Workbench({
     heldEquipment,
     onRemoveSelectedEquipment,
     pouringState,
+    draggedItemRef,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
     onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
-    onSelectEquipment: (id: string | null, e: React.MouseEvent | MouseEvent) => void;
+    onSelectEquipment: (id: string | null) => void;
     onDropOnApparatus: (equipmentId: string) => void;
-    onPickUpEquipment: (id: string, e: React.MouseEvent) => void;
+    onPickUpEquipment: (id: string) => void;
     onPour: (volume: number) => void;
     onInitiatePour: (targetId: string) => void;
     onCancelPour: () => void;
@@ -200,6 +199,7 @@ export function Workbench({
     heldEquipment: Equipment | null;
     onRemoveSelectedEquipment: (id: string) => void;
     pouringState: { sourceId: string; targetId: string; } | null;
+    draggedItemRef: React.RefObject<{ id: string; offset: { x: number; y: number }; hasMoved: boolean }>;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
   const [hoveredEquipment, setHoveredEquipment] = useState<string | null>(null);
@@ -211,47 +211,43 @@ export function Workbench({
   const selectedEquipment = state.equipment.find(e => e.isSelected);
   const isHoldingSomething = !!heldItem || !!heldEquipment;
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    let targetId: string | null = null;
-    if (isHoldingSomething && workbenchRef.current) {
-        const heldId = heldItem ? null : heldEquipment?.id;
-        const equipmentElements = Array.from(workbenchRef.current.children).filter(
-          (child) => child.id && child.id !== heldId && child.id !== 'lab-slab'
-        );
+  const handleEquipmentMouseDown = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectEquipment(id);
+    const equip = state.equipment.find(eq => eq.id === id);
+    if (equip && workbenchRef.current) {
+        const workbenchRect = workbenchRef.current.getBoundingClientRect();
+        draggedItemRef.current = {
+            id: id,
+            offset: {
+                x: e.clientX - workbenchRect.left - equip.position.x,
+                y: e.clientY - workbenchRect.top - equip.position.y,
+            },
+            hasMoved: false,
+        };
+    }
+  };
 
-        for (const elem of equipmentElements) {
-            const rect = elem.getBoundingClientRect();
-            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                targetId = elem.id;
-                break;
+  const handleEquipmentMouseUp = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (draggedItemRef.current && !draggedItemRef.current.hasMoved) {
+        // This was a click, not a drag
+        if (heldItem) {
+            onDropOnApparatus(id);
+        } else if (heldEquipment) {
+            if (heldEquipment.id !== id) {
+                onInitiatePour(id);
             }
+        } else {
+            onPickUpEquipment(id);
         }
     }
-    setHoveredEquipment(targetId);
-  }, [isHoldingSomething, heldItem, heldEquipment]);
-
-  const handleMouseUp = useCallback((e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-
-    // The drop logic is now handled by the onClick of the EquipmentDisplay
-    // We only need to handle deselecting here
-    
-    // Clear selection if clicking on the workbench background
-    const isWorkbenchClick = target === workbenchRef.current || target.id === 'lab-slab';
-    if (!selectedEquipment && isWorkbenchClick) {
-      onSelectEquipment(null, e);
-    }
-    if (isHoldingSomething) {
-      setHoveredEquipment(null);
-    }
-
-  }, [isHoldingSomething, selectedEquipment, onSelectEquipment]);
-
-  const handleDropOrPour = (targetId: string) => {
-    if (heldItem) {
-        onDropOnApparatus(targetId);
-    } else if (heldEquipment) {
-        onInitiatePour(targetId);
+    draggedItemRef.current = null;
+  };
+  
+  const handleWorkbenchMouseDown = (e: React.MouseEvent) => {
+    if (e.target === workbenchRef.current || (e.target as HTMLElement).id === 'lab-slab') {
+      onSelectEquipment(null);
     }
   }
 
@@ -264,22 +260,29 @@ export function Workbench({
     }
   }, [pouringState, maxPourVolume]);
 
+  const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
+    let targetId: string | null = null;
+    const currentHeldId = heldItem ? null : heldEquipment?.id;
+    if ((isHoldingSomething || draggedItemRef.current) && workbenchRef.current) {
+        const equipmentElements = Array.from(workbenchRef.current.children).filter(
+          (child) => child.id && child.id !== draggedItemRef.current?.id && child.id !== currentHeldId && child.id !== 'lab-slab'
+        );
 
+        for (const elem of equipmentElements) {
+            const rect = elem.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                targetId = elem.id;
+                break;
+            }
+        }
+    }
+    setHoveredEquipment(targetId);
+  }, [isHoldingSomething, heldItem, heldEquipment, draggedItemRef]);
+  
   useEffect(() => {
-    const ref = workbenchRef.current;
-    if (!ref) return;
-    
-    const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
-    const handleGlobalMouseUp = (e: MouseEvent) => handleMouseUp(e);
-
     document.addEventListener('mousemove', handleGlobalMouseMove);
-    document.addEventListener('mouseup', handleGlobalMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp]);
+    return () => document.removeEventListener('mousemove', handleGlobalMouseMove);
+  }, [handleGlobalMouseMove]);
 
   return (
     <div className="h-full flex flex-col">
@@ -311,11 +314,7 @@ export function Workbench({
                 "relative w-full flex-1",
                 (heldItem || heldEquipment) && "cursor-copy"
               )}
-              onMouseDown={(e) => {
-                if (e.target === workbenchRef.current || (e.target as HTMLElement).id === 'lab-slab') {
-                  onSelectEquipment(null, e);
-                }
-              }}
+              onMouseDown={handleWorkbenchMouseDown}
             >
               <div 
                 id="lab-slab" 
@@ -329,25 +328,17 @@ export function Workbench({
               {state.equipment.length > 0 ? (
                   <>
                       {state.equipment.map(item => (
-                          <div
-                            key={item.id}
-                            onMouseEnter={() => { if (isHoldingSomething) setHoveredEquipment(item.id)}}
-                            onMouseLeave={() => { if (isHoldingSomething) setHoveredEquipment(null)}}
-                          >
-                            <EquipmentDisplay 
-                                item={item} 
-                                state={state} 
-                                onSelectAndPickup={(id, e) => {
-                                  onSelectEquipment(id, e);
-                                  onPickUpEquipment(id, e);
-                                }}
-                                onDropOrPour={handleDropOrPour}
-                                onRemove={onRemoveSelectedEquipment}
-                                onResize={onResizeEquipment}
-                                isHoverTarget={(isHoldingSomething) && hoveredEquipment === item.id && item.id !== heldEquipment?.id}
-                                isHeld={heldEquipment?.id === item.id}
-                            />
-                          </div>
+                          <EquipmentDisplay 
+                              key={item.id}
+                              item={item} 
+                              state={state} 
+                              onMouseDown={handleEquipmentMouseDown}
+                              onMouseUp={handleEquipmentMouseUp}
+                              onRemove={onRemoveSelectedEquipment}
+                              onResize={onResizeEquipment}
+                              isHoverTarget={(isHoldingSomething || !!draggedItemRef.current) && hoveredEquipment === item.id}
+                              isHeld={heldEquipment?.id === item.id || draggedItemRef.current?.id === item.id}
+                          />
                       ))}
                   </>
               ) : (

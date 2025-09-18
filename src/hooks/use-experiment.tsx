@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -36,9 +37,9 @@ type ExperimentContextType = {
   handleRemoveSelectedEquipment: (id: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
-  handleSelectEquipment: (equipmentId: string | null, e: React.MouseEvent | MouseEvent) => void;
+  handleSelectEquipment: (equipmentId: string | null) => void;
   handleDropOnApparatus: (equipmentId: string) => void;
-  handlePickUpEquipment: (id: string, e: React.MouseEvent) => void;
+  handlePickUpEquipment: (id: string) => void;
   handlePour: (volume: number) => void;
   handleInitiatePour: (targetId: string) => void;
   handleCancelPour: () => void;
@@ -48,6 +49,7 @@ type ExperimentContextType = {
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
   handleClearHeldItem: () => void;
+  draggedItemRef: React.RefObject<{ id: string; offset: { x: number, y: number }; hasMoved: boolean; }>;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -64,7 +66,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>([]);
   const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>([]);
 
-  const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number } } | null>(null);
+  const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number }; hasMoved: boolean; } | null>(null);
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
@@ -129,51 +131,26 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setExperimentState(prev => ({ ...prev, title }));
   }, []);
   
-  const handleSelectEquipment = useCallback((equipmentId: string | null, e: React.MouseEvent | MouseEvent) => {
-    e.stopPropagation();
-
+  const handleSelectEquipment = useCallback((equipmentId: string | null) => {
     if (heldItem && equipmentId) {
         handleDropOnApparatus(equipmentId);
         return;
     }
+     if (heldEquipment && equipmentId) {
+        handleInitiatePour(equipmentId);
+        return;
+    }
 
     setExperimentState(prevState => {
-      // If we are deselecting, clear dragged item and selection
-      if (!equipmentId) {
-          draggedItemRef.current = null; 
-          return {
-              ...prevState,
-              equipment: prevState.equipment.map(e => ({ ...e, isSelected: false })),
-          };
-      }
-      
-      const equip = prevState.equipment.find(eq => eq.id === equipmentId);
-      
-      // If we click an item, set up for dragging
-      if (equip && e.nativeEvent instanceof MouseEvent && e.currentTarget) {
-          const workbenchEl = (e.currentTarget as HTMLElement).closest('.relative.w-full.flex-1');
-          if (workbenchEl) {
-              const workbenchRect = workbenchEl.getBoundingClientRect();
-              draggedItemRef.current = {
-                  id: equipmentId,
-                  offset: {
-                      x: e.nativeEvent.clientX - workbenchRect.left - equip.position.x,
-                      y: e.nativeEvent.clientY - workbenchRect.top - equip.position.y,
-                  },
-              };
-          }
-      }
-
-      // Set the clicked item as selected and others as not
-      return {
-        ...prevState,
-        equipment: prevState.equipment.map(e => ({
-          ...e,
-          isSelected: e.id === equipmentId,
-        })),
-      };
+        return {
+            ...prevState,
+            equipment: prevState.equipment.map(e => ({
+            ...e,
+            isSelected: e.id === equipmentId,
+            })),
+        };
     });
-  }, [heldItem]);
+  }, [heldItem, heldEquipment]);
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
@@ -346,8 +323,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setHeldItem(chemical);
   }, []);
 
-  const handlePickUpEquipment = useCallback((id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handlePickUpEquipment = useCallback((id: string) => {
     if(pouringState) return;
 
     handleClearHeldItem();
@@ -429,6 +405,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
         if (draggedItemRef.current) {
+            if (!draggedItemRef.current.hasMoved) {
+              draggedItemRef.current.hasMoved = true;
+            }
             const { id, offset } = draggedItemRef.current;
             const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
             if (workbench) {
@@ -481,6 +460,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResetExperiment,
     handlePickUpChemical,
     handleClearHeldItem,
+    draggedItemRef,
   }), [
     experimentState, 
     labLogs, 
@@ -507,7 +487,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleTitrate,
     handleAddCustomLog,
     handleResetExperiment,
-handlePickUpChemical,
+    handlePickUpChemical,
     handleClearHeldItem,
   ]);
 
