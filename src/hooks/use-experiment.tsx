@@ -132,15 +132,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, []);
   
   const handleSelectEquipment = useCallback((equipmentId: string | null) => {
-    if (heldItem && equipmentId) {
-        handleDropOnApparatus(equipmentId);
-        return;
-    }
-     if (heldEquipment && equipmentId) {
-        handleInitiatePour(equipmentId);
-        return;
-    }
-
     setExperimentState(prevState => {
         return {
             ...prevState,
@@ -150,7 +141,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             })),
         };
     });
-  }, [heldItem, heldEquipment]);
+  }, []);
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
@@ -223,72 +214,82 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (!handleSafetyCheck() || !heldItem) return;
 
     setExperimentState(prevState => {
-        let newState = { ...prevState };
-        const equipmentOnWorkbench = newState.equipment.find(e => e.id === equipmentId);
+        const equipmentOnWorkbench = prevState.equipment.find(e => e.id === equipmentId);
         if (!equipmentOnWorkbench) return prevState;
 
         const canAddChemical = !equipmentOnWorkbench.solutions || equipmentOnWorkbench.solutions.length === 0;
 
-        if ((heldItem.type === 'acid' || heldItem.type === 'base') && canAddChemical) {
-            equipmentOnWorkbench.solutions = [{ chemical: heldItem, volume: Math.min(50, equipmentOnWorkbench.volume || 50) }];
-            addLog(`Added ${equipmentOnWorkbench.solutions[0].volume}ml of ${heldItem.name} to ${equipmentOnWorkbench.name}.`);
-        } else if (heldItem.type === 'indicator') {
-             if (!equipmentOnWorkbench.solutions) equipmentOnWorkbench.solutions = [];
+        if (heldItem.type === 'indicator') {
+            const newState = {...prevState};
+            if (!equipmentOnWorkbench.solutions) equipmentOnWorkbench.solutions = [];
             equipmentOnWorkbench.solutions.push({ chemical: heldItem, volume: 1 }); // Assume 1ml of indicator
             addLog(`Added ${heldItem.name} indicator to ${equipmentOnWorkbench.name}.`);
+            handleClearHeldItem();
+            return updatePhAndColor(newState);
+        } else if ((heldItem.type === 'acid' || heldItem.type === 'base') && canAddChemical) {
+            setPouringState({ sourceId: 'inventory', targetId: equipmentId });
         } else if (!canAddChemical) {
             setTimeout(() => toast({ title: 'Invalid Action', description: `${equipmentOnWorkbench.name} already contains a solution.`, variant: 'destructive' }), 0);
+            handleClearHeldItem();
         } else {
             setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to ${equipmentOnWorkbench.name}.`, variant: 'destructive' }), 0);
+            handleClearHeldItem();
         }
         
-        handleClearHeldItem();
-        return updatePhAndColor(newState);
+        return prevState;
     });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, heldItem]);
+  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, heldItem, handleClearHeldItem]);
   
   const handlePour = useCallback((volume: number) => {
     if (!pouringState) return;
     const { sourceId, targetId } = pouringState;
 
     setExperimentState(prevState => {
-      const source = prevState.equipment.find(e => e.id === sourceId);
-      const target = prevState.equipment.find(e => e.id === targetId);
-
-      if (!source || !target || !source.solutions || source.solutions.length === 0) {
+      let newState = {...prevState};
+      const target = newState.equipment.find(e => e.id === targetId);
+      if (!target) {
         setPouringState(null);
         return prevState;
       }
       
-      const totalSourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
-      const pourVolumeClamped = Math.min(volume, totalSourceVolume);
-
-      addLog(`Pouring ${pourVolumeClamped.toFixed(1)}ml from ${source.name} into ${target.name}.`);
-
       if (!target.solutions) target.solutions = [];
-      
-      for (const sourceSolution of source.solutions) {
-        const pourFraction = sourceSolution.volume / totalSourceVolume;
-        const volToTake = pourFraction * pourVolumeClamped;
-        
-        const existingTargetSolution = target.solutions.find(s => s.chemical.id === sourceSolution.chemical.id);
-        if (existingTargetSolution) {
-          existingTargetSolution.volume += volToTake;
-        } else {
-          target.solutions.push({...sourceSolution, volume: volToTake});
-        }
-        sourceSolution.volume -= volToTake;
-      }
-      
-      source.solutions = source.solutions.filter(s => s.volume > 0.01);
 
-      const newState = {
-        ...prevState,
-        equipment: prevState.equipment.map(e => {
-          if (e.id === source.id) return source;
-          if (e.id === target.id) return target;
-          return e;
-        })
+      if (sourceId === 'inventory') {
+          if (!heldItem) return prevState;
+          const pourVolumeClamped = Math.min(volume, target.volume || volume);
+          target.solutions = [{ chemical: heldItem, volume: pourVolumeClamped }];
+          addLog(`Added ${pourVolumeClamped.toFixed(1)}ml of ${heldItem.name} to ${target.name}.`);
+
+      } else {
+        const source = newState.equipment.find(e => e.id === sourceId);
+        if (!source || !source.solutions || source.solutions.length === 0) {
+            setPouringState(null);
+            return prevState;
+        }
+
+        const totalSourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
+        const pourVolumeClamped = Math.min(volume, totalSourceVolume);
+        addLog(`Pouring ${pourVolumeClamped.toFixed(1)}ml from ${source.name} into ${target.name}.`);
+
+        for (const sourceSolution of source.solutions) {
+            const pourFraction = sourceSolution.volume / totalSourceVolume;
+            const volToTake = pourFraction * pourVolumeClamped;
+            
+            const existingTargetSolution = target.solutions.find(s => s.chemical.id === sourceSolution.chemical.id);
+            if (existingTargetSolution) {
+            existingTargetSolution.volume += volToTake;
+            } else {
+            target.solutions.push({...sourceSolution, volume: volToTake});
+            }
+            sourceSolution.volume -= volToTake;
+        }
+        
+        source.solutions = source.solutions.filter(s => s.volume > 0.01);
+      }
+
+      newState = {
+        ...newState,
+        equipment: newState.equipment.map(e => e.id === target.id ? target : e)
       };
 
       setPouringState(null);
@@ -296,7 +297,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       return updatePhAndColor(newState);
     });
 
-  }, [addLog, pouringState, updatePhAndColor]);
+  }, [addLog, pouringState, updatePhAndColor, heldItem, handleClearHeldItem]);
 
   const handleInitiatePour = useCallback((targetId: string) => {
     if (!heldEquipment || heldEquipment.id === targetId) return;
@@ -311,17 +312,18 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         setTimeout(() => toast({ title: 'Invalid Action', description: `You cannot pour into a ${target.name}.`, variant: 'destructive' }), 0);
         handleClearHeldItem();
     }
-  }, [heldEquipment, experimentState.equipment, toast]);
+  }, [heldEquipment, experimentState.equipment, toast, handleClearHeldItem]);
   
   const handleCancelPour = useCallback(() => {
     setPouringState(null);
     handleClearHeldItem();
-  }, []);
+  }, [handleClearHeldItem]);
   
   const handlePickUpChemical = useCallback((chemical: Chemical) => {
+    if (pouringState) return;
     handleClearHeldItem();
     setHeldItem(chemical);
-  }, []);
+  }, [pouringState, handleClearHeldItem]);
 
   const handlePickUpEquipment = useCallback((id: string) => {
     if(pouringState) return;
@@ -331,7 +333,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (equipment && equipment.solutions && equipment.solutions.length > 0) {
       setHeldEquipment(equipment);
     }
-  }, [experimentState.equipment, pouringState]);
+  }, [experimentState.equipment, pouringState, handleClearHeldItem]);
 
   const handleClearHeldItem = useCallback(() => {
     setHeldItem(null);
@@ -404,22 +406,45 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-        if (draggedItemRef.current) {
-            if (!draggedItemRef.current.hasMoved) {
-              draggedItemRef.current.hasMoved = true;
+        if (draggedItemRef.current && draggedItemRef.current.id) {
+            if (!draggedItemRef.current.hasMoved && e.buttons === 1) {
+              // Check for small movements to differentiate click from drag
+              const startX = draggedItemRef.current.offset.x;
+              const startY = draggedItemRef.current.offset.y;
+              if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+                  draggedItemRef.current.hasMoved = true;
+              }
             }
-            const { id, offset } = draggedItemRef.current;
-            const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
-            if (workbench) {
-                const rect = workbench.getBoundingClientRect();
-                const x = e.clientX - rect.left - offset.x;
-                const y = e.clientY - rect.top - offset.y;
-                handleMoveEquipment(id, { x, y });
+
+            if (draggedItemRef.current.hasMoved) {
+              const { id, offset } = draggedItemRef.current;
+              const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
+              if (workbench) {
+                  const rect = workbench.getBoundingClientRect();
+                  const x = e.clientX - rect.left - offset.x;
+                  const y = e.clientY - rect.top - offset.y;
+                  handleMoveEquipment(id, { x, y });
+              }
             }
         }
     };
 
     const handleMouseUp = () => {
+        if (draggedItemRef.current && !draggedItemRef.current.hasMoved) {
+            const id = draggedItemRef.current.id;
+            // It's a click, not a drag. Now decide what to do.
+            if (heldItem) {
+                handleDropOnApparatus(id);
+            } else if (heldEquipment) {
+                if (heldEquipment.id !== id) {
+                    handleInitiatePour(id);
+                } else {
+                    handleClearHeldItem(); // Clicked on the item already being held
+                }
+            } else {
+                handlePickUpEquipment(id);
+            }
+        }
         draggedItemRef.current = null;
     };
 
@@ -429,7 +454,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleMoveEquipment]);
+  }, [handleMoveEquipment, heldItem, heldEquipment, handleDropOnApparatus, handleInitiatePour, handlePickUpEquipment, handleClearHeldItem]);
 
 
   const value = useMemo(() => ({

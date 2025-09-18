@@ -251,8 +251,19 @@ export function Workbench({
     }
   }
 
-  const pouringSource = pouringState ? state.equipment.find(e => e.id === pouringState.sourceId) : null;
-  const maxPourVolume = pouringSource?.solutions.reduce((total, s) => total + s.volume, 0) || 0;
+  const pouringSource = pouringState ? (pouringState.sourceId === 'inventory' ? heldItem : state.equipment.find(e => e.id === pouringState.sourceId)) : null;
+  const pouringTarget = pouringState ? state.equipment.find(e => e.id === pouringState.targetId) : null;
+  
+  let maxPourVolume = 0;
+  if (pouringSource) {
+      if ('solutions' in pouringSource && pouringSource.solutions) { // It's Equipment
+          maxPourVolume = pouringSource.solutions.reduce((total, s) => total + s.volume, 0);
+      } else if (pouringTarget?.volume) { // It's a Chemical from inventory
+          maxPourVolume = pouringTarget.volume;
+      } else {
+          maxPourVolume = 100; // Default for inventory if target has no volume
+      }
+  }
 
   useEffect(() => {
     if (pouringState) {
@@ -294,7 +305,7 @@ export function Workbench({
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-test-tube-diagonal"><path d="M14.5 2.5 16 4l-1.5 1.5"/><path d="M17.5 5.5 19 7l-1.5 1.5"/><path d="m3 21 7-7"/><path d="M13.5 6.5 16 9l4-4"/><path d="m3 21 7-7"/><path d="M14.5 6.5 17 9l4-4"/><path d="M10.586 11.414a2 2 0 1 1 2.828-2.828"/></svg>
             Workbench
           </CardTitle>
-           {heldItem && (
+           {heldItem && !pouringState && (
             <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
               <Hand className="h-4 w-4"/>
               Holding: {heldItem.name}. Click on an apparatus to add it. (Press Esc to cancel)
@@ -347,9 +358,11 @@ export function Workbench({
             </div>
           
             <div className="w-full max-w-md mt-4">
-              {pouringState && pouringSource && (
+              {pouringState && pouringSource && pouringTarget && (
                 <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
-                    <p className="text-sm font-medium text-foreground">Pour from {pouringSource.name}</p>
+                    <p className="text-sm font-medium text-foreground">
+                        {pouringState.sourceId === 'inventory' ? `Add ${pouringSource.name} to ${pouringTarget.name}` : `Pour from ${pouringSource.name}`}
+                    </p>
                     <div className="flex items-center gap-4 w-full px-4">
                         <Slider
                             value={[pourVolume]}
@@ -361,7 +374,9 @@ export function Workbench({
                         <span className="text-sm font-mono w-24 text-center">{pourVolume.toFixed(2)} ml</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => onPour(pourVolume)} className='flex-1' variant="default">Pour</Button>
+                        <Button onClick={() => onPour(pourVolume)} className='flex-1' variant="default">
+                            {pouringState.sourceId === 'inventory' ? 'Add' : 'Pour'}
+                        </Button>
                         <Button onClick={onCancelPour} className='flex-1' variant="outline">Cancel</Button>
                     </div>
                 </div>
