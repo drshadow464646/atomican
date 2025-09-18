@@ -133,16 +133,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleSelectEquipment = useCallback((equipmentId: string | null, e: React.MouseEvent | MouseEvent) => {
     e.stopPropagation();
 
-    // If an item is held and we click on another item, initiate a pour
     if (heldEquipment && equipmentId && heldEquipment.id !== equipmentId) {
         handleInitiatePour(equipmentId);
         return;
     }
 
     setExperimentState(prevState => {
-      // If we're clicking to de-select, just update the state
       if (!equipmentId) {
-          draggedItemRef.current = null; // Stop any dragging
+          draggedItemRef.current = null; 
           return {
               ...prevState,
               equipment: prevState.equipment.map(e => ({ ...e, isSelected: false })),
@@ -151,7 +149,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       
       const equip = prevState.equipment.find(eq => eq.id === equipmentId);
       
-      // If an item is clicked, prepare it for being dragged
       if (equip && e.nativeEvent instanceof MouseEvent && e.currentTarget) {
           const workbenchRect = (e.currentTarget as HTMLElement).closest('.relative.w-full.flex-1')?.getBoundingClientRect();
           if (workbenchRect) {
@@ -196,7 +193,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleAddEquipmentToInventory = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (inventoryEquipment.find((e) => e.id === equipment.id)) {
-       setTimeout(() => toast({ title: 'Already in Inventory', description: `${equipment.name} is already in your inventory.` }), 0);
       return;
     }
     const newInventoryItem: Equipment = {
@@ -207,8 +203,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         solutions: [],
     };
     setInventoryEquipment(prev => [...prev, newInventoryItem]);
-     setTimeout(() => toast({ title: 'Added to Inventory', description: `${equipment.name} has been added to your inventory.` }), 0);
-  }, [inventoryEquipment, toast]);
+  }, [inventoryEquipment]);
   
   const handleRemoveSelectedEquipment = useCallback((id: string) => {
     setExperimentState(prevState => {
@@ -363,12 +358,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
-        setTimeout(() => toast({ title: 'Already in Inventory', description: `${chemical.name} is already in your inventory.` }), 0);
         return;
     }
     setInventoryChemicals(prev => [...prev, chemical]);
-    setTimeout(() => toast({ title: 'Added to Inventory', description: `${chemical.name} has been added to your inventory.` }), 0);
-  }, [inventoryChemicals, toast]);
+  }, [inventoryChemicals]);
   
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
