@@ -57,7 +57,7 @@ const EquipmentDisplay = ({
   item, 
   state,
   onMouseDown,
-  onMouseUp,
+  onClick,
   onRemove,
   onResize,
   isHoverTarget,
@@ -66,7 +66,7 @@ const EquipmentDisplay = ({
   item: Equipment, 
   state: ExperimentState,
   onMouseDown: (id: string, e: React.MouseEvent) => void,
-  onMouseUp: (id: string, e: React.MouseEvent) => void,
+  onClick: (id: string, e: React.MouseEvent) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
@@ -124,6 +124,7 @@ const EquipmentDisplay = ({
     return (
         <div 
             id={item.id}
+            data-equipment-id={item.id}
             className={cn(
                 "absolute flex flex-col items-center justify-center p-2 bg-transparent transition-all duration-200 rounded-lg group",
                 item.isSelected && !isHeld && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
@@ -136,7 +137,7 @@ const EquipmentDisplay = ({
                 touchAction: 'none',
             }}
             onMouseDown={(e) => onMouseDown(item.id, e)}
-            onMouseUp={(e) => onMouseUp(item.id, e)}
+            onClick={(e) => onClick(item.id, e)}
         >
             {item.isSelected && !isHeld && (
               <>
@@ -182,6 +183,7 @@ export function Workbench({
     heldItem,
     heldEquipment,
     onRemoveSelectedEquipment,
+    onClearHeldItem,
     pouringState,
     draggedItemRef,
 }: { 
@@ -198,6 +200,7 @@ export function Workbench({
     heldItem: Chemical | null;
     heldEquipment: Equipment | null;
     onRemoveSelectedEquipment: (id: string) => void;
+    onClearHeldItem: () => void;
     pouringState: { sourceId: string; targetId: string; } | null;
     draggedItemRef: React.RefObject<{ id: string; offset: { x: number; y: number }; hasMoved: boolean }>;
 }) {
@@ -228,40 +231,60 @@ export function Workbench({
     }
   };
 
-  const handleEquipmentMouseUp = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (draggedItemRef.current && !draggedItemRef.current.hasMoved) {
-        // This was a click, not a drag
-        if (heldItem) {
-            onDropOnApparatus(id);
-        } else if (heldEquipment) {
-            if (heldEquipment.id !== id) {
-                onInitiatePour(id);
-            }
-        } else {
-            onPickUpEquipment(id);
-        }
-    }
-    draggedItemRef.current = null;
+  const handleEquipmentClick = (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      // This logic runs if the mouseup event determines it was a click, not a drag
+      if (draggedItemRef.current && draggedItemRef.current.hasMoved) {
+          // It was a drag, so the mouseup handler already took care of it. Do nothing.
+          return;
+      }
+      
+      if (heldItem) {
+          // If holding a chemical, drop it in the clicked apparatus
+          onDropOnApparatus(id);
+      } else if (heldEquipment) {
+          // If holding equipment, clicking another piece of equipment means we want to pour
+          if (heldEquipment.id !== id) {
+              onInitiatePour(id);
+          } else {
+              // Clicked on the same item we are holding, so "put it down"
+              onClearHeldItem();
+          }
+      } else {
+          // If holding nothing, clicking an apparatus means we want to pick it up for pouring
+          onPickUpEquipment(id);
+      }
   };
   
   const handleWorkbenchMouseDown = (e: React.MouseEvent) => {
     if (e.target === workbenchRef.current || (e.target as HTMLElement).id === 'lab-slab') {
       onSelectEquipment(null);
+      if(heldEquipment || heldItem) {
+        onClearHeldItem();
+      }
     }
   }
 
-  const pouringSource = pouringState ? (pouringState.sourceId === 'inventory' ? heldItem : state.equipment.find(e => e.id === pouringState.sourceId)) : null;
-  const pouringTarget = pouringState ? state.equipment.find(e => e.id === pouringState.targetId) : null;
+  const pouringSourceItem = pouringState ? (pouringState.sourceId === 'inventory' ? heldItem : state.equipment.find(e => e.id === pouringState.sourceId)) : null;
+  const pouringTargetItem = pouringState ? state.equipment.find(e => e.id === pouringState.targetId) : null;
   
   let maxPourVolume = 0;
-  if (pouringSource) {
-      if ('solutions' in pouringSource && pouringSource.solutions) { // It's Equipment
-          maxPourVolume = pouringSource.solutions.reduce((total, s) => total + s.volume, 0);
-      } else if (pouringTarget?.volume) { // It's a Chemical from inventory
-          maxPourVolume = pouringTarget.volume;
+  if (pouringState && pouringSourceItem && pouringTargetItem) {
+      if (pouringState.sourceId === 'inventory') {
+          // Pouring from inventory: limit by target's remaining capacity
+          const targetVolume = pouringTargetItem.volume || 0;
+          const currentVolume = pouringTargetItem.solutions.reduce((acc, s) => acc + s.volume, 0);
+          maxPourVolume = Math.max(0, targetVolume - currentVolume);
       } else {
-          maxPourVolume = 100; // Default for inventory if target has no volume
+          // Pouring from another container: limit by source volume and target capacity
+          const source = pouringSourceItem as Equipment;
+          const sourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
+          
+          const targetVolume = pouringTargetItem.volume || 0;
+          const currentTargetVolume = pouringTargetItem.solutions.reduce((acc, s) => acc + s.volume, 0);
+          const targetCapacity = Math.max(0, targetVolume - currentTargetVolume);
+          
+          maxPourVolume = Math.min(sourceVolume, targetCapacity);
       }
   }
 
@@ -273,7 +296,7 @@ export function Workbench({
 
   const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
     let targetId: string | null = null;
-    const currentHeldId = heldItem ? null : heldEquipment?.id;
+    const currentHeldId = heldEquipment?.id;
     if ((isHoldingSomething || draggedItemRef.current) && workbenchRef.current) {
         const equipmentElements = Array.from(workbenchRef.current.children).filter(
           (child) => child.id && child.id !== draggedItemRef.current?.id && child.id !== currentHeldId && child.id !== 'lab-slab'
@@ -288,9 +311,11 @@ export function Workbench({
         }
     }
     setHoveredEquipment(targetId);
-  }, [isHoldingSomething, heldItem, heldEquipment, draggedItemRef]);
+  }, [isHoldingSomething, heldEquipment, draggedItemRef]);
   
   useEffect(() => {
+    // These listeners are for hover effects, not for drag logic.
+    // Drag logic is now in useExperiment hook.
     document.addEventListener('mousemove', handleGlobalMouseMove);
     return () => document.removeEventListener('mousemove', handleGlobalMouseMove);
   }, [handleGlobalMouseMove]);
@@ -344,7 +369,7 @@ export function Workbench({
                               item={item} 
                               state={state} 
                               onMouseDown={handleEquipmentMouseDown}
-                              onMouseUp={handleEquipmentMouseUp}
+                              onClick={handleEquipmentClick}
                               onRemove={onRemoveSelectedEquipment}
                               onResize={onResizeEquipment}
                               isHoverTarget={(isHoldingSomething || !!draggedItemRef.current) && hoveredEquipment === item.id}
@@ -358,10 +383,10 @@ export function Workbench({
             </div>
           
             <div className="w-full max-w-md mt-4">
-              {pouringState && pouringSource && pouringTarget && (
+              {pouringState && pouringSourceItem && pouringTargetItem && (
                 <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">
-                        {pouringState.sourceId === 'inventory' ? `Add ${pouringSource.name} to ${pouringTarget.name}` : `Pour from ${pouringSource.name}`}
+                        {pouringState.sourceId === 'inventory' ? `Add ${pouringSourceItem.name} to ${pouringTargetItem.name}` : `Pour from ${pouringSourceItem.name} into ${pouringTargetItem.name}`}
                     </p>
                     <div className="flex items-center gap-4 w-full px-4">
                         <Slider
@@ -398,3 +423,5 @@ export function Workbench({
     </div>
   );
 }
+
+    

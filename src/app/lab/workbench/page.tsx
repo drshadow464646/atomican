@@ -107,6 +107,7 @@ export default function WorkbenchPage() {
                 heldItem={heldItem}
                 heldEquipment={heldEquipment}
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
+                onClearHeldItem={handleClearHeldItem}
                 pouringState={pouringState}
                 draggedItemRef={draggedItemRef}
             />
@@ -120,3 +121,5 @@ export default function WorkbenchPage() {
     </div>
   );
 }
+
+    
