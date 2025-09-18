@@ -8,7 +8,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const GenerateExperimentStepsInputSchema = z.object({
@@ -35,7 +34,7 @@ const prompt = ai.definePrompt({
     schema: GenerateExperimentStepsOutputSchema,
     format: 'json',
   },
-  model: googleAI('gemini-1.5-flash-latest'),
+  model: ['nemotron', 'kimi'],
   prompt: `You are a virtual chemistry lab assistant that designs experiment procedures for students.
   The user will provide a goal for an experiment. Your task is to generate a clear, concise, step-by-step procedure to achieve this goal in a virtual lab setting.
 
