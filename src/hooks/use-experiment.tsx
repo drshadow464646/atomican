@@ -202,8 +202,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         isSelected: false,
         solutions: [],
     };
+    addLog(`Added ${equipment.name} to equipment inventory.`);
     setInventoryEquipment(prev => [...prev, newInventoryItem]);
-  }, [inventoryEquipment]);
+  }, [inventoryEquipment, addLog]);
   
   const handleRemoveSelectedEquipment = useCallback((id: string) => {
     setExperimentState(prevState => {
@@ -352,16 +353,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [experimentState.equipment]);
 
   const handleClearHeldItem = useCallback(() => {
-    if (heldItem) setHeldItem(null);
-    if (heldEquipment) setHeldEquipment(null);
-  }, [heldItem, heldEquipment]);
+    setHeldItem(null);
+    setHeldEquipment(null);
+  }, []);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.find((c) => c.id === chemical.id)) {
         return;
     }
+    addLog(`Added ${chemical.name} to chemical inventory.`);
     setInventoryChemicals(prev => [...prev, chemical]);
-  }, [inventoryChemicals]);
+  }, [inventoryChemicals, addLog]);
   
   const handleTitrate = useCallback((volume: number) => {
     if (!handleSafetyCheck()) return;
@@ -474,7 +476,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleAddCustomLog,
     handleResetExperiment,
     handlePickUpChemical,
-handleClearHeldItem,
+    handleClearHeldItem,
   }), [
     experimentState, 
     labLogs, 
