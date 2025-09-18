@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -217,7 +216,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
       addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
       
-      const newEquipment = prevState.equipment.filter(e => e.id !== equipmentToRemove.id);
+      const newEquipment = prevState.equipment.filter(e => e.id !== id);
       
       return {
         ...prevState,
