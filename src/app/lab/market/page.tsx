@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Droplets, Plus, Search, Loader2 } from 'lucide-react';
+import { Droplets, Plus, Search, Loader2, Check } from 'lucide-react';
 import type { Chemical } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
@@ -17,7 +17,7 @@ export default function MarketPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Chemical[]>([]);
   const { toast } = useToast();
-  const { handleAddChemicalToInventory } = useExperiment();
+  const { handleAddChemicalToInventory, inventoryChemicals } = useExperiment();
 
   const filterChemicals = (query: string) => {
     setIsSearching(true);
@@ -88,33 +88,49 @@ export default function MarketPage() {
 
         {!isSearching && results.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {results.map(chem => (
-              <Card key={chem.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                      <Droplets className="h-6 w-6 text-primary" />
+            {results.map(chem => {
+              const isInInventory = inventoryChemicals.some(invChem => invChem.id === chem.id);
+              return (
+                <Card key={chem.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-md">
+                        <Droplets className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{chem.name}</CardTitle>
+                        <CardDescription>{chem.formula}</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{chem.name}</CardTitle>
-                      <CardDescription>{chem.formula}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <p className="text-sm text-muted-foreground">
-                    Type: <span className="font-medium text-foreground">{chem.type}</span>
-                    {chem.concentration && `, Conc: ${chem.concentration}M`}
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full" onClick={() => handleAddChemicalToInventory(chem)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add to Inventory
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <p className="text-sm text-muted-foreground">
+                      Type: <span className="font-medium text-foreground">{chem.type}</span>
+                      {chem.concentration && `, Conc: ${chem.concentration}M`}
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleAddChemicalToInventory(chem)}
+                      disabled={isInInventory}
+                    >
+                      {isInInventory ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Added
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add to Inventory
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )
+            })}
           </div>
         )}
 

@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2 } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2, Check } from 'lucide-react';
 import { useExperiment } from '@/hooks/use-experiment';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +46,7 @@ export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[]>([]);
-  const { handleAddEquipmentToInventory } = useExperiment();
+  const { handleAddEquipmentToInventory, inventoryEquipment } = useExperiment();
 
   const filterApparatus = (query: string) => {
     setIsSearching(true);
@@ -111,25 +111,41 @@ export default function ApparatusPage() {
 
         {!isSearching && results.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {results.map(item => (
-              <Card key={item.id} className="flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
-                <CardHeader className="items-center text-center">
-                  <div className="p-4 bg-primary/10 rounded-full mb-2">
-                      {getIconForEquipment(item)}
-                  </div>
-                  <CardTitle className="text-xl">{item.name}</CardTitle>
-                  <CardDescription>
-                    <Badge variant="secondary">{item.type}</Badge>
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <Button className="w-full" onClick={() => handleAddEquipmentToInventory(item)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+            {results.map(item => {
+              const isInInventory = inventoryEquipment.some(invItem => invItem.id === item.id);
+              return (
+                <Card key={item.id} className="flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+                  <CardHeader className="items-center text-center">
+                    <div className="p-4 bg-primary/10 rounded-full mb-2">
+                        {getIconForEquipment(item)}
+                    </div>
+                    <CardTitle className="text-xl">{item.name}</CardTitle>
+                    <CardDescription>
+                      <Badge variant="secondary">{item.type}</Badge>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleAddEquipmentToInventory(item)}
+                      disabled={isInInventory}
+                    >
+                      {isInInventory ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Added
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )
+            })}
           </div>
         )}
         
