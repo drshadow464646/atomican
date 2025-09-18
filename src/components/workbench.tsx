@@ -350,10 +350,7 @@ export function Workbench({
                       ))}
                   </>
               ) : (
-                   <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                     <p className="text-lg mb-2">Workbench is empty</p>
-                     <p className="text-sm">Add equipment from your inventory to get started.</p>
-                  </div>
+                   null
               )}
             </div>
           
