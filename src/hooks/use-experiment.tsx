@@ -132,17 +132,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleSelectEquipment = useCallback((equipmentId: string | null, e: React.MouseEvent | MouseEvent) => {
     e.stopPropagation();
 
-    if (heldEquipment && equipmentId && heldEquipment.id !== equipmentId) {
-        handleInitiatePour(equipmentId);
-        return;
-    }
-    
     if (heldItem && equipmentId) {
         handleDropOnApparatus(equipmentId);
         return;
     }
 
     setExperimentState(prevState => {
+      // If we are deselecting, clear dragged item and selection
       if (!equipmentId) {
           draggedItemRef.current = null; 
           return {
@@ -153,9 +149,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       
       const equip = prevState.equipment.find(eq => eq.id === equipmentId);
       
+      // If we click an item, set up for dragging
       if (equip && e.nativeEvent instanceof MouseEvent && e.currentTarget) {
-          const workbenchRect = (e.currentTarget as HTMLElement).closest('.relative.w-full.flex-1')?.getBoundingClientRect();
-          if (workbenchRect) {
+          const workbenchEl = (e.currentTarget as HTMLElement).closest('.relative.w-full.flex-1');
+          if (workbenchEl) {
+              const workbenchRect = workbenchEl.getBoundingClientRect();
               draggedItemRef.current = {
                   id: equipmentId,
                   offset: {
@@ -166,6 +164,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           }
       }
 
+      // Set the clicked item as selected and others as not
       return {
         ...prevState,
         equipment: prevState.equipment.map(e => ({
@@ -174,7 +173,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         })),
       };
     });
-  }, [heldEquipment, heldItem]);
+  }, [heldItem]);
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
@@ -339,6 +338,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handleCancelPour = useCallback(() => {
     setPouringState(null);
+    handleClearHeldItem();
   }, []);
   
   const handlePickUpChemical = useCallback((chemical: Chemical) => {
