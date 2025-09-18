@@ -55,9 +55,8 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
 const EquipmentDisplay = ({ 
   item, 
   state,
-  onSelect,
-  onDrop,
-  onInitiatePour,
+  onSelectAndPickup,
+  onDropOrPour,
   onRemove,
   onResize,
   isHoverTarget,
@@ -65,9 +64,8 @@ const EquipmentDisplay = ({
 }: { 
   item: Equipment, 
   state: ExperimentState,
-  onSelect: (id: string, e: React.MouseEvent) => void,
-  onDrop: (id: string) => void,
-  onInitiatePour: (id: string) => void,
+  onSelectAndPickup: (id: string, e: React.MouseEvent) => void,
+  onDropOrPour: (id: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
@@ -122,8 +120,6 @@ const EquipmentDisplay = ({
         }
     };
 
-    const hasLiquid = (item.solutions && item.solutions.length > 0);
-
     return (
         <div 
             id={item.id}
@@ -138,13 +134,10 @@ const EquipmentDisplay = ({
                 top: `${item.position.y}px`,
                 touchAction: 'none',
             }}
-            onMouseDown={(e) => onSelect(item.id, e)}
+            onMouseDown={(e) => onSelectAndPickup(item.id, e)}
             onClick={(e) => {
-              e.stopPropagation(); 
-              onDrop(item.id);
-              if (hasLiquid) {
-                onInitiatePour(item.id);
-              }
+              e.stopPropagation();
+              onDropOrPour(item.id);
             }}
         >
             {item.isSelected && !isHeld && (
@@ -239,19 +232,28 @@ export function Workbench({
 
   const handleMouseUp = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (heldEquipment && hoveredEquipment) {
-        onInitiatePour(hoveredEquipment);
-    } else if (heldItem && hoveredEquipment) {
-        onDropOnApparatus(hoveredEquipment);
-    }
+
+    // The drop logic is now handled by the onClick of the EquipmentDisplay
+    // We only need to handle deselecting here
     
     // Clear selection if clicking on the workbench background
     const isWorkbenchClick = target === workbenchRef.current || target.id === 'lab-slab';
     if (!selectedEquipment && isWorkbenchClick) {
       onSelectEquipment(null, e);
     }
-    setHoveredEquipment(null);
-  }, [hoveredEquipment, heldItem, heldEquipment, selectedEquipment, onInitiatePour, onDropOnApparatus, onSelectEquipment]);
+    if (isHoldingSomething) {
+      setHoveredEquipment(null);
+    }
+
+  }, [isHoldingSomething, selectedEquipment, onSelectEquipment]);
+
+  const handleDropOrPour = (targetId: string) => {
+    if (heldItem) {
+        onDropOnApparatus(targetId);
+    } else if (heldEquipment) {
+        onInitiatePour(targetId);
+    }
+  }
 
   const pouringSource = pouringState ? state.equipment.find(e => e.id === pouringState.sourceId) : null;
   const maxPourVolume = pouringSource?.solutions.reduce((total, s) => total + s.volume, 0) || 0;
@@ -298,7 +300,7 @@ export function Workbench({
           {heldEquipment && !pouringState && (
             <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
               <Hand className="h-4 w-4"/>
-              Holding: {heldEquipment.name}. Drag and drop on another apparatus to pour. (Press Esc to cancel)
+              Holding: {heldEquipment.name}. Click on another apparatus to pour. (Press Esc to cancel)
             </CardDescription>
           )}
         </CardHeader>
@@ -335,12 +337,11 @@ export function Workbench({
                             <EquipmentDisplay 
                                 item={item} 
                                 state={state} 
-                                onSelect={(id, e) => {
+                                onSelectAndPickup={(id, e) => {
                                   onSelectEquipment(id, e);
                                   onPickUpEquipment(id, e);
                                 }}
-                                onDrop={onDropOnApparatus}
-                                onInitiatePour={onInitiatePour}
+                                onDropOrPour={handleDropOrPour}
                                 onRemove={onRemoveSelectedEquipment}
                                 onResize={onResizeEquipment}
                                 isHoverTarget={(isHoldingSomething) && hoveredEquipment === item.id && item.id !== heldEquipment?.id}
