@@ -1,5 +1,5 @@
 
-import type { ExperimentStepSuggestionOutput } from "@/ai/flows/ai-guided-experiment-steps";
+import type { GenerateExperimentStepsOutput } from "@/ai/flows/ai-guided-experiment-steps";
 
 export type Chemical = {
   id: string;
@@ -44,7 +44,7 @@ export type LabLog = {
   isCustom?: boolean;
 };
 
-export type AiSuggestion = ExperimentStepSuggestionOutput | null;
+export type AiSuggestion = GenerateExperimentStepsOutput | null;
 
 export function calculatePH(solutions: Solution[]): number {
   if (!solutions || solutions.length === 0) return 7;

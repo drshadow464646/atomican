@@ -45,7 +45,7 @@ function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | '
 export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size'>[]>([]);
+  const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[]>([]);
   const { handleAddEquipmentToInventory } = useExperiment();
 
   const filterApparatus = (query: string) => {
