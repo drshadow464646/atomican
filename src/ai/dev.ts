@@ -42,14 +42,14 @@ const openRouter = (
   );
 };
 
-const nemotron = openRouter(
-  'nemotron',
-  'nvidia/nemotron-nano-9b-v2:free',
+const glm = openRouter(
+  'glm',
+  'z-ai/glm-4.5-air:free',
   true
 );
-const kimi = openRouter('kimi', 'moonshotai/kimi-k2:free');
+const gemma = openRouter('gemma', 'google/gemma-3n-e2b-it:free');
 
-const plugins: Plugin[] = [nemotron, kimi];
+const plugins: Plugin[] = [glm, gemma];
 
 genkit({
   plugins,
