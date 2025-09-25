@@ -42,14 +42,14 @@ const openRouter = (
   );
 };
 
-const glm = openRouter(
-  'glm',
-  'z-ai/glm-4.5-air:free',
+const grok = openRouter(
+  'grok',
+  'x-ai/grok-4-fast:free',
   true
 );
-const gemma = openRouter('gemma', 'google/gemma-3n-e2b-it:free');
+const mistral = openRouter('mistral', 'mistralai/mistral-small-3.1-24b-instruct:free');
 
-const plugins: Plugin[] = [glm, gemma];
+const plugins: Plugin[] = [grok, mistral];
 
 genkit({
   plugins,
