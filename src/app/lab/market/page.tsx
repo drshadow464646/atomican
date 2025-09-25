@@ -54,14 +54,14 @@ export default function MarketPage() {
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Chemical Market</h1>
+        <header className="text-center mb-8 animate-fade-in-up">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-glow">Chemical Market</h1>
           <p className="text-muted-foreground mt-2 text-md md:text-lg">
             Browse and acquire reagents for your experiments from our virtual catalog.
           </p>
         </header>
 
-        <div className="mb-8 max-w-lg mx-auto">
+        <div className="mb-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="relative flex items-center">
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
             <Input
@@ -88,10 +88,10 @@ export default function MarketPage() {
 
         {!isSearching && results.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {results.map(chem => {
+            {results.map((chem, index) => {
               const isInInventory = inventoryChemicals.some(invChem => invChem.id === chem.id);
               return (
-                <Card key={chem.id} className="flex flex-col">
+                <Card key={chem.id} className="flex flex-col card-entry-animation" style={{ animationDelay: `${index * 50}ms` }}>
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-primary/10 rounded-md">

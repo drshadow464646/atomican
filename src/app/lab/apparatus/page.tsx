@@ -82,14 +82,14 @@ export default function ApparatusPage() {
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Apparatus Catalog</h1>
+        <header className="text-center mb-8 animate-fade-in-up">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-glow">Apparatus Catalog</h1>
           <p className="text-muted-foreground mt-2 text-md md:text-lg">
             Explore the tools and equipment available in the LabSphere laboratory.
           </p>
         </header>
 
-        <div className="mb-8 max-w-lg mx-auto">
+        <div className="mb-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="relative flex items-center">
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
             <Input
@@ -111,10 +111,10 @@ export default function ApparatusPage() {
 
         {!isSearching && results.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {results.map(item => {
+            {results.map((item, index) => {
               const isInInventory = inventoryEquipment.some(invItem => invItem.id === item.id);
               return (
-                <Card key={item.id} className="flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+                <Card key={item.id} className="flex flex-col justify-between card-entry-animation" style={{ animationDelay: `${index * 50}ms` }}>
                   <CardHeader className="items-center text-center">
                     <div className="p-4 bg-primary/10 rounded-full mb-2">
                         {getIconForEquipment(item)}
