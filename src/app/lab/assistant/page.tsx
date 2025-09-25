@@ -68,7 +68,7 @@ export default function ProcedurePage() {
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><FlaskConical className="h-5 w-5" />Required Apparatus</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                      {procedure.requiredApparatus?.map((item, index) => 
+                      {procedure.requiredApparatus && Array.isArray(procedure.requiredApparatus) && procedure.requiredApparatus.map((item, index) => 
                         item?.name ? <li key={index}>{item.name} (x{item.quantity})</li> : null
                       )}
                     </ul>
@@ -76,7 +76,7 @@ export default function ProcedurePage() {
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><ChevronsRight className="h-5 w-5" />Required Chemicals</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                      {procedure.requiredChemicals?.map((item, index) => 
+                      {procedure.requiredChemicals && Array.isArray(procedure.requiredChemicals) && procedure.requiredChemicals.map((item, index) => 
                         item?.name ? <li key={index}>{item.name} - {item.amount}</li> : null
                       )}
                     </ul>
@@ -86,11 +86,13 @@ export default function ProcedurePage() {
               <div>
                 <h3 className="font-semibold flex items-center gap-2 mb-2"><List className="h-5 w-5" />Procedure</h3>
                 <ol className="list-decimal list-inside space-y-3">
-                  {procedure.steps.map((step, index) => (
-                    <li key={index} className="pl-2">
-                      {step}
-                    </li>
-                  ))}
+                  {procedure?.steps && Array.isArray(procedure.steps) ? (
+                    procedure.steps.map((step, index) => (
+                      step ? <li key={index} className="pl-2">{step}</li> : null
+                    ))
+                  ) : (
+                    <li className="pl-2 text-muted-foreground">No steps available or an error occurred.</li>
+                  )}
                 </ol>
               </div>
             </CardContent>
