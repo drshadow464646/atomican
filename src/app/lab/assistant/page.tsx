@@ -68,13 +68,17 @@ export default function ProcedurePage() {
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><FlaskConical className="h-5 w-5" />Required Apparatus</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                      {procedure.requiredApparatus.map((item, index) => <li key={index}>{item.name} (x{item.quantity})</li>)}
+                      {procedure.requiredApparatus?.map((item, index) => 
+                        item?.name ? <li key={index}>{item.name} (x{item.quantity})</li> : null
+                      )}
                     </ul>
                   </div>
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><ChevronsRight className="h-5 w-5" />Required Chemicals</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                      {procedure.requiredChemicals.map((item, index) => <li key={index}>{item.name} - {item.amount}</li>)}
+                      {procedure.requiredChemicals?.map((item, index) => 
+                        item?.name ? <li key={index}>{item.name} - {item.amount}</li> : null
+                      )}
                     </ul>
                   </div>
                 </>
@@ -101,4 +105,3 @@ export default function ProcedurePage() {
     </div>
   );
 }
-
