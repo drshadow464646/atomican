@@ -386,7 +386,7 @@ export function Workbench({
               {pouringState && pouringSourceItem && pouringTargetItem && (
                 <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">
-                        {pouringState.sourceId === 'inventory' ? `Add ${pouringSourceItem.name} to ${pouringTargetItem.name}` : `Pour from ${pouringSourceItem.name} into ${pouringTargetItem.name}`}
+                      {pouringState.sourceId === 'inventory' ? `Add ${pouringSourceItem.name} to ${pouringTargetItem.name}` : `Pour from ${pouringSourceItem.name} into ${pouringTargetItem.name}`}
                     </p>
                     <div className="flex items-center gap-4 w-full px-4">
                         <Slider
@@ -423,5 +423,3 @@ export function Workbench({
     </div>
   );
 }
-
-    
