@@ -155,4 +155,8 @@
   .card-entry-animation {
     @apply animate-fade-in-up;
   }
+  
+  .fade-in {
+    @apply animate-fade-in;
+  }
 }
