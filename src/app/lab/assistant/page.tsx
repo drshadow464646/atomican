@@ -63,18 +63,18 @@ export default function ProcedurePage() {
               <CardTitle>{procedure.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {procedure.title !== 'Error' ? (
+              {procedure.title !== 'Error Generating Procedure' ? (
                 <>
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><FlaskConical className="h-5 w-5" />Required Apparatus</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                      {procedure.requiredApparatus.map((item, index) => <li key={index}>{item}</li>)}
+                      {procedure.requiredApparatus.map((item, index) => <li key={index}>{item.name} (x{item.quantity})</li>)}
                     </ul>
                   </div>
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 mb-2"><ChevronsRight className="h-5 w-5" />Required Chemicals</h3>
                     <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                      {procedure.requiredChemicals.map((item, index) => <li key={index}>{item}</li>)}
+                      {procedure.requiredChemicals.map((item, index) => <li key={index}>{item.name} - {item.amount}</li>)}
                     </ul>
                   </div>
                 </>
@@ -101,3 +101,4 @@ export default function ProcedurePage() {
     </div>
   );
 }
+
