@@ -10,11 +10,12 @@ export async function getExperimentSteps(goal: string): Promise<GenerateExperime
     try {
         const procedure = await generateExperimentSteps(input);
         return procedure;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error getting AI-generated procedure:", error);
+        const errorMessage = error.message || "An unknown error occurred. Please check the server console for details.";
         return {
-            title: "Error",
-            steps: ["An error occurred while generating the procedure. Please check the console for more details and try again."],
+            title: "Error Generating Procedure",
+            steps: [errorMessage],
             requiredChemicals: [],
             requiredApparatus: [],
         }
