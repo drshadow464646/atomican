@@ -5,7 +5,7 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { gemini15Pro } from '@genkit-ai/googleai';
+import { gemini15Flash } from '@genkit-ai/googleai';
 
 const ExperimentStepsSchema = z.object({
   title: z.string().describe('A short, descriptive title for the experiment.'),
@@ -30,7 +30,7 @@ export const experimentStepsFlow = ai.defineFlow(
   },
   async (goal) => {
     const { output } = await ai.generate({
-        model: gemini15Pro,
+        model: gemini15Flash,
         output: { schema: ExperimentStepsSchema, format: 'json' },
         system: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
 
