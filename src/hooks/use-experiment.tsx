@@ -13,6 +13,8 @@ const getUniqueLogId = () => {
     return `${Date.now()}-${logIdCounter++}`;
 };
 
+let equipmentIdCounter = 0;
+
 const initialExperimentState: ExperimentState = {
   title: '',
   equipment: [],
@@ -148,9 +150,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     setExperimentState((prevState) => {
       addLog(`Added ${equipment.name} to the workbench.`);
+      equipmentIdCounter++;
       const newEquipment: Equipment = { 
         ...equipment, 
-        id: `${equipment.id}-${Date.now()}`,
+        id: `${equipment.id}-${equipmentIdCounter}`,
         size: 1,
         position: { x: 250 + (Math.random() * 50 - 25), y: 100 + (Math.random() * 50 - 25) },
         isSelected: true,
@@ -573,5 +576,7 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
 
     
