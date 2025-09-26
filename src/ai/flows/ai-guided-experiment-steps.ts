@@ -2,10 +2,6 @@
 'use server';
 /**
  * @fileOverview A flow that generates experiment steps based on a user's goal.
- *
- * This flow is currently disabled due to model access issues.
- * To re-enable, ensure you have a valid model available in your Google Cloud project
- * and uncomment the code below.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -32,12 +28,8 @@ export const experimentStepsFlow = ai.defineFlow(
     outputSchema: ExperimentStepsSchema,
   },
   async (goal) => {
-    // This flow is intentionally disabled.
-    // When enabled, it should call the generative model.
-    // Example:
-    /*
     const { output } = await ai.generate({
-        model: 'gemini-pro', // or another available model
+        model: 'gemini-pro',
         output: { schema: ExperimentStepsSchema, format: 'json' },
         system: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
 
@@ -59,9 +51,5 @@ Your output MUST be only the JSON object, with no other text or markdown formatt
       throw new Error('Failed to generate experiment steps.');
     }
     return output;
-    */
-
-    // Return a default error state because the feature is disabled.
-    throw new Error("The AI Procedure Generation feature is temporarily disabled due to model availability issues. Please check your Google Cloud project settings for model access and quotas.");
   }
 );
