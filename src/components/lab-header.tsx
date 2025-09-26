@@ -14,6 +14,9 @@ import { useDebouncedCallback } from 'use-debounce';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -67,11 +70,18 @@ function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left">
+        <SheetHeader>
+            <SheetTitle>
+                 <Link href="/lab/workbench" className="flex items-center gap-2 text-lg font-semibold">
+                    <span className="text-2xl">🌌</span>
+                    <span>LabSphere</span>
+                </Link>
+            </SheetTitle>
+            <SheetDescription>
+                Navigate between the different sections of the virtual lab.
+            </SheetDescription>
+        </SheetHeader>
         <nav className="grid gap-4 text-lg font-medium mt-6">
-          <Link href="/lab/workbench" className="flex items-center gap-2 text-lg font-semibold mb-4">
-              <span className="text-2xl">🌌</span>
-              <span>LabSphere</span>
-          </Link>
           {menuItems.map(item => {
             const isActive = pathname.startsWith(item.href);
             return (
