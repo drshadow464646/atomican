@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Bot, FlaskConical, Beaker, List, Loader2, Thermometer, TestTube } from 'lucide-react';
+import { Bot, FlaskConical, Beaker, List, Loader2, TestTube } from 'lucide-react';
 import { getExperimentSteps } from '@/app/actions';
 import type { GenerateExperimentStepsOutput } from '@/ai/flows/ai-guided-experiment-steps';
 
@@ -135,7 +135,7 @@ export default function ProcedurePage() {
                 <CardContent>
                     <CardDescription>
                     Enter a description of the experiment you want to perform and click &quot;Generate Procedure&quot; to get started.
-                    </p>
+                    </CardDescription>
                 </CardContent>
             </Card>
         )}
