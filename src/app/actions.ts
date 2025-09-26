@@ -14,12 +14,16 @@ export async function getExperimentSteps(goal: string): Promise<GenerateExperime
     return result;
   } catch (error) {
     console.error('Error generating experiment steps:', error);
-    // Return a structured error object that matches the expected type
+    // Return a structured error object that includes the specific error message.
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       title: 'Error Generating Procedure',
       requiredApparatus: [],
       requiredChemicals: [],
-      steps: ['An error occurred while generating the procedure. Please check the server logs and try again.'],
+      steps: [
+        'An error occurred while generating the procedure. Details below:',
+        errorMessage,
+      ],
     };
   }
 }
