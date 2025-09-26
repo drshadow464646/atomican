@@ -55,27 +55,14 @@ export default function ProcedurePage() {
         </div>
         
         {isGenerating && (
-           <Card className="shadow-lg animate-pulse">
+           <Card className="shadow-lg text-center">
                 <CardHeader>
-                    <CardTitle className="h-8 bg-muted rounded-md"></CardTitle>
+                    <CardTitle className="flex items-center gap-2 justify-center"><Loader2 className="h-6 w-6 animate-spin"/> Generating Procedure</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <div className="h-6 w-1/3 bg-muted rounded-md"></div>
-                        <div className="h-4 w-full bg-muted rounded-md"></div>
-                        <div className="h-4 w-3/4 bg-muted rounded-md"></div>
-                    </div>
-                     <div className="space-y-2">
-                        <div className="h-6 w-1/3 bg-muted rounded-md"></div>
-                        <div className="h-4 w-full bg-muted rounded-md"></div>
-                        <div className="h-4 w-3/4 bg-muted rounded-md"></div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="h-6 w-1/2 bg-muted rounded-md"></div>
-                        <div className="h-4 w-full bg-muted rounded-md"></div>
-                        <div className="h-4 w-full bg-muted rounded-md"></div>
-                        <div className="h-4 w-5/6 bg-muted rounded-md"></div>
-                    </div>
+                <CardContent>
+                    <CardDescription>
+                      The AI assistant is thinking...
+                    </CardDescription>
                 </CardContent>
             </Card>
         )}
