@@ -1,32 +1,144 @@
 
 'use client';
 
+import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Bot, FlaskConical, Beaker, List, Loader2, Thermometer, TestTube } from 'lucide-react';
+import { getExperimentSteps } from '@/app/actions';
+import type { GenerateExperimentStepsOutput } from '@/ai/flows/ai-guided-experiment-steps';
 
 export default function ProcedurePage() {
+  const [goal, setGoal] = useState('Titration of HCl with NaOH');
+  const [procedure, setProcedure] = useState<GenerateExperimentStepsOutput | null>(null);
+  const [isGenerating, startGenerationTransition] = useTransition();
+
+  const handleGenerate = () => {
+    if (!goal) return;
+    startGenerationTransition(async () => {
+      const result = await getExperimentSteps(goal);
+      setProcedure(result);
+    });
+  };
+
+  const hasError = procedure?.title === 'Error Generating Procedure';
 
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Procedure</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-glow">AI Procedure Generator</h1>
           <p className="text-muted-foreground mt-2 text-md md:text-lg">
-            View and manage your experiment procedure.
+            Describe your experiment, and the AI will generate the procedure.
           </p>
         </header>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2 mb-8">
+          <Input
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            placeholder="e.g., 'Titrate a strong acid with a strong base'"
+            className="flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+          />
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto">
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              'Generate Procedure'
+            )}
+          </Button>
+        </div>
         
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Bot className="h-6 w-6"/> AI Assistant Offline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>
-              The AI-powered procedure generator has been removed from this application.
-              You can manually manage your experiment steps in a future update.
-            </CardDescription>
-          </CardContent>
-        </Card>
+        {isGenerating && (
+           <Card className="shadow-lg animate-pulse">
+                <CardHeader>
+                    <CardTitle className="h-8 bg-muted rounded-md"></CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <div className="h-6 w-1/3 bg-muted rounded-md"></div>
+                        <div className="h-4 w-full bg-muted rounded-md"></div>
+                        <div className="h-4 w-3/4 bg-muted rounded-md"></div>
+                    </div>
+                     <div className="space-y-2">
+                        <div className="h-6 w-1/3 bg-muted rounded-md"></div>
+                        <div className="h-4 w-full bg-muted rounded-md"></div>
+                        <div className="h-4 w-3/4 bg-muted rounded-md"></div>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="h-6 w-1/2 bg-muted rounded-md"></div>
+                        <div className="h-4 w-full bg-muted rounded-md"></div>
+                        <div className="h-4 w-full bg-muted rounded-md"></div>
+                        <div className="h-4 w-5/6 bg-muted rounded-md"></div>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
+
+        {procedure && !isGenerating && (
+          <Card className={`shadow-lg fade-in ${hasError ? 'border-destructive' : ''}`}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className={`h-6 w-6 ${hasError ? 'text-destructive' : ''}`} /> 
+                {procedure.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!hasError && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-semibold flex items-center gap-2 mb-2"><Beaker className="h-5 w-5" />Apparatus</h3>
+                      <ul className="list-disc list-inside text-muted-foreground">
+                        {procedure.requiredApparatus?.map((item, index) => (
+                          <li key={index}>{item.quantity} x {item.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold flex items-center gap-2 mb-2"><FlaskConical className="h-5 w-5" />Chemicals</h3>
+                      <ul className="list-disc list-inside text-muted-foreground">
+                        {procedure.requiredChemicals?.map((item, index) => (
+                           <li key={index}>{item.amount} {item.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div>
+                <h3 className="font-semibold flex items-center gap-2 mb-2"><List className="h-5 w-5" />Procedure</h3>
+                <ol className="list-decimal list-inside space-y-3">
+                  {procedure.steps?.map((step, index) => (
+                    <li key={index} className="pl-2">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+            </CardContent>
+          </Card>
+        )}
+
+        {!procedure && !isGenerating && (
+             <Card className="shadow-lg text-center">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 justify-center"><Bot className="h-6 w-6"/> Waiting for instructions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <CardDescription>
+                    Enter a description of the experiment you want to perform and click &quot;Generate Procedure&quot; to get started.
+                    </p>
+                </CardContent>
+            </Card>
+        )}
       </div>
     </div>
   );
