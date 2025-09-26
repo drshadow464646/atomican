@@ -9,6 +9,9 @@ import { googleAI } from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [
-    googleAI(),
+    googleAI({
+      apiEndpoint: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY,
+    }),
   ],
 });
