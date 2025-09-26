@@ -31,7 +31,7 @@ export const experimentStepsFlow = ai.defineFlow(
     const { output } = await ai.generate({
         model: 'x-ai/grok-4-fast:free',
         output: { schema: ExperimentStepsSchema, format: 'json' },
-        system: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
+        prompt: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
 
 The user will provide a goal for an experiment. You must provide a valid JSON object that conforms to the output schema.
 
@@ -43,8 +43,9 @@ Your response must include:
 
 Prioritize safety and clarity in the procedure.
 Do not include any steps for cleaning up.
-Your output MUST be only the JSON object, with no other text or markdown formatting.`,
-        prompt: `Generate an experiment procedure for the following goal: ${goal}`,
+Your output MUST be only the JSON object, with no other text or markdown formatting.
+
+Generate an experiment procedure for the following goal: ${goal}`,
     });
     
     if (!output) {
