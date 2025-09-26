@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Bot, FlaskConical, Beaker, List, Loader2, TestTube } from 'lucide-react';
+import { Bot, FlaskConical, Beaker, List, Loader2, TestTube, AlertTriangle } from 'lucide-react';
 import { getExperimentSteps } from '@/app/actions';
 import type { GenerateExperimentStepsOutput } from '@/ai/flows/ai-guided-experiment-steps';
 
@@ -22,7 +22,7 @@ export default function ProcedurePage() {
     });
   };
 
-  const hasError = procedure?.title === 'Error Generating Procedure';
+  const hasError = procedure?.title === 'AI Feature Disabled';
 
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
@@ -41,8 +41,9 @@ export default function ProcedurePage() {
             placeholder="e.g., 'Titrate a strong acid with a strong base'"
             className="flex-1"
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+            suppressHydrationWarning
           />
-          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto">
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto" suppressHydrationWarning>
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -57,7 +58,7 @@ export default function ProcedurePage() {
         {isGenerating && (
            <Card className="shadow-lg text-center">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 justify-center"><Loader2 className="h-6 w-6 animate-spin"/> Generating Procedure</CardTitle>
+                    <CardTitle className="flex items-center gap-2 justify-center"><Loader2 className="h-6 w-6 animate-spin"/> Contacting AI Assistant</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <CardDescription>
@@ -71,7 +72,7 @@ export default function ProcedurePage() {
           <Card className={`shadow-lg fade-in ${hasError ? 'border-destructive' : ''}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bot className={`h-6 w-6 ${hasError ? 'text-destructive' : ''}`} /> 
+                <AlertTriangle className={`h-6 w-6 ${hasError ? 'text-destructive' : ''}`} /> 
                 {procedure.title}
               </CardTitle>
             </CardHeader>
