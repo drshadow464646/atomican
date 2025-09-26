@@ -5,7 +5,7 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { gemini15Pro } from '@genkit-ai/googleai';
+import { gemini15Flash } from '@genkit-ai/googleai';
 
 const ExperimentStepsSchema = z.object({
   title: z.string().describe('A short, descriptive title for the experiment.'),
@@ -27,7 +27,7 @@ const experimentGenerationPrompt = ai.definePrompt(
     name: 'experimentGenerationPrompt',
     input: { schema: z.string() },
     output: { schema: ExperimentStepsSchema, format: 'json' },
-    model: gemini15Pro,
+    model: gemini15Flash,
     system: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
 
 The user will provide a goal for an experiment. You must provide a valid JSON object that conforms to the output schema.
