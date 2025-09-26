@@ -22,13 +22,17 @@ const ExperimentStepsSchema = z.object({
 
 export type GenerateExperimentStepsOutput = z.infer<typeof ExperimentStepsSchema>;
 
-const experimentGenerationPrompt = ai.definePrompt(
+export const experimentStepsFlow = ai.defineFlow(
   {
-    name: 'experimentGenerationPrompt',
-    input: { schema: z.string() },
-    output: { schema: ExperimentStepsSchema, format: 'json' },
-    model: gemini15Flash,
-    system: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
+    name: 'experimentStepsFlow',
+    inputSchema: z.string(),
+    outputSchema: ExperimentStepsSchema,
+  },
+  async (goal) => {
+    const { output } = await ai.generate({
+        model: gemini15Flash,
+        output: { schema: ExperimentStepsSchema, format: 'json' },
+        system: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
 
 The user will provide a goal for an experiment. You must provide a valid JSON object that conforms to the output schema.
 
@@ -40,24 +44,10 @@ Your response must include:
 
 Prioritize safety and clarity in the procedure.
 Do not include any steps for cleaning up.
-Do not wrap your response in markdown tags.
-`,
-  },
-  async (goal) => {
-    return {
-      prompt: `Generate an experiment procedure for the following goal: ${goal}`,
-    };
-  }
-);
-
-export const experimentStepsFlow = ai.defineFlow(
-  {
-    name: 'experimentStepsFlow',
-    inputSchema: z.string(),
-    outputSchema: ExperimentStepsSchema,
-  },
-  async (goal) => {
-    const { output } = await experimentGenerationPrompt(goal);
+Your output MUST be only the JSON object, with no other text or markdown formatting.`,
+        prompt: `Generate an experiment procedure for the following goal: ${goal}`,
+    });
+    
     if (!output) {
       throw new Error('Failed to generate experiment steps.');
     }
