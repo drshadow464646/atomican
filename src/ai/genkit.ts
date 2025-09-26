@@ -1,5 +1,3 @@
-
-'use server';
 /**
  * @fileoverview This file initializes and configures the Genkit AI object.
  *
