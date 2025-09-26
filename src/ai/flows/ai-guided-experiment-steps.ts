@@ -3,7 +3,7 @@
 /**
  * @fileOverview A flow that generates experiment steps based on a user's goal.
  */
-import { ai } from 'genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { gemini15Pro } from '@genkit-ai/googleai';
 
