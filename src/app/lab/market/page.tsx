@@ -1,49 +1,41 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Droplets, Plus, Search, Loader2, Check } from 'lucide-react';
 import type { Chemical } from '@/lib/experiment';
-import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
 import { useExperiment } from '@/hooks/use-experiment';
-import { ALL_CHEMICALS, COMMON_CHEMICAL_IDS } from '@/lib/chemical-catalog';
+import { findChemicals } from '@/app/actions';
 
 export default function MarketPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('common acids and bases');
+  const [isSearching, startSearchTransition] = useTransition();
   const [results, setResults] = useState<Chemical[]>([]);
-  const { toast } = useToast();
   const { handleAddChemicalToInventory, inventoryChemicals } = useExperiment();
 
-  const filterChemicals = (query: string) => {
-    setIsSearching(true);
+  const performSearch = (query: string) => {
     if (!query) {
-      setResults(ALL_CHEMICALS.filter(chem => COMMON_CHEMICAL_IDS.includes(chem.id)));
-    } else {
-      const lowerCaseQuery = query.toLowerCase();
-      const filtered = ALL_CHEMICALS.filter(chem =>
-        chem.name.toLowerCase().includes(lowerCaseQuery) ||
-        chem.formula.toLowerCase().includes(lowerCaseQuery) ||
-        chem.type.toLowerCase().includes(lowerCaseQuery) ||
-        chem.id.toLowerCase().includes(lowerCaseQuery)
-      );
-      setResults(filtered);
+        setResults([]);
+        return;
     }
-    setIsSearching(false);
+    startSearchTransition(async () => {
+      const searchResults = await findChemicals(query);
+      setResults(searchResults);
+    });
   };
 
   useEffect(() => {
     // Show common items on initial load
-    filterChemicals('');
+    performSearch('common acids and bases');
   }, []);
 
   const debouncedSearch = useDebouncedCallback((query: string) => {
-    filterChemicals(query);
-  }, 300);
+    performSearch(query);
+  }, 500);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -82,7 +74,7 @@ export default function MarketPage() {
         {isSearching && (
           <div className="text-center col-span-full py-16">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground mt-4">Searching catalog...</p>
+              <p className="text-muted-foreground mt-4">AI is searching the catalog...</p>
           </div>
         )}
 
@@ -126,7 +118,7 @@ export default function MarketPage() {
                           Add to Inventory
                         </>
                       )}
-                    </Button>
+                    </Button>                  
                   </CardFooter>
                 </Card>
               )

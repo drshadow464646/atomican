@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2, Check } from 'lucide-react';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDebouncedCallback } from 'use-debounce';
 import type { Equipment } from '@/lib/experiment';
-import { ALL_APPARATUS, COMMON_APPARATUS_IDS } from '@/lib/apparatus-catalog';
+import { findApparatus } from '@/app/actions';
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
   glassware: <Beaker className="h-10 w-10 text-primary" />,
@@ -21,7 +21,6 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
   safety: <Beaker className="h-10 w-10 text-primary" />, // Placeholder
   other: <TestTube className="h-10 w-10 text-primary" />,
 };
-
 
 function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | 'size'>): React.ReactNode {
   // More specific icons first
@@ -43,35 +42,30 @@ function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | '
 }
 
 export default function ApparatusPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('common lab equipment');
+  const [isSearching, startSearchTransition] = useTransition();
   const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[]>([]);
   const { handleAddEquipmentToInventory, inventoryEquipment } = useExperiment();
 
-  const filterApparatus = (query: string) => {
-    setIsSearching(true);
+  const performSearch = (query: string) => {
     if (!query) {
-      setResults(ALL_APPARATUS.filter(item => COMMON_APPARATUS_IDS.includes(item.id)));
-    } else {
-      const lowerCaseQuery = query.toLowerCase();
-      const filtered = ALL_APPARATUS.filter(item => 
-        item.name.toLowerCase().includes(lowerCaseQuery) ||
-        item.description.toLowerCase().includes(lowerCaseQuery) ||
-        item.type.toLowerCase().includes(lowerCaseQuery)
-      );
-      setResults(filtered);
-    }
-    setIsSearching(false);
+      setResults([]);
+      return;
+    };
+    startSearchTransition(async () => {
+      const searchResults = await findApparatus(query);
+      setResults(searchResults);
+    });
   };
 
   useEffect(() => {
     // Show common items on initial load
-    filterApparatus('');
+    performSearch('common lab glassware');
   }, []);
 
   const debouncedSearch = useDebouncedCallback((query: string) => {
-    filterApparatus(query);
-  }, 300);
+    performSearch(query);
+  }, 500);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -105,7 +99,7 @@ export default function ApparatusPage() {
         {isSearching && (
           <div className="text-center col-span-full py-16">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground mt-4">Searching...</p>
+              <p className="text-muted-foreground mt-4">AI is searching the catalog...</p>
           </div>
         )}
 
