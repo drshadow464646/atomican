@@ -21,14 +21,14 @@ export async function searchChemicals(query: string): Promise<ChemicalSearchOutp
   const prompt = `You are a chemical supply catalog AI. A user is searching for a chemical with the query: "${query}".
 Generate a list of 5 to 10 relevant chemicals.
 
-Your response MUST be only a valid JSON array that conforms to the following schema:
-Array<{
+Your response MUST be only a valid JSON object that conforms to the following schema, with "chemicals" as the top-level key:
+{ "chemicals": Array<{
   id: string (lowercase, kebab-case identifier, e.g., "hydrochloric-acid"),
   name: string (common name, e.g., "Hydrochloric Acid"),
   formula: string (chemical formula, e.g., "HCl"),
   type: 'acid' | 'base' | 'indicator' | 'salt' | 'solvent' | 'oxidant' | 'reductant' | 'other',
   concentration?: number (molarity in mol/L, if applicable)
-}>
+}>}
 
 If the query is generic (e.g., "strong acid"), list common examples. If it is a solution, provide a common concentration (e.g., 0.1).
 Do not include any other text, markdown formatting, or explanations.`;
@@ -60,14 +60,13 @@ Do not include any other text, markdown formatting, or explanations.`;
       throw new Error("The AI returned an empty response.");
     }
     
-    // The response is expected to be a JSON object containing a root key, e.g. {"results": [...]}, as per json_object mode
     const parsedOutput = JSON.parse(textResponse);
     
-    // Find the array within the parsed object
-    const dataArray = Object.values(parsedOutput).find(Array.isArray);
+    // The prompt now requests a specific key "chemicals"
+    const dataArray = parsedOutput.chemicals;
 
-    if (!dataArray) {
-        throw new Error("AI returned a JSON object, but no array was found inside it.");
+    if (!Array.isArray(dataArray)) {
+        throw new Error("AI returned a JSON object, but the 'chemicals' array was not found inside it.");
     }
 
     const validation = ChemicalSearchOutputSchema.safeParse(dataArray);

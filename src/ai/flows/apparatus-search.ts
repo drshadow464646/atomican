@@ -21,14 +21,14 @@ export async function searchApparatus(query: string): Promise<ApparatusSearchOut
   const prompt = `You are a laboratory supply catalog AI. A user is searching for equipment with the query: "${query}".
 Generate a list of 5 to 10 relevant pieces of laboratory equipment.
 
-Your response MUST be only a valid JSON array that conforms to the following schema:
-Array<{
+Your response MUST be only a valid JSON object that conforms to the following schema, where the top-level key is "equipment":
+{ "equipment": Array<{
   id: string (lowercase, kebab-case identifier, e.g., "erlenmeyer-flask-250ml"),
   name: string (common name, e.g., "Erlenmeyer Flask (250ml)"),
   type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'other' | 'glassware' | 'vacuum' | 'safety',
   volume?: number (capacity in ml, if applicable),
   description: string (a brief one-sentence description)
-}>
+}>}
 
 Prioritize common and essential lab equipment. If the query is generic, list common items.
 Do not include any other text, markdown formatting, or explanations.`;
@@ -60,14 +60,13 @@ Do not include any other text, markdown formatting, or explanations.`;
       throw new Error("The AI returned an empty response.");
     }
     
-    // The response is expected to be a JSON object containing a root key, e.g. {"results": [...]}, as per json_object mode
     const parsedOutput = JSON.parse(textResponse);
     
-    // Find the array within the parsed object
-    const dataArray = Object.values(parsedOutput).find(Array.isArray);
+    // The prompt now requests a specific key "equipment"
+    const dataArray = parsedOutput.equipment;
 
-    if (!dataArray) {
-        throw new Error("AI returned a JSON object, but no array was found inside it.");
+    if (!Array.isArray(dataArray)) {
+        throw new Error("AI returned a JSON object, but the 'equipment' array was not found inside it.");
     }
 
     const validation = ApparatusSearchOutputSchema.safeParse(dataArray);
