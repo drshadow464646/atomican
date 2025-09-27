@@ -34,7 +34,10 @@ export default function WorkbenchPage() {
     handleInitiatePour,
     handleCancelPour,
     pouringState,
-    draggedItemRef,
+    dragState,
+    handleDragStart,
+    handleWorkbenchClick,
+    handleEquipmentClick,
   } = useExperiment();
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
@@ -109,7 +112,10 @@ export default function WorkbenchPage() {
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
                 onClearHeldItem={handleClearHeldItem}
                 pouringState={pouringState}
-                draggedItemRef={draggedItemRef}
+                dragState={dragState}
+                onDragStart={handleDragStart}
+                onWorkbenchClick={handleWorkbenchClick}
+                onEquipmentClick={handleEquipmentClick}
             />
             {selectedEquipment && !heldEquipment && !pouringState && (
               <div className="absolute top-4 right-4 z-20 w-80">
@@ -121,5 +127,3 @@ export default function WorkbenchPage() {
     </div>
   );
 }
-
-    

@@ -2,6 +2,7 @@
 'use server';
 /**
  * @fileOverview An AI flow to predict the outcome of a chemical reaction.
+ * This has been refactored to use a direct API call for reliability.
  */
 import { z } from 'zod';
 import type { ReactionPrediction, Solution } from '@/lib/experiment';
@@ -24,26 +25,26 @@ export async function predictReaction(solutions: Solution[]): Promise<ReactionPr
 
 Your response MUST be only a valid JSON object that conforms to the following schema:
 {
-  products: Array<{
-    chemical: {
-      id: string (kebab-case),
-      name: string,
-      formula: string,
-      type: 'acid' | 'base' | 'indicator' | 'salt' | 'solvent' | 'oxidant' | 'reductant' | 'other',
-      concentration?: number
+  "products": [{
+    "chemical": {
+      "id": "string (kebab-case)",
+      "name": "string",
+      "formula": "string",
+      "type": "'acid' | 'base' | 'indicator' | 'salt' | 'solvent' | 'oxidant' | 'reductant' | 'other'",
+      "concentration": "number (optional)"
     },
-    volume: number (in ml)
-  }> (The final list of solutions, including unreacted starting materials and new products. The sum of product volumes should equal the sum of reactant volumes.),
-  ph: number (The final pH of the mixture.),
-  color: string (The final CSS color of the solution, considering indicators and products. e.g., 'hsl(300 100% 80% / 0.5)'),
-  gasProduced: string | null (Formula of gas, e.g., "CO2", or null.),
-  precipitateFormed: string | null (Name of precipitate, or null.),
-  isExplosive: boolean,
-  temperatureChange: number (in Celsius),
-  description: string (A one-sentence chemical explanation.)
+    "volume": "number (in ml)"
+  }],
+  "ph": "number (The final pH of the mixture.)",
+  "color": "string (The final CSS color of the solution, e.g., 'hsl(300 100% 80% / 0.5)')",
+  "gasProduced": "string | null (Formula of gas, e.g., 'CO2', or null.)",
+  "precipitateFormed": "string | null (Name of precipitate, or null.)",
+  "isExplosive": "boolean",
+  "temperatureChange": "number (in Celsius)",
+  "description": "string (A one-sentence chemical explanation.)"
 }
 
-Consider acid-base neutralization, redox reactions, precipitation, and gas evolution. For indicators like phenolphthalein, calculate the color based on the final pH. If no reaction occurs, return the original solutions combined, with pH calculated for the mixture.`;
+Consider acid-base neutralization, redox reactions, precipitation, and gas evolution. For indicators like phenolphthalein, calculate the color based on the final pH. The sum of product volumes must equal the sum of reactant volumes. If no reaction occurs, return the original solutions combined, with pH calculated for the mixture.`;
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -61,6 +62,7 @@ Consider acid-base neutralization, redox reactions, precipitation, and gas evolu
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("OpenRouter API Error (Reaction Prediction):", errorText);
       throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
 
@@ -93,7 +95,7 @@ Consider acid-base neutralization, redox reactions, precipitation, and gas evolu
       precipitateFormed: null,
       isExplosive: false,
       temperatureChange: 0,
-      description: `An error occurred: ${error.message}`,
+      description: `An error occurred while predicting the reaction: ${error.message}`,
     };
   }
 }

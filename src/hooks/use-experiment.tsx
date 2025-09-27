@@ -21,6 +21,13 @@ const initialExperimentState: ExperimentState = {
   color: 'transparent',
 };
 
+type DragState = { 
+  id: string; 
+  offset: { x: number; y: number; }; 
+  hasMoved: boolean; 
+} | null;
+
+
 type ExperimentContextType = {
   experimentState: ExperimentState;
   labLogs: LabLog[];
@@ -49,7 +56,10 @@ type ExperimentContextType = {
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
   handleClearHeldItem: () => void;
-  draggedItemRef: React.RefObject<{ id: string; offset: { x: number; y: number }; hasMoved: boolean }>;
+  dragState: React.RefObject<DragState>;
+  handleDragStart: (id: string, e: React.MouseEvent) => void;
+  handleWorkbenchClick: (e: React.MouseEvent) => void;
+  handleEquipmentClick: (id: string, e: React.MouseEvent) => void;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -66,7 +76,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>([]);
   const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>([]);
 
-  const draggedItemRef = useRef<{ id: string; offset: { x: number; y: number }; hasMoved: boolean; } | null>(null);
+  const dragState = useRef<DragState>(null);
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
@@ -247,6 +257,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     
     if (sourceId === 'inventory') {
         if (!heldItem) return;
+        addLog(`Adding ${pourVolumeClamped.toFixed(1)}ml of ${heldItem.name} to ${target.name}.`);
         reactants.push({ chemical: heldItem, volume: pourVolumeClamped });
     } else {
         const source = experimentState.equipment.find(e => e.id === sourceId);
@@ -259,8 +270,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
              return;
         }
 
-        // Add source solutions to reactants and adjust their volumes for the pour amount
-        const pourFraction = pourVolumeClamped / sourceVolume;
+        const actualPourVolume = Math.min(pourVolumeClamped, sourceVolume);
+        const pourFraction = actualPourVolume / sourceVolume;
+        addLog(`Pouring ${actualPourVolume.toFixed(1)}ml from ${source.name} to ${target.name}.`);
+        
         for (const sol of source.solutions) {
             reactants.push({ ...sol, volume: sol.volume * pourFraction });
         }
@@ -270,24 +283,23 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleClearHeldItem();
     addLog('Analyzing reaction...');
     
-    // Optimistic UI: Set reacting state
-    setExperimentState(prevState => {
-        const newEquipment = prevState.equipment.map(e => e.id === targetId ? { ...e, isReacting: true } : e);
-        return { ...prevState, equipment: newEquipment };
-    });
+    setExperimentState(prevState => ({
+      ...prevState,
+      equipment: prevState.equipment.map(e => e.id === targetId ? {...e, isReacting: true} : e)
+    }));
 
     const prediction = await getReactionPrediction(reactants);
     
     applyReactionPrediction(targetId, prediction);
 
-    // Update source container if pouring from another equipment
     if (sourceId !== 'inventory') {
         setExperimentState(prevState => {
             const newSource = prevState.equipment.find(e => e.id === sourceId);
             if (!newSource || !newSource.solutions) return prevState;
 
             const sourceVolume = newSource.solutions.reduce((t, s) => t + s.volume, 0);
-            const pourFraction = pourVolumeClamped / sourceVolume;
+            const actualPourVolume = Math.min(pourVolumeClamped, sourceVolume);
+            const pourFraction = actualPourVolume / sourceVolume;
 
             newSource.solutions.forEach(s => {
                 s.volume -= s.volume * pourFraction;
@@ -401,50 +413,82 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setLabLogs([]);
     addLog('Experiment reset.');
   }, [addLog]);
+  
+  const handleDragStart = useCallback((id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleSelectEquipment(id);
+    const equip = experimentState.equipment.find(eq => eq.id === id);
+    if (equip && e.button === 0) { // Only drag on left-click
+        const workbenchEl = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
+        if (!workbenchEl) return;
+        const rect = workbenchEl.getBoundingClientRect();
+        dragState.current = {
+            id,
+            offset: {
+                x: e.clientX - rect.left - equip.position.x,
+                y: e.clientY - rect.top - equip.position.y,
+            },
+            hasMoved: false,
+        };
+    }
+  }, [experimentState.equipment, handleSelectEquipment]);
+  
+  const handleWorkbenchClick = useCallback((e: React.MouseEvent) => {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).id === 'lab-slab') {
+      handleSelectEquipment(null);
+      if(heldEquipment || heldItem) {
+        handleClearHeldItem();
+      }
+    }
+  }, [heldItem, heldEquipment, handleClearHeldItem, handleSelectEquipment]);
+  
+  const handleEquipmentClick = useCallback((id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (dragState.current && dragState.current.hasMoved) {
+          return;
+      }
+      
+      if (heldItem) {
+          handleDropOnApparatus(id);
+      } else if (heldEquipment) {
+          if (heldEquipment.id !== id) {
+              handleInitiatePour(id);
+          } else {
+              handleClearHeldItem();
+          }
+      } else {
+          const equip = experimentState.equipment.find(eq => eq.id === id);
+          if (equip && equip.solutions && equip.solutions.length > 0) {
+            handlePickUpEquipment(id);
+          } else {
+            handleSelectEquipment(id);
+          }
+      }
+  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleInitiatePour, handleClearHeldItem, handlePickUpEquipment, experimentState.equipment, handleSelectEquipment]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-        if (draggedItemRef.current && draggedItemRef.current.id) {
-            const item = draggedItemRef.current;
-            const startX = item.offset.x;
-            const startY = item.offset.y;
-            
-            if (!item.hasMoved && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
-              item.hasMoved = true;
-            }
+        if (dragState.current) {
+            const item = dragState.current;
+            const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
+            if (workbench) {
+                const rect = workbench.getBoundingClientRect();
+                const newX = e.clientX - rect.left - item.offset.x;
+                const newY = e.clientY - rect.top - item.offset.y;
+                
+                if (!item.hasMoved && (Math.abs(newX - (experimentState.equipment.find(eq=>eq.id===item.id)?.position.x || 0)) > 5 || Math.abs(newY - (experimentState.equipment.find(eq=>eq.id===item.id)?.position.y || 0)) > 5)) {
+                    item.hasMoved = true;
+                }
 
-            if (item.hasMoved) {
-              const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
-              if (workbench) {
-                  const rect = workbench.getBoundingClientRect();
-                  const newX = e.clientX - rect.left - item.offset.x;
-                  const newY = e.clientY - rect.top - item.offset.y;
+                if (item.hasMoved) {
                   handleMoveEquipment(item.id, { x: newX, y: newY });
-              }
+                }
             }
         }
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-        if (draggedItemRef.current) {
-            if (!draggedItemRef.current.hasMoved) {
-                const id = draggedItemRef.current.id;
-                const targetElement = e.target as HTMLElement;
-                const targetEquipmentElement = targetElement.closest('[data-equipment-id]');
-                const targetId = targetEquipmentElement?.getAttribute('data-equipment-id');
-
-                if (heldItem) {
-                    handleDropOnApparatus(id);
-                } else if (heldEquipment) {
-                     if (heldEquipment.id === id) { 
-                        handleClearHeldItem(); 
-                     }
-                } else {
-                    handlePickUpEquipment(id);
-                }
-            }
-        }
-        draggedItemRef.current = null;
+        dragState.current = null;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -453,7 +497,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleMoveEquipment, heldItem, heldEquipment, handleDropOnApparatus, handleInitiatePour, handlePickUpEquipment, handleClearHeldItem]);
+  }, [handleMoveEquipment, experimentState.equipment]);
 
 
   const value = useMemo(() => ({
@@ -484,7 +528,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResetExperiment,
     handlePickUpChemical,
     handleClearHeldItem,
-    draggedItemRef,
+    dragState,
+    handleDragStart,
+    handleWorkbenchClick,
+    handleEquipmentClick,
   }), [
     experimentState, 
     labLogs, 
@@ -512,6 +559,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResetExperiment,
     handlePickUpChemical,
     handleClearHeldItem,
+    dragState,
+    handleDragStart,
+    handleWorkbenchClick,
+    handleEquipmentClick,
   ]);
 
   return (
