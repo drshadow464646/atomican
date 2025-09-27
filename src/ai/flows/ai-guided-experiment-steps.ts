@@ -29,7 +29,7 @@ export const experimentStepsFlow = ai.defineFlow(
   },
   async (goal) => {
     const { output } = await ai.generate({
-        model: 'x-ai/grok-4-fast:free',
+        model: "openrouter:x-ai/grok-4-fast:free",
         output: { schema: ExperimentStepsSchema, format: 'json' },
         prompt: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
 

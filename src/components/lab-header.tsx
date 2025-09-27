@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook } from 'lucide-react';
+import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook, TestTube } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -51,6 +51,11 @@ const menuItems = [
     href: '/lab/apparatus',
     label: 'Apparatus',
     icon: Library,
+  },
+    {
+    href: '/lab/model-test',
+    label: 'Model Test',
+    icon: TestTube,
   },
   {
     href: '/lab/settings',
@@ -144,6 +149,7 @@ export function LabHeader({
               className="h-8 text-lg font-semibold"
               autoFocus
               placeholder=""
+              suppressHydrationWarning
             />
           ) : (
             <div 
@@ -185,7 +191,7 @@ export function LabHeader({
         </nav>
       </div>
       <div className='flex items-center gap-2 md:gap-4'>
-        <Button variant="outline" size="sm" onClick={onResetExperiment}>
+        <Button variant="outline" size="sm" onClick={onResetExperiment} suppressHydrationWarning>
           <RefreshCw className="h-4 w-4 md:mr-2" />
           <span className="hidden md:inline">Reset</span>
         </Button>
@@ -199,6 +205,7 @@ export function LabHeader({
             checked={safetyGogglesOn}
             onCheckedChange={onGoggleToggle}
             aria-label="Toggle safety goggles"
+            suppressHydrationWarning
           />
         </div>
       </div>
