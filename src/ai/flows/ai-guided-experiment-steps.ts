@@ -28,29 +28,27 @@ export const experimentStepsFlow = ai.defineFlow(
     outputSchema: ExperimentStepsSchema,
   },
   async (goal) => {
-    const { output } = await ai.generate({
-        model: "openrouter:x-ai/grok-4-fast:free",
-        output: { schema: ExperimentStepsSchema, format: 'json' },
-        prompt: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure.
+    const { text } = await ai.generate({
+        model: "x-ai/grok-4-fast:free",
+        prompt: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure. The user wants to: "${goal}".
 
-The user will provide a goal for an experiment. You must provide a valid JSON object that conforms to the output schema.
+You must provide a valid JSON object that conforms to the following schema:
+- title: string (A short, descriptive title for the experiment.)
+- requiredApparatus: Array<{name: string, quantity: number}> (A list of all laboratory equipment required for the experiment, with specific sizes like "250ml Beaker".)
+- requiredChemicals: Array<{name: string, amount: string}> (A list of all chemicals and reagents required, with concentrations like "0.1M HCl".)
+- steps: Array<string> (A step-by-step procedure for conducting the experiment.)
 
-Your response must include:
-1.  A 'title' for the experiment.
-2.  A list of 'requiredApparatus', including specific sizes (e.g., "250ml Beaker").
-3.  A list of 'requiredChemicals', including concentrations (e.g., "0.1M HCl").
-4.  A series of 'steps' that are easy to follow.
+Prioritize safety and clarity in the procedure. Do not include any steps for cleaning up.
 
-Prioritize safety and clarity in the procedure.
-Do not include any steps for cleaning up.
-Your output MUST be only the JSON object, with no other text or markdown formatting.
-
-Generate an experiment procedure for the following goal: ${goal}`,
+IMPORTANT: Your output MUST be only the JSON object, with no other text, markdown formatting, or explanations.`,
     });
     
-    if (!output) {
-      throw new Error('Failed to generate experiment steps.');
+    try {
+      const output = JSON.parse(text);
+      return ExperimentStepsSchema.parse(output);
+    } catch (e) {
+        console.error("Failed to parse AI output:", e);
+        throw new Error("The AI returned an invalid response format.");
     }
-    return output;
   }
 );
