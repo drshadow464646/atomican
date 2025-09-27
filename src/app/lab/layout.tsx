@@ -25,7 +25,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className={cn("flex flex-col h-screen fade-in", isClient && (heldItem || heldEquipment) && "cursor-copy")}>
+    <div className={cn("flex flex-col h-screen fade-in", (heldItem || heldEquipment) && "cursor-copy")}>
       <main className="flex-1 overflow-auto">
         {children}
       </main>
