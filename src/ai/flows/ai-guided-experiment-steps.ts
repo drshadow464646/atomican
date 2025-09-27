@@ -47,7 +47,7 @@ IMPORTANT: Your output MUST be only the JSON object, with no other text, markdow
       const output = JSON.parse(text);
       return ExperimentStepsSchema.parse(output);
     } catch (e) {
-        console.error("Failed to parse AI output:", e);
+        console.error("Failed to parse AI output:", e, "Raw text:", text);
         throw new Error("The AI returned an invalid response format.");
     }
   }
