@@ -49,7 +49,7 @@ type ExperimentContextType = {
   handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
   handleClearHeldItem: () => void;
-  draggedItemRef: React.RefObject<{ id: string; offset: { x: number, y: number }; hasMoved: boolean }>;
+  draggedItemRef: React.RefObject<{ id: string; offset: { x: number; y: number }; hasMoved: boolean }>;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -86,6 +86,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         const container = newState.equipment.find(e => e.id === containerId);
         if (!container) return prevState;
 
+        container.isReacting = false; // Turn off analyzing state
         container.solutions = prediction.products;
         container.ph = prediction.ph;
         container.color = prediction.color;
@@ -150,7 +151,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         isSelected: true,
         solutions: [],
         ph: 7,
-        color: 'transparent'
+        color: 'transparent',
+        isReacting: false,
       }; 
       return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment] };
     });
@@ -166,6 +168,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         size: 1,
         isSelected: false,
         solutions: [],
+        isReacting: false,
     };
     setInventoryEquipment(prev => [...prev, newInventoryItem]);
   }, [inventoryEquipment]);
@@ -266,6 +269,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setPouringState(null);
     handleClearHeldItem();
     addLog('Analyzing reaction...');
+    
+    // Optimistic UI: Set reacting state
+    setExperimentState(prevState => {
+        const newEquipment = prevState.equipment.map(e => e.id === targetId ? { ...e, isReacting: true } : e);
+        return { ...prevState, equipment: newEquipment };
+    });
 
     const prediction = await getReactionPrediction(reactants);
     
@@ -356,6 +365,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     ];
 
     addLog(`Adding ${volumeToPour.toFixed(1)}ml of ${titrantSolution.chemical.name} via burette. Analyzing reaction...`);
+    
+    setExperimentState(prevState => ({
+        ...prevState,
+        equipment: prevState.equipment.map(e => e.id === beaker.id ? {...e, isReacting: true} : e)
+    }));
+
     const prediction = await getReactionPrediction(reactants);
     applyReactionPrediction(beaker.id, prediction);
 

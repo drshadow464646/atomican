@@ -3,15 +3,16 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2 } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Slider } from './ui/slider';
 
-const ReactionEffects = ({ effects, size }: { effects?: Equipment['reactionEffects'], size: number }) => {
+const ReactionEffects = ({ effects, size, liquidHeight }: { effects?: Equipment['reactionEffects'], size: number, liquidHeight: number }) => {
     if (!effects) return null;
     const { gas, precipitate, isExplosive, key } = effects;
+    const precipitateY = 120 - liquidHeight * 0.25;
 
     // Use a unique key to force re-render and re-play animations
     return (
@@ -19,7 +20,7 @@ const ReactionEffects = ({ effects, size }: { effects?: Equipment['reactionEffec
             {gas && Array.from({ length: 10 }).map((_, i) => (
                 <div
                     key={i}
-                    className="absolute bottom-0 w-1 h-1 bg-foreground/30 rounded-full animate-bubble"
+                    className="absolute w-1 h-1 bg-foreground/30 rounded-full animate-bubble"
                     style={{
                         left: `${15 + Math.random() * 70}%`,
                         animationDelay: `${Math.random() * 2}s`,
@@ -29,7 +30,7 @@ const ReactionEffects = ({ effects, size }: { effects?: Equipment['reactionEffec
                 />
             ))}
             {precipitate && (
-                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-white/20 animate-precipitate" />
+                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 bg-white/80 animate-precipitate" style={{'--liquid-height': `${liquidHeight}%`}}/>
             )}
             {isExplosive && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -41,7 +42,8 @@ const ReactionEffects = ({ effects, size }: { effects?: Equipment['reactionEffec
 };
 
 
-const BeakerIcon = ({ color, fillPercentage, size, effects }: { color: string; fillPercentage: number; size: number, effects?: Equipment['reactionEffects'] }) => {
+const BeakerIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
+  const {color, reactionEffects, isReacting} = item;
   const liquidHeight = 95 * (fillPercentage / 100);
   const liquidY = 115 - liquidHeight;
   
@@ -50,7 +52,7 @@ const BeakerIcon = ({ color, fillPercentage, size, effects }: { color: string; f
 
   return (
     <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
-       <ReactionEffects effects={effects} size={size}/>
+       <ReactionEffects effects={reactionEffects} size={size} liquidHeight={liquidHeight} />
       <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
            <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -64,7 +66,7 @@ const BeakerIcon = ({ color, fillPercentage, size, effects }: { color: string; f
             <path
               d={`M20,${liquidY} L 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
               fill={color === 'transparent' ? 'hsl(var(--background))' : color}
-              className="transition-all duration-500"
+              className={cn("transition-all duration-500", isReacting && "animate-analyzing")}
             />
           </g>
         )}
@@ -81,6 +83,11 @@ const BeakerIcon = ({ color, fillPercentage, size, effects }: { color: string; f
           fill="none"
         />
       </svg>
+      {isReacting && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+            <Loader2 className="w-1/2 h-1/2 text-primary animate-spin" />
+        </div>
+      )}
     </div>
   );
 };
@@ -111,8 +118,6 @@ const EquipmentDisplay = ({
         const totalVolume = workbenchItem.solutions.reduce((sum, s) => sum + s.volume, 0);
         fillPercentage = (totalVolume / workbenchItem.volume) * 100;
     }
-
-    const color = workbenchItem?.color || 'transparent';
     
     const size = item.size ?? 1;
     const iconClass = "text-muted-foreground/50 transition-all";
@@ -146,7 +151,7 @@ const EquipmentDisplay = ({
             case 'erlenmeyer-flask':
             case 'graduated-cylinder':
             case 'volumetric-flask':
-                return <BeakerIcon color={color} fillPercentage={fillPercentage} size={size} effects={item.reactionEffects} />;
+                return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
             case 'burette':
                 return <Pipette className={iconClass} style={iconStyle} />;
             default:
@@ -162,7 +167,8 @@ const EquipmentDisplay = ({
                 "absolute flex flex-col items-center justify-center p-2 bg-transparent transition-all duration-200 rounded-lg group",
                 item.isSelected && !isHeld && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl z-10",
                 isHoverTarget && "ring-2 ring-accent ring-offset-2 ring-offset-background shadow-2xl",
-                isHeld ? "cursor-grabbing opacity-75 z-20" : "cursor-grab"
+                isHeld ? "cursor-grabbing opacity-75 z-20" : "cursor-grab",
+                item.isReacting && "pointer-events-none"
             )}
             style={{ 
                 left: `${item.position.x}px`, 
@@ -172,7 +178,7 @@ const EquipmentDisplay = ({
             onMouseDown={(e) => onMouseDown(item.id, e)}
             onClick={(e) => onClick(item.id, e)}
         >
-            {item.isSelected && !isHeld && (
+            {item.isSelected && !isHeld && !item.isReacting && (
               <>
                 <Button 
                     size="icon" 

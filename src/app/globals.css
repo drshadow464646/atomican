@@ -164,31 +164,56 @@
 @layer components {
     @keyframes bubble {
         0% {
-            bottom: 0;
+            bottom: 5%;
             opacity: 1;
-            transform: scale(0.5) translateX(0);
+            transform: scale(0.2) translateX(0);
+        }
+        20% {
+            transform: scale(0.6) translateX(var(--wobble-1));
+        }
+        40% {
+            transform: scale(0.5) translateX(var(--wobble-2));
+        }
+        60% {
+            transform: scale(0.7) translateX(var(--wobble-1));
         }
         100% {
             bottom: 100%;
             opacity: 0;
-            transform: scale(1) translateX(calc(var(--tw-translate-x) + (sin(var(--animation-progress) * 10) * 10px)));
+            transform: scale(1) translateX(var(--wobble-2));
         }
     }
     .animate-bubble {
         animation: bubble linear infinite;
+        --wobble-1: -5px;
+        --wobble-2: 5px;
     }
 
-    @keyframes precipitate {
+    @keyframes precipitate-settle {
         0% {
-            height: 0;
-            opacity: 0.8;
+            bottom: 0;
+            height: 100%;
+            opacity: 0.6;
         }
         100% {
+            bottom: 0;
             height: 25%;
-            opacity: 0.2;
+            opacity: 1;
         }
     }
     .animate-precipitate {
-        animation: precipitate 2s ease-out forwards;
+        animation: precipitate-settle 2s ease-out forwards;
+    }
+    
+    @keyframes analyzing {
+        0%, 100% {
+            opacity: 0.2;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+    .animate-analyzing {
+        animation: analyzing 1.5s infinite;
     }
 }

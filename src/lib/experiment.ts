@@ -40,6 +40,7 @@ export type Equipment = {
   solutions: Solution[];
   ph?: number;
   color?: string;
+  isReacting: boolean;
   // New properties for visual effects
   reactionEffects?: {
     gas?: string;
