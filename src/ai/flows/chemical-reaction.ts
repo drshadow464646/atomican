@@ -1,0 +1,99 @@
+
+'use server';
+/**
+ * @fileOverview An AI flow to predict the outcome of a chemical reaction.
+ */
+import { z } from 'zod';
+import type { ReactionPrediction, Solution } from '@/lib/experiment';
+import { ChemicalSchema, SolutionSchema } from '@/lib/experiment';
+
+const ReactionPredictionSchema = z.object({
+  products: z.array(SolutionSchema).describe('The resulting solutions after the reaction. This should include unreacted chemicals and newly formed products.'),
+  ph: z.number().describe('The final pH of the resulting mixture.'),
+  color: z.string().describe("The final color of the solution as a CSS color string (e.g., 'hsl(300 100% 80% / 0.5)' or 'transparent')."),
+  gasProduced: z.string().nullable().describe('The chemical formula of any gas produced (e.g., "CO2", "H2"), or null if no gas.'),
+  precipitateFormed: z.string().nullable().describe('The name or formula of any solid precipitate formed, or null if none.'),
+  isExplosive: z.boolean().describe('Whether the reaction is dangerously explosive.'),
+  temperatureChange: z.number().describe('The change in temperature in Celsius. Positive for exothermic, negative for endothermic.'),
+  description: z.string().describe('A brief, one-sentence chemical explanation of what happened in the reaction.'),
+});
+
+export async function predictReaction(solutions: Solution[]): Promise<ReactionPrediction> {
+  const reactantDesc = solutions.map(s => `${s.volume}ml of ${s.chemical.concentration ? `${s.chemical.concentration}M` : ''} ${s.chemical.name} (${s.chemical.formula})`).join(' and ');
+  const prompt = `You are a chemistry expert AI. Predict the outcome of mixing the following solutions: ${reactantDesc}.
+
+Your response MUST be only a valid JSON object that conforms to the following schema:
+{
+  products: Array<{
+    chemical: {
+      id: string (kebab-case),
+      name: string,
+      formula: string,
+      type: 'acid' | 'base' | 'indicator' | 'salt' | 'solvent' | 'oxidant' | 'reductant' | 'other',
+      concentration?: number
+    },
+    volume: number (in ml)
+  }> (The final list of solutions, including unreacted starting materials and new products. The sum of product volumes should equal the sum of reactant volumes.),
+  ph: number (The final pH of the mixture.),
+  color: string (The final CSS color of the solution, considering indicators and products. e.g., 'hsl(300 100% 80% / 0.5)'),
+  gasProduced: string | null (Formula of gas, e.g., "CO2", or null.),
+  precipitateFormed: string | null (Name of precipitate, or null.),
+  isExplosive: boolean,
+  temperatureChange: number (in Celsius),
+  description: string (A one-sentence chemical explanation.)
+}
+
+Consider acid-base neutralization, redox reactions, precipitation, and gas evolution. For indicators like phenolphthalein, calculate the color based on the final pH. If no reaction occurs, return the original solutions combined, with pH calculated for the mixture.`;
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "x-ai/grok-4-fast:free",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
+    const textResponse = result.choices[0]?.message?.content;
+
+    if (!textResponse) {
+      throw new Error("The AI returned an empty response.");
+    }
+    
+    const parsedOutput = JSON.parse(textResponse);
+    const validation = ReactionPredictionSchema.safeParse(parsedOutput);
+
+    if (!validation.success) {
+      console.error("Zod validation error (Reaction Prediction):", validation.error.errors);
+      throw new Error("AI returned data in an unexpected format.");
+    }
+
+    return validation.data;
+
+  } catch (error: any) {
+    console.error("Error predicting reaction:", error);
+    // Return a "no reaction" state on error
+    const totalVolume = solutions.reduce((acc, s) => acc + s.volume, 0);
+    return {
+      products: [{chemical: {id: 'error', name: 'Error', formula: 'Error', type: 'other'}, volume: totalVolume}],
+      ph: 7,
+      color: 'hsl(0 100% 50% / 0.3)',
+      gasProduced: null,
+      precipitateFormed: null,
+      isExplosive: false,
+      temperatureChange: 0,
+      description: `An error occurred: ${error.message}`,
+    };
+  }
+}

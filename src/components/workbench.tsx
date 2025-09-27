@@ -3,13 +3,45 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Slider } from './ui/slider';
 
-const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercentage: number; size: number }) => {
+const ReactionEffects = ({ effects, size }: { effects?: Equipment['reactionEffects'], size: number }) => {
+    if (!effects) return null;
+    const { gas, precipitate, isExplosive, key } = effects;
+
+    // Use a unique key to force re-render and re-play animations
+    return (
+        <div key={key} className="absolute inset-0 pointer-events-none overflow-hidden">
+            {gas && Array.from({ length: 10 }).map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute bottom-0 w-1 h-1 bg-foreground/30 rounded-full animate-bubble"
+                    style={{
+                        left: `${15 + Math.random() * 70}%`,
+                        animationDelay: `${Math.random() * 2}s`,
+                        animationDuration: `${2 + Math.random() * 2}s`,
+                        transform: `scale(${size})`,
+                    }}
+                />
+            ))}
+            {precipitate && (
+                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-white/20 animate-precipitate" />
+            )}
+            {isExplosive && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Flame className="w-1/2 h-1/2 text-orange-500 animate-pulse" />
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+const BeakerIcon = ({ color, fillPercentage, size, effects }: { color: string; fillPercentage: number; size: number, effects?: Equipment['reactionEffects'] }) => {
   const liquidHeight = 95 * (fillPercentage / 100);
   const liquidY = 115 - liquidHeight;
   
@@ -18,6 +50,7 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
 
   return (
     <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+       <ReactionEffects effects={effects} size={size}/>
       <svg viewBox="0 0 100 120" className="h-full w-full">
         <defs>
            <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -30,7 +63,7 @@ const BeakerIcon = ({ color, fillPercentage, size }: { color: string; fillPercen
           <g>
             <path
               d={`M20,${liquidY} L 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
-              fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient)`}
+              fill={color === 'transparent' ? 'hsl(var(--background))' : color}
               className="transition-all duration-500"
             />
           </g>
@@ -113,7 +146,7 @@ const EquipmentDisplay = ({
             case 'erlenmeyer-flask':
             case 'graduated-cylinder':
             case 'volumetric-flask':
-                return <BeakerIcon color={color} fillPercentage={fillPercentage} size={size} />;
+                return <BeakerIcon color={color} fillPercentage={fillPercentage} size={size} effects={item.reactionEffects} />;
             case 'burette':
                 return <Pipette className={iconClass} style={iconStyle} />;
             default:
@@ -233,25 +266,19 @@ export function Workbench({
 
   const handleEquipmentClick = (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
-      // This logic runs if the mouseup event determines it was a click, not a drag
       if (draggedItemRef.current && draggedItemRef.current.hasMoved) {
-          // It was a drag, so the mouseup handler already took care of it. Do nothing.
           return;
       }
       
       if (heldItem) {
-          // If holding a chemical, drop it in the clicked apparatus
           onDropOnApparatus(id);
       } else if (heldEquipment) {
-          // If holding equipment, clicking another piece of equipment means we want to pour
           if (heldEquipment.id !== id) {
               onInitiatePour(id);
           } else {
-              // Clicked on the same item we are holding, so "put it down"
               onClearHeldItem();
           }
       } else {
-          // If holding nothing, clicking an apparatus means we want to pick it up for pouring
           onPickUpEquipment(id);
       }
   };
@@ -270,20 +297,15 @@ export function Workbench({
   
   let maxPourVolume = 0;
   if (pouringState && pouringSourceItem && pouringTargetItem) {
+      const targetVolume = pouringTargetItem.volume || 0;
+      const currentTargetVolume = pouringTargetItem.solutions.reduce((acc, s) => acc + s.volume, 0);
+      const targetCapacity = Math.max(0, targetVolume - currentTargetVolume);
+      
       if (pouringState.sourceId === 'inventory') {
-          // Pouring from inventory: limit by target's remaining capacity
-          const targetVolume = pouringTargetItem.volume || 0;
-          const currentVolume = pouringTargetItem.solutions.reduce((acc, s) => acc + s.volume, 0);
-          maxPourVolume = Math.max(0, targetVolume - currentVolume);
+          maxPourVolume = targetCapacity;
       } else {
-          // Pouring from another container: limit by source volume and target capacity
           const source = pouringSourceItem as Equipment;
           const sourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
-          
-          const targetVolume = pouringTargetItem.volume || 0;
-          const currentTargetVolume = pouringTargetItem.solutions.reduce((acc, s) => acc + s.volume, 0);
-          const targetCapacity = Math.max(0, targetVolume - currentTargetVolume);
-          
           maxPourVolume = Math.min(sourceVolume, targetCapacity);
       }
   }
@@ -314,14 +336,12 @@ export function Workbench({
   }, [isHoldingSomething, heldEquipment, draggedItemRef]);
   
   useEffect(() => {
-    // These listeners are for hover effects, not for drag logic.
-    // Drag logic is now in useExperiment hook.
     document.addEventListener('mousemove', handleGlobalMouseMove);
     return () => document.removeEventListener('mousemove', handleGlobalMouseMove);
   }, [handleGlobalMouseMove]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
       <Card 
         className="h-full rounded-none flex flex-col text-card-foreground bg-card/50 border-0"
       >
@@ -386,7 +406,7 @@ export function Workbench({
               {pouringState && pouringSourceItem && pouringTargetItem && (
                 <div className="flex flex-col items-center gap-4 w-full p-4 rounded-lg border border-border bg-background/80 backdrop-blur-sm shadow-lg">
                     <p className="text-sm font-medium text-foreground">
-                      {pouringState.sourceId === 'inventory' ? `Add ${pouringSourceItem.name} to ${pouringTargetItem.name}` : `Pour from ${pouringSourceItem.name} into ${pouringTargetItem.name}`}
+                      {pouringState.sourceId === 'inventory' ? `Add ${pouringSourceItem.name} to ${pouringTargetItem.name}` : `Pour from ${(pouringSourceItem as Equipment).name} into ${pouringTargetItem.name}`}
                     </p>
                     <div className="flex items-center gap-4 w-full px-4">
                         <Slider

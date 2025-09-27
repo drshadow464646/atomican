@@ -2,11 +2,9 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { ExperimentState, LabLog, Chemical, Equipment, Solution } from '@/lib/experiment';
-import { calculatePH, getIndicatorColor } from '@/lib/experiment';
+import type { ExperimentState, LabLog, Chemical, Equipment, Solution, ReactionPrediction } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
-import { ALL_CHEMICALS, COMMON_CHEMICAL_IDS } from '@/lib/chemical-catalog';
-import { ALL_APPARATUS, COMMON_APPARATUS_IDS } from '@/lib/apparatus-catalog';
+import { getReactionPrediction } from '@/app/actions';
 
 let logIdCounter = 0;
 const getUniqueLogId = () => {
@@ -82,37 +80,30 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
   
-  const updatePhAndColor = useCallback((state: ExperimentState): ExperimentState => {
-    const newState = { ...state };
-    
-    newState.equipment.forEach(container => {
-      if (container.solutions) {
-        const newPh = calculatePH(container.solutions);
-        container.ph = newPh;
-        const indicator = container.solutions.find(s => s.chemical.type === 'indicator')?.chemical;
-        if (indicator) {
-          const newColor = getIndicatorColor(indicator.id, newPh);
-          if (newColor !== container.color) {
-            addLog(`Solution color in ${container.name} changed to ${newColor}.`);
-          }
-          container.color = newColor;
-        } else {
-          container.color = 'transparent';
+  const applyReactionPrediction = (containerId: string, prediction: ReactionPrediction) => {
+    setExperimentState(prevState => {
+        const newState = { ...prevState };
+        const container = newState.equipment.find(e => e.id === containerId);
+        if (!container) return prevState;
+
+        container.solutions = prediction.products;
+        container.ph = prediction.ph;
+        container.color = prediction.color;
+        container.reactionEffects = {
+            gas: prediction.gasProduced || undefined,
+            precipitate: prediction.precipitateFormed || undefined,
+            isExplosive: prediction.isExplosive,
+            key: Date.now(), // new key to trigger animation
+        };
+
+        addLog(`Reaction in ${container.name}: ${prediction.description}`);
+        if(prediction.isExplosive) {
+             toast({ title: 'DANGER!', description: 'The reaction is explosive!', variant: 'destructive' });
         }
-      }
+
+        return { ...newState, equipment: [...newState.equipment] };
     });
-
-    const mainContainer = newState.equipment.find(e => e.type === 'beaker' || e.type === 'erlenmeyer-flask');
-    if (mainContainer) {
-        newState.ph = mainContainer.ph ?? null;
-        newState.color = mainContainer.color ?? 'transparent';
-    } else {
-        newState.ph = null;
-        newState.color = 'transparent';
-    }
-
-    return newState;
-  }, [addLog]);
+  };
 
 
   const handleSafetyCheck = useCallback(() => {
@@ -225,133 +216,89 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleDropOnApparatus = useCallback((equipmentId: string) => {
     if (!handleSafetyCheck() || !heldItem) return;
-
-    setExperimentState(prevState => {
-        const equipmentOnWorkbench = prevState.equipment.find(e => e.id === equipmentId);
-        if (!equipmentOnWorkbench) return prevState;
-        
-        // Always allow initiating a pour, even if there are contents.
-        // The handlePour logic will handle mixing.
-        if (heldItem.type === 'indicator') {
-            const newState = {...prevState};
-            if (!equipmentOnWorkbench.solutions) equipmentOnWorkbench.solutions = [];
-            // Add a small, fixed amount of indicator
-            equipmentOnWorkbench.solutions.push({ chemical: heldItem, volume: 1 });
-            addLog(`Added ${heldItem.name} indicator to ${equipmentOnWorkbench.name}.`);
-            handleClearHeldItem();
-            return updatePhAndColor(newState);
-        } else if (heldItem.type === 'acid' || heldItem.type === 'base' || heldItem.type === 'solvent') {
-            setPouringState({ sourceId: 'inventory', targetId: equipmentId });
-        } else {
-            setTimeout(() => toast({ title: 'Invalid Action', description: `Cannot add ${heldItem.name} to ${equipmentOnWorkbench.name}.`, variant: 'destructive' }), 0);
-            handleClearHeldItem();
-        }
-        
-        return prevState;
-    });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor, heldItem, handleClearHeldItem]);
+    setPouringState({ sourceId: 'inventory', targetId: equipmentId });
+  }, [handleSafetyCheck, heldItem]);
   
-  const handlePour = useCallback((volume: number) => {
+  const handlePour = useCallback(async (volume: number) => {
     if (!pouringState) return;
     const { sourceId, targetId } = pouringState;
 
-    setExperimentState(prevState => {
-      let newState = {...prevState};
-      const target = newState.equipment.find(e => e.id === targetId);
-      if (!target) {
+    const target = experimentState.equipment.find(e => e.id === targetId);
+    if (!target) {
         setPouringState(null);
-        return prevState;
-      }
-      
-      if (!target.solutions) target.solutions = [];
+        return;
+    }
 
-      if (sourceId === 'inventory') {
-          if (!heldItem) return prevState;
-          const totalTargetVolume = target.solutions.reduce((acc, s) => acc + s.volume, 0);
-          const pourVolumeClamped = Math.min(volume, (target.volume || Infinity) - totalTargetVolume);
-          
-          if (pourVolumeClamped <= 0) {
-              setTimeout(() => toast({ title: 'Container Full', description: `${target.name} cannot hold any more liquid.`, variant: 'destructive' }), 0);
-              setPouringState(null);
-              handleClearHeldItem();
-              return prevState;
-          }
+    const currentTargetVolume = target.solutions.reduce((acc, s) => acc + s.volume, 0);
+    const availableCapacity = (target.volume || Infinity) - currentTargetVolume;
+    const pourVolumeClamped = Math.min(volume, availableCapacity);
 
-          const existingSolution = target.solutions.find(s => s.chemical.id === heldItem.id);
-          if (existingSolution) {
-              existingSolution.volume += pourVolumeClamped;
-          } else {
-              target.solutions.push({ chemical: heldItem, volume: pourVolumeClamped });
-          }
-          addLog(`Added ${pourVolumeClamped.toFixed(1)}ml of ${heldItem.name} to ${target.name}.`);
+    if (pourVolumeClamped <= 0) {
+        toast({ title: 'Container Full', description: `${target.name} cannot hold any more liquid.`, variant: 'destructive' });
+        setPouringState(null);
+        handleClearHeldItem();
+        return;
+    }
 
-      } else {
-        const source = newState.equipment.find(e => e.id === sourceId);
-        if (!source || !source.solutions || source.solutions.length === 0) {
-            setPouringState(null);
-            return prevState;
+    let reactants: Solution[] = [...(target.solutions || [])];
+    
+    if (sourceId === 'inventory') {
+        if (!heldItem) return;
+        reactants.push({ chemical: heldItem, volume: pourVolumeClamped });
+    } else {
+        const source = experimentState.equipment.find(e => e.id === sourceId);
+        if (!source || !source.solutions) return;
+
+        const sourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
+        if (sourceVolume <= 0) {
+             toast({ title: 'Cannot Pour', description: `${source.name} is empty.`, variant: 'destructive' });
+             setPouringState(null);
+             return;
         }
 
-        const totalSourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
-        const totalTargetVolume = target.solutions.reduce((acc, s) => acc + s.volume, 0);
-        
-        // Clamp by source volume and available space in target
-        const pourVolumeClamped = Math.min(volume, totalSourceVolume, (target.volume || Infinity) - totalTargetVolume);
-
-        if (pourVolumeClamped <= 0) {
-            const reason = totalSourceVolume <= 0 ? `${source.name} is empty.` : `${target.name} is full.`;
-            setTimeout(() => toast({ title: 'Cannot Pour', description: reason, variant: 'destructive' }), 0);
-            setPouringState(null);
-            handleClearHeldItem();
-            return prevState;
+        // Add source solutions to reactants and adjust their volumes for the pour amount
+        const pourFraction = pourVolumeClamped / sourceVolume;
+        for (const sol of source.solutions) {
+            reactants.push({ ...sol, volume: sol.volume * pourFraction });
         }
+    }
+    
+    setPouringState(null);
+    handleClearHeldItem();
+    addLog('Analyzing reaction...');
 
-        addLog(`Pouring ${pourVolumeClamped.toFixed(1)}ml from ${source.name} into ${target.name}.`);
+    const prediction = await getReactionPrediction(reactants);
+    
+    applyReactionPrediction(targetId, prediction);
 
-        // Create a copy of source solutions to avoid mutation issues
-        const solutionsToTransfer = JSON.parse(JSON.stringify(source.solutions));
+    // Update source container if pouring from another equipment
+    if (sourceId !== 'inventory') {
+        setExperimentState(prevState => {
+            const newSource = prevState.equipment.find(e => e.id === sourceId);
+            if (!newSource || !newSource.solutions) return prevState;
 
-        for (const sourceSolution of solutionsToTransfer) {
-            // Calculate how much of this specific chemical to take
-            const pourFraction = sourceSolution.volume / totalSourceVolume;
-            const volToTake = pourFraction * pourVolumeClamped;
+            const sourceVolume = newSource.solutions.reduce((t, s) => t + s.volume, 0);
+            const pourFraction = pourVolumeClamped / sourceVolume;
+
+            newSource.solutions.forEach(s => {
+                s.volume -= s.volume * pourFraction;
+            });
+            newSource.solutions = newSource.solutions.filter(s => s.volume > 0.01);
             
-            const existingTargetSolution = target.solutions.find(s => s.chemical.id === sourceSolution.chemical.id);
-            if (existingTargetSolution) {
-                existingTargetSolution.volume += volToTake;
-            } else {
-                target.solutions.push({...sourceSolution, volume: volToTake});
-            }
-            
-            // Find original solution in source and decrease its volume
-            const originalSourceSolution = source.solutions.find(s => s.chemical.id === sourceSolution.chemical.id);
-            if (originalSourceSolution) {
-                originalSourceSolution.volume -= volToTake;
-            }
-        }
-        
-        // Remove solutions from source if their volume is negligible
-        source.solutions = source.solutions.filter(s => s.volume > 0.01);
-      }
+            return {
+                ...prevState,
+                equipment: prevState.equipment.map(e => e.id === sourceId ? { ...newSource } : e)
+            };
+        });
+    }
 
-      newState = {
-        ...newState,
-        equipment: newState.equipment.map(e => e.id === target.id ? target : e)
-      };
-
-      setPouringState(null);
-      handleClearHeldItem();
-      return updatePhAndColor(newState);
-    });
-
-  }, [addLog, pouringState, updatePhAndColor, heldItem, handleClearHeldItem, toast]);
+  }, [addLog, pouringState, experimentState.equipment, heldItem, handleClearHeldItem, toast]);
 
   const handleInitiatePour = useCallback((targetId: string) => {
     if (!heldEquipment || heldEquipment.id === targetId) return;
     const target = experimentState.equipment.find(e => e.id === targetId);
     if (!target) return;
     
-    // Only allow pouring into certain types of containers
     const validTargets = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
     if (validTargets.includes(target.type)) {
        setPouringState({ sourceId: heldEquipment.id, targetId });
@@ -372,7 +319,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     handleClearHeldItem();
     const equipment = experimentState.equipment.find(e => e.id === id);
-    // Only allow picking up equipment if it has contents to pour
     if (equipment && equipment.solutions && equipment.solutions.length > 0) {
       setHeldEquipment(equipment);
     }
@@ -385,47 +331,46 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setInventoryChemicals(prev => [...prev, chemical]);
   }, [inventoryChemicals]);
   
-  const handleTitrate = useCallback((volume: number) => {
+  const handleTitrate = useCallback(async (volume: number) => {
     if (!handleSafetyCheck()) return;
     
+    const burette = experimentState.equipment.find(e => e.type === 'burette');
+    const beaker = experimentState.equipment.find(e => e.type === 'beaker' || e.type === 'erlenmeyer-flask');
+
+    if (!beaker || !burette || !burette.solutions || burette.solutions.length === 0) {
+      toast({ title: 'Error', description: 'Ensure a flask/beaker and a filled burette are on the workbench.', variant: 'destructive' });
+      return;
+    }
+    
+    const titrantSolution = burette.solutions[0];
+    const volumeToPour = Math.min(volume, titrantSolution.volume);
+
+    if (volumeToPour <= 0) {
+      toast({ title: 'Notice', description: 'Burette is empty.' });
+      return;
+    }
+
+    const reactants = [
+        ...(beaker.solutions || []),
+        { chemical: titrantSolution.chemical, volume: volumeToPour }
+    ];
+
+    addLog(`Adding ${volumeToPour.toFixed(1)}ml of ${titrantSolution.chemical.name} via burette. Analyzing reaction...`);
+    const prediction = await getReactionPrediction(reactants);
+    applyReactionPrediction(beaker.id, prediction);
+
     setExperimentState(prevState => {
-      const burette = prevState.equipment.find(e => e.type === 'burette');
-      const beaker = prevState.equipment.find(e => e.type === 'beaker' || e.type === 'erlenmeyer-flask');
-
-      if (!beaker || !burette || !burette.solutions || burette.solutions.length === 0) {
-        setTimeout(() => toast({ title: 'Error', description: 'Ensure a flask/beaker and a filled burette are on the workbench.', variant: 'destructive' }), 0);
-        return prevState;
-      }
-      
-      const titrantSolution = burette.solutions[0];
-      const volumeToPour = Math.min(volume, titrantSolution.volume);
-
-      if (volumeToPour <= 0) {
-        setTimeout(() => toast({ title: 'Notice', description: 'Burette is empty.' }), 0);
-        return prevState;
-      }
-
-      titrantSolution.volume -= volumeToPour;
-      addLog(`Added ${volumeToPour.toFixed(1)}ml of ${titrantSolution.chemical.name} from burette.`);
-      
-      if (!beaker.solutions) beaker.solutions = [];
-      const existingTitrantInBeaker = beaker.solutions.find(s => s.chemical.id === titrantSolution.chemical.id);
-
-      if(existingTitrantInBeaker) {
-        existingTitrantInBeaker.volume += volumeToPour;
-      } else {
-        beaker.solutions.push({ chemical: titrantSolution.chemical, volume: volumeToPour });
-      }
-      
-      const newState = {...prevState, equipment: prevState.equipment.map(e => {
-        if(e.id === burette.id) return burette;
-        if(e.id === beaker.id) return beaker;
-        return e;
-      })};
-
-      return updatePhAndColor(newState);
+        const newBurette = prevState.equipment.find(e => e.id === burette.id);
+        if (newBurette && newBurette.solutions && newBurette.solutions.length > 0) {
+            newBurette.solutions[0].volume -= volumeToPour;
+            if (newBurette.solutions[0].volume < 0.01) {
+                newBurette.solutions = [];
+            }
+        }
+        return { ...prevState, equipment: prevState.equipment.map(e => e.id === burette.id ? {...newBurette} : e) };
     });
-  }, [addLog, handleSafetyCheck, toast, updatePhAndColor]);
+
+  }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
 
 
   const handleAddCustomLog = useCallback((note: string) => {
@@ -449,7 +394,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             const startX = item.offset.x;
             const startY = item.offset.y;
             
-            // Check for significant movement to differentiate click from drag
             if (!item.hasMoved && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
               item.hasMoved = true;
             }
@@ -458,7 +402,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
               const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
               if (workbench) {
                   const rect = workbench.getBoundingClientRect();
-                  // The offset here is the initial mouse position relative to the element's top-left corner
                   const newX = e.clientX - rect.left - item.offset.x;
                   const newY = e.clientY - rect.top - item.offset.y;
                   handleMoveEquipment(item.id, { x: newX, y: newY });
@@ -469,25 +412,19 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     const handleMouseUp = (e: MouseEvent) => {
         if (draggedItemRef.current) {
-            // If it wasn't a drag, it's a click.
             if (!draggedItemRef.current.hasMoved) {
                 const id = draggedItemRef.current.id;
                 const targetElement = e.target as HTMLElement;
-
-                // Check if the click target is another piece of equipment
                 const targetEquipmentElement = targetElement.closest('[data-equipment-id]');
                 const targetId = targetEquipmentElement?.getAttribute('data-equipment-id');
 
                 if (heldItem) {
                     handleDropOnApparatus(id);
                 } else if (heldEquipment) {
-                     if (heldEquipment.id === id) { // Clicked on the currently held item
-                        handleClearHeldItem(); // Put it down
-                     } else {
-                        // This case is handled by the onClick of the target
+                     if (heldEquipment.id === id) { 
+                        handleClearHeldItem(); 
                      }
                 } else {
-                    // This is the click to pick up
                     handlePickUpEquipment(id);
                 }
             }
@@ -576,7 +513,3 @@ export function useExperiment() {
   }
   return context;
 }
-
-    
-
-    

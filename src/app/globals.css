@@ -160,3 +160,35 @@
     @apply animate-fade-in;
   }
 }
+
+@layer components {
+    @keyframes bubble {
+        0% {
+            bottom: 0;
+            opacity: 1;
+            transform: scale(0.5) translateX(0);
+        }
+        100% {
+            bottom: 100%;
+            opacity: 0;
+            transform: scale(1) translateX(calc(var(--tw-translate-x) + (sin(var(--animation-progress) * 10) * 10px)));
+        }
+    }
+    .animate-bubble {
+        animation: bubble linear infinite;
+    }
+
+    @keyframes precipitate {
+        0% {
+            height: 0;
+            opacity: 0.8;
+        }
+        100% {
+            height: 25%;
+            opacity: 0.2;
+        }
+    }
+    .animate-precipitate {
+        animation: precipitate 2s ease-out forwards;
+    }
+}

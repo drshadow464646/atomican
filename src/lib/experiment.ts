@@ -1,12 +1,31 @@
 
 import type { GenerateExperimentStepsOutput } from "@/ai/flows/ai-guided-experiment-steps";
+import { z } from 'zod';
 
-export type Chemical = {
-  id: string;
-  name: string;
-  formula: string;
-  type: 'acid' | 'base' | 'indicator' | 'salt' | 'solvent' | 'oxidant' | 'reductant' | 'other';
-  concentration?: number; // Molarity (mol/L)
+export const ChemicalSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  formula: z.string(),
+  type: z.enum(['acid', 'base', 'indicator', 'salt', 'solvent', 'oxidant', 'reductant', 'other']),
+  concentration: z.number().optional(),
+});
+export type Chemical = z.infer<typeof ChemicalSchema>;
+
+export const SolutionSchema = z.object({
+  chemical: ChemicalSchema,
+  volume: z.number(),
+});
+export type Solution = z.infer<typeof SolutionSchema>;
+
+export type ReactionPrediction = {
+  products: Solution[];
+  ph: number;
+  color: string;
+  gasProduced: string | null;
+  precipitateFormed: string | null;
+  isExplosive: boolean;
+  temperatureChange: number;
+  description: string;
 };
 
 export type Equipment = {
@@ -21,11 +40,13 @@ export type Equipment = {
   solutions: Solution[];
   ph?: number;
   color?: string;
-};
-
-export type Solution = {
-  chemical: Chemical;
-  volume: number; // in ml
+  // New properties for visual effects
+  reactionEffects?: {
+    gas?: string;
+    precipitate?: string;
+    isExplosive?: boolean;
+    key: number; // To re-trigger animations
+  }
 };
 
 export type ExperimentState = {
@@ -46,6 +67,7 @@ export type LabLog = {
 
 export type AiSuggestion = GenerateExperimentStepsOutput | null;
 
+// This function is now superseded by the AI reaction prediction flow
 export function calculatePH(solutions: Solution[]): number {
   if (!solutions || solutions.length === 0) return 7;
 
@@ -54,12 +76,9 @@ export function calculatePH(solutions: Solution[]): number {
   let totalVolumeL = 0;
 
   for (const solution of solutions) {
-    // Ignore indicators in pH calculation
     if (solution.chemical.type === 'indicator') continue;
-
     const volumeL = solution.volume / 1000;
     totalVolumeL += volumeL;
-
     if (solution.chemical.type === 'acid' && solution.chemical.concentration) {
       molesH += volumeL * solution.chemical.concentration;
     } else if (solution.chemical.type === 'base' && solution.chemical.concentration) {
@@ -85,20 +104,21 @@ export function calculatePH(solutions: Solution[]): number {
   }
 }
 
+// This function is now superseded by the AI reaction prediction flow
 export function getIndicatorColor(indicatorId: string, ph: number): string {
     switch(indicatorId) {
         case 'phenolphthalein':
-            if (ph < 8.2) return 'transparent'; // Colorless
-            if (ph >= 8.2 && ph <= 10) return 'hsl(300 100% 80% / 0.5)'; // Pink
-            return 'hsl(300 100% 60% / 0.7)'; // Fuchsia
+            if (ph < 8.2) return 'transparent';
+            if (ph >= 8.2 && ph <= 10) return 'hsl(300 100% 80% / 0.5)';
+            return 'hsl(300 100% 60% / 0.7)';
         case 'methyl-orange':
-            if (ph < 3.1) return 'hsl(0 100% 60% / 0.6)'; // Red
-            if (ph >= 3.1 && ph <= 4.4) return 'hsl(30 100% 60% / 0.6)'; // Orange
-            return 'hsl(60 100% 60% / 0.6)'; // Yellow
+            if (ph < 3.1) return 'hsl(0 100% 60% / 0.6)';
+            if (ph >= 3.1 && ph <= 4.4) return 'hsl(30 100% 60% / 0.6)';
+            return 'hsl(60 100% 60% / 0.6)';
         case 'bromothymol-blue':
-            if (ph < 6.0) return 'hsl(60 100% 50% / 0.6)'; // Yellow
-            if (ph >= 6.0 && ph <= 7.6) return 'hsl(120 100% 80% / 0.6)'; // Green
-            return 'hsl(240 100% 60% / 0.6)'; // Blue
+            if (ph < 6.0) return 'hsl(60 100% 50% / 0.6)';
+            if (ph >= 6.0 && ph <= 7.6) return 'hsl(120 100% 80% / 0.6)';
+            return 'hsl(240 100% 60% / 0.6)';
         default:
             return 'transparent';
     }
