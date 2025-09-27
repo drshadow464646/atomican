@@ -2,15 +2,10 @@
 'use server';
 /**
  * @fileOverview An AI flow to search for laboratory chemicals.
- *
- * - searchChemicals - A function that searches for chemicals based on a query.
- * - ChemicalSearchOutput - The return type for the searchChemicals function.
+ * This has been refactored to use a direct API call for reliability.
  */
-
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-// Define the shape of a single chemical item in the search results
 const ChemicalSchema = z.object({
   id: z.string().describe('A unique lowercase, kebab-case identifier for the chemical, e.g., "hydrochloric-acid".'),
   name: z.string().describe('The common name of the chemical, e.g., "Hydrochloric Acid".'),
@@ -19,46 +14,72 @@ const ChemicalSchema = z.object({
   concentration: z.number().optional().describe('The molarity of the solution (mol/L), if it is a solution.'),
 });
 
-// The output of the flow will be an array of these chemical items
 const ChemicalSearchOutputSchema = z.array(ChemicalSchema);
 export type ChemicalSearchOutput = z.infer<typeof ChemicalSearchOutputSchema>;
 
-// This is the main exported function that the server action will call.
 export async function searchChemicals(query: string): Promise<ChemicalSearchOutput> {
-  return chemicalSearchFlow(query);
-}
+  const prompt = `You are a chemical supply catalog AI. A user is searching for a chemical with the query: "${query}".
+Generate a list of 5 to 10 relevant chemicals.
 
-// Define the prompt for the AI model
-const chemicalSearchPrompt = ai.definePrompt({
-  name: 'chemicalSearchPrompt',
-  input: { schema: z.string() },
-  output: { schema: ChemicalSearchOutputSchema, format: 'json' },
-  prompt: `You are a chemical supply catalog AI. A user is searching for a chemical.
-Based on the user's query: "{{input}}", generate a list of 5 to 10 relevant chemicals.
+Your response MUST be only a valid JSON array that conforms to the following schema:
+Array<{
+  id: string (lowercase, kebab-case identifier, e.g., "hydrochloric-acid"),
+  name: string (common name, e.g., "Hydrochloric Acid"),
+  formula: string (chemical formula, e.g., "HCl"),
+  type: 'acid' | 'base' | 'indicator' | 'salt' | 'solvent' | 'oxidant' | 'reductant' | 'other',
+  concentration?: number (molarity in mol/L, if applicable)
+}>
 
-For each chemical, provide its ID, name, formula, type, and an optional concentration.
-Ensure the 'type' field is one of the allowed values.
-If the query is generic (e.g., "strong acid"), list common examples.
-If it is a solution, provide a common concentration (e.g., 0.1M).
-Your response must be a valid JSON array.`,
-});
+If the query is generic (e.g., "strong acid"), list common examples. If it is a solution, provide a common concentration (e.g., 0.1).
+Do not include any other text, markdown formatting, or explanations.`;
+  
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "x-ai/grok-4-fast:free",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      }),
+    });
 
-// Define the Genkit flow that orchestrates the AI call
-const chemicalSearchFlow = ai.defineFlow(
-  {
-    name: 'chemicalSearchFlow',
-    inputSchema: z.string(),
-    outputSchema: ChemicalSearchOutputSchema,
-  },
-  async (query) => {
-    const { output } = await chemicalSearchPrompt(query, { model: 'x-ai/grok-4-fast:free' });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenRouter API Error (Chemical Search):", errorText);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+    const textResponse = result.choices[0]?.message?.content;
     
-    // The output should already be parsed JSON, but we handle the case where it might be null.
-    if (!output) {
-      console.error("Chemical search returned no output.");
-      return [];
+    if (!textResponse) {
+      throw new Error("The AI returned an empty response.");
     }
     
-    return output;
+    // The response is expected to be a JSON object containing a root key, e.g. {"results": [...]}, as per json_object mode
+    const parsedOutput = JSON.parse(textResponse);
+    
+    // Find the array within the parsed object
+    const dataArray = Object.values(parsedOutput).find(Array.isArray);
+
+    if (!dataArray) {
+        throw new Error("AI returned a JSON object, but no array was found inside it.");
+    }
+
+    const validation = ChemicalSearchOutputSchema.safeParse(dataArray);
+    if (!validation.success) {
+      console.error("Zod validation error (Chemical Search):", validation.error.errors);
+      throw new Error("AI returned data in an unexpected format.");
+    }
+
+    return validation.data;
+
+  } catch (error: any) {
+    console.error("Error searching chemicals:", error);
+    return []; // Return an empty array on error to prevent crashing the UI
   }
-);
+}

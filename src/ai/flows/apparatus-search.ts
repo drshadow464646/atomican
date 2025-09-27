@@ -2,16 +2,10 @@
 'use server';
 /**
  * @fileOverview An AI flow to search for laboratory apparatus.
- *
- * - searchApparatus - A function that searches for apparatus based on a query.
- * - ApparatusSearchOutput - The return type for the searchApparatus function.
+ * This has been refactored to use a direct API call for reliability.
  */
-
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import type { Equipment } from '@/lib/experiment';
 
-// Define the shape of a single apparatus item in the search results
 const ApparatusSchema = z.object({
   id: z.string().describe('A unique lowercase, kebab-case identifier for the equipment, e.g., "erlenmeyer-flask-250ml".'),
   name: z.string().describe('The common name of the equipment, including size if applicable, e.g., "Erlenmeyer Flask (250ml)".'),
@@ -20,45 +14,72 @@ const ApparatusSchema = z.object({
   description: z.string().describe('A brief, one-sentence description of the equipment and its primary use.'),
 });
 
-// The output of the flow will be an array of these apparatus items
 const ApparatusSearchOutputSchema = z.array(ApparatusSchema);
 export type ApparatusSearchOutput = z.infer<typeof ApparatusSearchOutputSchema>;
 
-// This is the main exported function that the server action will call.
 export async function searchApparatus(query: string): Promise<ApparatusSearchOutput> {
-  return apparatusSearchFlow(query);
-}
+  const prompt = `You are a laboratory supply catalog AI. A user is searching for equipment with the query: "${query}".
+Generate a list of 5 to 10 relevant pieces of laboratory equipment.
 
-// Define the prompt for the AI model
-const apparatusSearchPrompt = ai.definePrompt({
-  name: 'apparatusSearchPrompt',
-  input: { schema: z.string() },
-  output: { schema: ApparatusSearchOutputSchema, format: 'json' },
-  prompt: `You are a laboratory supply catalog AI. A user is searching for equipment.
-Based on the user's query: "{{input}}", generate a list of 5 to 10 relevant pieces of laboratory equipment.
+Your response MUST be only a valid JSON array that conforms to the following schema:
+Array<{
+  id: string (lowercase, kebab-case identifier, e.g., "erlenmeyer-flask-250ml"),
+  name: string (common name, e.g., "Erlenmeyer Flask (250ml)"),
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'other' | 'glassware' | 'vacuum' | 'safety',
+  volume?: number (capacity in ml, if applicable),
+  description: string (a brief one-sentence description)
+}>
 
-For each piece of equipment, provide its ID, name, type, an optional volume, and a description.
-Ensure the 'type' field is one of the allowed values.
-Prioritize common and essential lab equipment that would be found in a typical chemistry lab. If the query is generic, list common items.
-Your response must be a valid JSON array.`,
-});
+Prioritize common and essential lab equipment. If the query is generic, list common items.
+Do not include any other text, markdown formatting, or explanations.`;
 
-// Define the Genkit flow that orchestrates the AI call
-const apparatusSearchFlow = ai.defineFlow(
-  {
-    name: 'apparatusSearchFlow',
-    inputSchema: z.string(),
-    outputSchema: ApparatusSearchOutputSchema,
-  },
-  async (query) => {
-    const { output } = await apparatusSearchPrompt(query, { model: 'x-ai/grok-4-fast:free' });
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "x-ai/grok-4-fast:free",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenRouter API Error (Apparatus Search):", errorText);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+    const textResponse = result.choices[0]?.message?.content;
     
-    // The output should already be parsed JSON, but we handle the case where it might be null.
-    if (!output) {
-      console.error("Apparatus search returned no output.");
-      return [];
+    if (!textResponse) {
+      throw new Error("The AI returned an empty response.");
     }
     
-    return output;
+    // The response is expected to be a JSON object containing a root key, e.g. {"results": [...]}, as per json_object mode
+    const parsedOutput = JSON.parse(textResponse);
+    
+    // Find the array within the parsed object
+    const dataArray = Object.values(parsedOutput).find(Array.isArray);
+
+    if (!dataArray) {
+        throw new Error("AI returned a JSON object, but no array was found inside it.");
+    }
+
+    const validation = ApparatusSearchOutputSchema.safeParse(dataArray);
+    if (!validation.success) {
+      console.error("Zod validation error (Apparatus Search):", validation.error.errors);
+      throw new Error("AI returned data in an unexpected format.");
+    }
+
+    return validation.data;
+
+  } catch (error: any) {
+    console.error("Error searching apparatus:", error);
+    return []; // Return an empty array on error to prevent crashing the UI
   }
-);
+}
