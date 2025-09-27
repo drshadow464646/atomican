@@ -5,13 +5,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { fetchOpenRouterModels, testOpenRouterPost, type Model, type TestResult } from '@/app/model-test-actions';
 
 type TestStatus = 'idle' | 'loading' | 'success' | 'error';
-
-interface Model {
-  id: string;
-  name: string;
-}
 
 export default function ModelTestPage() {
   const [modelList, setModelList] = useState<Model[]>([]);
@@ -19,7 +15,7 @@ export default function ModelTestPage() {
   const [grokFound, setGrokFound] = useState<boolean | null>(null);
 
   const [postStatus, setPostStatus] = useState<TestStatus>('idle');
-  const [postResponse, setPostResponse] = useState<string | null>(null);
+  const [postResponse, setPostResponse] = useState<TestResult | null>(null);
 
   const modelIdToTest = 'x-ai/grok-4-fast:free';
 
@@ -27,14 +23,12 @@ export default function ModelTestPage() {
     setListStatus('loading');
     setGrokFound(null);
     try {
-      // NOTE: This is a client-side fetch for testing purposes.
-      // In a real app, this should be a server-side action to protect the API key.
-      const response = await fetch('https://openrouter.ai/api/v1/models');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const result = await fetchOpenRouterModels();
+      if(result.error) {
+        throw new Error(result.error);
       }
-      const data = await response.json();
-      const models: Model[] = data.data || [];
+      
+      const models = result.data || [];
       setModelList(models);
 
       const found = models.some(model => model.id === modelIdToTest);
@@ -50,18 +44,16 @@ export default function ModelTestPage() {
     setPostStatus('loading');
     setPostResponse(null);
     try {
-      // This is a proxy route to avoid exposing the API key on the client.
-      // We'd need to create this route. For now, this will fail, but shows the pattern.
-      // A proper implementation requires a backend endpoint.
-      // Since we can't easily add one, we'll alert the user.
-      alert("This test requires a backend proxy to protect the API key, which I can't create. The code shows the intended logic, but you would need to run the 'curl' command from your own terminal to truly test the POST request.");
-      setPostStatus('error');
-      setPostResponse("Test cannot be run from the browser directly. Please use `curl` or Postman from your local machine.");
-      return;
-
+      const result = await testOpenRouterPost();
+      setPostResponse(result);
+      if(result.error) {
+        setPostStatus('error');
+      } else {
+        setPostStatus('success');
+      }
     } catch (error: any) {
       setPostStatus('error');
-      setPostResponse(error.message);
+      setPostResponse({ error: error.message });
       console.error("Error testing POST:", error);
     }
   };
@@ -103,6 +95,9 @@ export default function ModelTestPage() {
                 {listStatus === 'error' && <p>Failed to fetch models. Check browser console for errors.</p>}
                 {listStatus === 'idle' && <p>Test not started.</p>}
               </div>
+               <Button onClick={fetchModels} disabled={listStatus === 'loading'} variant="outline">
+                Re-run
+              </Button>
             </div>
             {listStatus === 'success' && (
               <div className="mt-4 flex items-center space-x-3 p-4 bg-muted/50 rounded-md">
@@ -119,7 +114,7 @@ export default function ModelTestPage() {
           <CardHeader>
             <CardTitle>2. Test Chat Completions (POST)</CardTitle>
             <CardDescription>
-              This attempts to send a simple "Hi" message to the model.
+              This attempts to send a simple "Hello" message to the model via a secure server action.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -128,7 +123,7 @@ export default function ModelTestPage() {
               <div className="flex-1">
                 {postStatus === 'loading' && <p>Sending request...</p>}
                 {postStatus === 'success' && <p>Received a successful response!</p>}
-                {postStatus === 'error' && <p>Test failed or could not be run.</p>}
+                {postStatus === 'error' && <p>Test failed or returned an error.</p>}
                 {postStatus === 'idle' && <p>Ready to test.</p>}
               </div>
                <Button onClick={testPost} disabled={postStatus === 'loading'}>
@@ -136,9 +131,11 @@ export default function ModelTestPage() {
               </Button>
             </div>
             {postResponse && (
-                <div className="mt-4 p-4 bg-destructive/10 rounded-md text-destructive-foreground">
-                    <p className="font-semibold">Response:</p>
-                    <p className="text-sm">{postResponse}</p>
+                <div className="mt-4 p-4 bg-muted/50 rounded-md text-sm">
+                    <p className="font-semibold">Raw JSON Response:</p>
+                    <pre className="whitespace-pre-wrap break-all text-xs mt-2">
+                      {JSON.stringify(postResponse, null, 2)}
+                    </pre>
                 </div>
             )}
           </CardContent>
