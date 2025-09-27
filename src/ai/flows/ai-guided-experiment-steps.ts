@@ -2,6 +2,10 @@
 'use server';
 /**
  * @fileOverview A flow that generates experiment steps based on a user's goal.
+ *
+ * NOTE: This Genkit flow has been disabled and bypassed.
+ * The logic has been moved to a direct fetch call in `src/app/actions.ts`
+ * to resolve API compatibility issues with OpenRouter.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -21,34 +25,14 @@ const ExperimentStepsSchema = z.object({
 
 export type GenerateExperimentStepsOutput = z.infer<typeof ExperimentStepsSchema>;
 
+// This flow is currently not used. See src/app/actions.ts
 export const experimentStepsFlow = ai.defineFlow(
   {
-    name: 'experimentStepsFlow',
+    name: 'experimentStepsFlow_DISABLED',
     inputSchema: z.string(),
     outputSchema: ExperimentStepsSchema,
   },
   async (goal) => {
-    const { text } = await ai.generate({
-        model: "x-ai/grok-4-fast:free",
-        prompt: `You are a helpful chemistry lab assistant. Your role is to take a user's goal and generate a clear, concise, and safe experimental procedure. The user wants to: "${goal}".
-
-You must provide a valid JSON object that conforms to the following schema:
-- title: string (A short, descriptive title for the experiment.)
-- requiredApparatus: Array<{name: string, quantity: number}> (A list of all laboratory equipment required for the experiment, with specific sizes like "250ml Beaker".)
-- requiredChemicals: Array<{name: string, amount: string}> (A list of all chemicals and reagents required, with concentrations like "0.1M HCl".)
-- steps: Array<string> (A step-by-step procedure for conducting the experiment.)
-
-Prioritize safety and clarity in the procedure. Do not include any steps for cleaning up.
-
-IMPORTANT: Your output MUST be only the JSON object, with no other text, markdown formatting, or explanations.`,
-    });
-    
-    try {
-      const output = JSON.parse(text);
-      return ExperimentStepsSchema.parse(output);
-    } catch (e) {
-        console.error("Failed to parse AI output:", e, "Raw text:", text);
-        throw new Error("The AI returned an invalid response format.");
-    }
+    throw new Error("This flow is disabled. Use the server action in `src/app/actions.ts` instead.");
   }
 );
