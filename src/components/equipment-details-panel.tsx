@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Equipment, Solution } from '@/lib/experiment';
-import { Droplets, Beaker } from 'lucide-react';
+import { Droplets, Beaker, ChevronsRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type EquipmentDetailsPanelProps = {
@@ -14,6 +14,7 @@ type EquipmentDetailsPanelProps = {
 export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps) {
   const totalVolume = equipment.solutions?.reduce((acc, s) => acc + s.volume, 0) || 0;
   const hasContents = equipment.solutions && equipment.solutions.length > 0;
+  const reaction = equipment.reactionEffects;
 
   return (
     <Card className="shadow-lg backdrop-blur-xl bg-background/70 border-border/50">
@@ -42,6 +43,17 @@ export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps)
             <div className="font-medium">pH Level</div>
             <div className="font-mono text-base font-bold">{equipment.ph?.toFixed(2) ?? 'N/A'}</div>
         </div>
+
+        {reaction?.equation && (
+            <>
+                <Separator className="my-3"/>
+                <h4 className="font-medium mb-2">Last Reaction</h4>
+                <div className="p-2 bg-muted rounded-md text-center font-mono text-sm">
+                    {reaction.equation}
+                </div>
+                 <p className="text-xs text-muted-foreground mt-2">{reaction.description}</p>
+            </>
+        )}
 
         <Separator className="my-3"/>
 

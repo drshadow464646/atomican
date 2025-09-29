@@ -18,6 +18,7 @@ const ReactionPredictionSchema = z.object({
   isExplosive: z.boolean().describe('Whether the reaction is dangerously explosive.'),
   temperatureChange: z.number().describe('The change in temperature in Celsius. Positive for exothermic, negative for endothermic.'),
   description: z.string().describe('A brief, one-sentence chemical explanation of what happened in the reaction.'),
+  equation: z.string().describe("A string representing the balanced chemical equation for the reaction, e.g., '2HCl + Ca(OH)₂ → CaCl₂ + 2H₂O'.")
 });
 
 export async function predictReaction(solutions: Solution[]): Promise<ReactionPrediction> {
@@ -42,10 +43,11 @@ Your response MUST be only a valid JSON object that conforms to the following sc
   "precipitateFormed": "string | null (Name of precipitate, or null.)",
   "isExplosive": "boolean",
   "temperatureChange": "number (in Celsius)",
-  "description": "string (A one-sentence chemical explanation.)"
+  "description": "string (A one-sentence chemical explanation.)",
+  "equation": "string (The balanced chemical equation, e.g., 'HCl + NaOH → NaCl + H₂O'.)"
 }
 
-Consider acid-base neutralization, redox reactions, precipitation, and gas evolution. For indicators like phenolphthalein, calculate the color based on the final pH. The sum of product volumes must equal the sum of reactant volumes. If no reaction occurs, return the original solutions combined, with pH calculated for the mixture.`;
+Consider acid-base neutralization, redox reactions, precipitation, and gas evolution. For indicators like phenolphthalein, calculate the color based on the final pH. The sum of product volumes must equal the sum of reactant volumes. If no reaction occurs, return the original solutions combined, with pH calculated for the mixture, and an equation like 'No Reaction'.`;
 
   try {
     const textResponse = await callOpenRouterWithFallback(prompt);
@@ -77,6 +79,7 @@ Consider acid-base neutralization, redox reactions, precipitation, and gas evolu
       isExplosive: false,
       temperatureChange: 0,
       description: `An error occurred while predicting the reaction: ${error.message}`,
+      equation: 'Error',
     };
   }
 }

@@ -26,6 +26,7 @@ export type ReactionPrediction = {
   isExplosive: boolean;
   temperatureChange: number;
   description: string;
+  equation: string;
 };
 
 export type Equipment = {
@@ -46,6 +47,8 @@ export type Equipment = {
     gas?: string;
     precipitate?: string;
     isExplosive?: boolean;
+    equation?: string;
+    description?: string;
     key: number; // To re-trigger animations
   }
 };

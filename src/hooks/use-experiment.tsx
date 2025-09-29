@@ -105,6 +105,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             gas: prediction.gasProduced || undefined,
             precipitate: prediction.precipitateFormed || undefined,
             isExplosive: prediction.isExplosive,
+            equation: prediction.equation,
+            description: prediction.description,
             key: Date.now(), // new key to trigger animation
         };
 
@@ -318,7 +320,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 precipitateFormed: null,
                 isExplosive: false,
                 temperatureChange: 0,
-                description: 'State after pouring'
+                description: 'State after pouring',
+                equation: 'N/A'
               };
                newSource.ph = sourcePrediction.ph;
                newSource.color = sourcePrediction.color;
@@ -364,8 +367,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const equipment = experimentState.equipment.find(e => e.id === id);
     if (equipment && equipment.solutions && equipment.solutions.length > 0) {
       setHeldEquipment(equipment);
+    } else if (equipment) {
+        handleSelectEquipment(id);
     }
-  }, [experimentState.equipment, pouringState, handleClearHeldItem, heldItem]);
+  }, [experimentState.equipment, pouringState, handleClearHeldItem, heldItem, handleSelectEquipment]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.some((c) => c.id === chemical.id)) {
@@ -409,14 +414,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     applyReactionPrediction(beaker.id, prediction);
 
     setExperimentState(prevState => {
-        const newBurette = prevState.equipment.find(e => e.id === burette.id);
+        const newBuretteState = { ...prevState };
+        const newBurette = newBuretteState.equipment.find(e => e.id === burette.id);
         if (newBurette && newBurette.solutions && newBurette.solutions.length > 0) {
             newBurette.solutions[0].volume -= volumeToPour;
             if (newBurette.solutions[0].volume < 0.01) {
                 newBurette.solutions = [];
             }
         }
-        return { ...prevState, equipment: prevState.equipment.map(e => e.id === burette.id ? {...newBurette} : e) };
+        return { ...newBuretteState, equipment: newBuretteState.equipment.map(e => e.id === burette.id ? {...newBurette} : e) };
     });
 
   }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
@@ -479,14 +485,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
               handleClearHeldItem();
           }
       } else {
-          const equip = experimentState.equipment.find(eq => eq.id === id);
-          if (equip && equip.solutions && equip.solutions.length > 0) {
-            handlePickUpEquipment(id);
-          } else {
-            handleSelectEquipment(id);
-          }
+          handlePickUpEquipment(id);
       }
-  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleInitiatePour, handleClearHeldItem, handlePickUpEquipment, experimentState.equipment, handleSelectEquipment]);
+  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleInitiatePour, handleClearHeldItem, handlePickUpEquipment]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
