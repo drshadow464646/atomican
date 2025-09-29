@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer, Cylinder } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -253,7 +253,6 @@ const EquipmentDisplay = ({
 
     const renderContent = () => {
         const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
-        const id = item.id.split('-')[0]; // Use base id for matching
         
         // Liquid containers
         if (item.type === 'beaker') return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
@@ -262,15 +261,18 @@ const EquipmentDisplay = ({
         if (item.type === 'volumetric-flask') return <VolumetricFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
         if (item.type === 'test-tube') return <TestTubeIcon item={item} fillPercentage={fillPercentage} size={size} />;
 
-        // Other equipment
-        if (id.includes('burette')) return <Pipette className={iconClass} style={iconStyle} />;
-        if (id.includes('pipette')) return <Pipette className={iconClass} style={iconStyle} />;
-        if (id.includes('funnel')) return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
-        if (id.includes('ph-meter') || id.includes('thermometer')) return <Thermometer className={iconClass} style={iconStyle} />;
-        if (id.includes('balance')) return <Scale className={iconClass} style={iconStyle} />;
-        if (id.includes('microscope')) return <Microscope className={iconClass} style={iconStyle} />;
+        // Non-container equipment
+        const baseId = item.id.split('-')[0];
+        const iconSizeStyle = { height: `${6 * size}rem`, width: `${6 * size}rem` };
         
-        // Default fallback
+        if (item.type === 'burette' || baseId === 'burette') return <Pipette className={iconClass} style={iconSizeStyle} />;
+        if (item.type === 'pipette' || baseId === 'pipette') return <Pipette className={iconClass} style={iconSizeStyle} />;
+        if (item.type === 'funnel' || baseId === 'funnel') return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
+        if (item.type === 'measurement' || item.type === 'heating' || baseId === 'thermometer' || baseId === 'ph-meter') return <Thermometer className={iconClass} style={iconSizeStyle} />;
+        if (baseId === 'balance') return <Scale className={iconClass} style={iconSizeStyle} />;
+        if (baseId === 'microscope') return <Microscope className={iconClass} style={iconSizeStyle} />;
+        
+        // Default fallback for any other type
         return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
     };
 

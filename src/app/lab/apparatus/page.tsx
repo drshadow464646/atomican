@@ -4,7 +4,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2, Check } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2, Check, Cylinder } from 'lucide-react';
 import { useExperiment } from '@/hooks/use-experiment';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,33 +13,37 @@ import type { Equipment } from '@/lib/experiment';
 import { findApparatus } from '@/app/actions';
 import { commonApparatus } from '@/lib/apparatus-catalog';
 
+const iconClass = "h-10 w-10 text-primary";
+
 const equipmentIcons: { [key: string]: React.ReactNode } = {
-  glassware: <Beaker className="h-10 w-10 text-primary" />,
-  funnel: <Wind className="h-10 w-10 text-primary" />, // Using Wind as a stand-in
-  heating: <Flame className="h-10 w-10 text-primary" />,
-  vacuum: <Wind className="h-10 w-10 text-primary" />, // Using Wind as a stand-in
-  measurement: <Scale className="h-10 w-10 text-primary" />,
-  safety: <Beaker className="h-10 w-10 text-primary" />, // Placeholder
-  other: <TestTube className="h-10 w-10 text-primary" />,
+  'beaker': <Beaker className={iconClass} />,
+  'erlenmeyer-flask': <FlaskConical className={iconClass} />,
+  'graduated-cylinder': <Cylinder className={iconClass} />,
+  'test-tube': <TestTube className={iconClass} />,
+  'burette': <Pipette className={iconClass} />,
+  'pipette': <Pipette className={iconClass} />,
+  'volumetric-flask': <FlaskConical className={iconClass} />,
+  'funnel': <Wind className={iconClass} />,
+  'thermometer': <Thermometer className={iconClass} />,
+  'ph-meter': <Thermometer className={iconClass} />,
+  'balance': <Scale className={iconClass} />,
+  'heating': <Flame className={iconClass} />,
+  'microscope': <Microscope className={iconClass} />,
+  'measurement': <Scale className={iconClass} />,
+  'glassware': <Beaker className={iconClass} />,
+  'safety': <Beaker className={iconClass} />,
+  'vacuum': <Wind className={iconClass} />,
+  'other': <TestTube className={iconClass} />,
 };
 
 function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | 'size'>): React.ReactNode {
-  // More specific icons first
-  if (item.id.includes('beaker')) return <Beaker className="h-10 w-10 text-primary" />;
-  if (item.id.includes('erlenmeyer') || item.id.includes('flask')) return <FlaskConical className="h-10 w-10 text-primary" />;
-  if (item.id.includes('burette') || item.id.includes('pipette')) return <Pipette className="h-10 w-10 text-primary" />;
-  if (item.id.includes('cylinder') || item.id.includes('tube')) return <TestTube className="h-10 w-10 text-primary" />;
-  if (item.id.includes('ph-meter') || item.id.includes('thermometer')) return <Thermometer className="h-10 w-10 text-primary" />;
-  if (item.id.includes('balance')) return <Scale className="h-10 w-10 text-primary" />;
-  if (item.id.includes('microscope')) return <Microscope className="h-10 w-10 text-primary" />;
-
-  // Fallback to type
-  if (equipmentIcons[item.type]) {
-    return equipmentIcons[item.type];
-  }
-
-  // Final fallback
-  return <Beaker className="h-10 w-10 text-primary" />;
+  const baseId = item.id.split('-')[0];
+  
+  if (equipmentIcons[item.id]) return equipmentIcons[item.id];
+  if (equipmentIcons[baseId]) return equipmentIcons[baseId];
+  if (equipmentIcons[item.type]) return equipmentIcons[item.type];
+  
+  return <Beaker className={iconClass} />;
 }
 
 export default function ApparatusPage() {
