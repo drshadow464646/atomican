@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -103,6 +104,7 @@ const EquipmentDisplay = ({
   item, 
   onMouseDown,
   onClick,
+  onMouseUp,
   onRemove,
   onResize,
   isHoverTarget,
@@ -111,6 +113,7 @@ const EquipmentDisplay = ({
   item: Equipment, 
   onMouseDown: (id: string, e: React.MouseEvent) => void,
   onClick: (id: string, e: React.MouseEvent) => void,
+  onMouseUp: (id: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   isHoverTarget: boolean,
@@ -151,6 +154,7 @@ const EquipmentDisplay = ({
             case 'erlenmeyer-flask':
             case 'graduated-cylinder':
             case 'volumetric-flask':
+            case 'test-tube':
                 return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
             case 'burette':
                 return <Pipette className={iconClass} style={iconStyle} />;
@@ -177,6 +181,7 @@ const EquipmentDisplay = ({
             }}
             onMouseDown={(e) => onMouseDown(item.id, e)}
             onClick={(e) => onClick(item.id, e)}
+            onMouseUp={() => onMouseUp(item.id)}
         >
             {item.isSelected && !isHeld && !item.isReacting && (
               <>
@@ -212,45 +217,37 @@ export function Workbench({
     state, 
     onTitrate,
     onResizeEquipment,
-    onMoveEquipment,
     onSelectEquipment,
     onDropOnApparatus,
-    onPickUpEquipment,
     onPour,
-    onInitiatePour,
     onCancelPour,
     heldItem,
     heldEquipment,
     onRemoveSelectedEquipment,
-    onClearHeldItem,
     pouringState,
-    dragState,
     onDragStart,
     onWorkbenchClick,
-    onEquipmentClick
+    onEquipmentClick,
+    onMouseUpOnEquipment,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
-    onMoveEquipment: (id: string, pos: { x: number, y: number }) => void;
     onSelectEquipment: (id: string | null) => void;
     onDropOnApparatus: (equipmentId: string) => void;
-    onPickUpEquipment: (id: string) => void;
     onPour: (volume: number) => void;
-    onInitiatePour: (targetId: string) => void;
     onCancelPour: () => void;
     heldItem: Chemical | null;
     heldEquipment: Equipment | null;
     onRemoveSelectedEquipment: (id: string) => void;
-    onClearHeldItem: () => void;
     pouringState: { sourceId: string; targetId: string; } | null;
-    dragState: React.RefObject<{ id: string; offset: { x: number; y: number }; hasMoved: boolean; } | null>;
     onDragStart: (id: string, e: React.MouseEvent) => void;
     onWorkbenchClick: (e: React.MouseEvent) => void;
     onEquipmentClick: (id: string, e: React.MouseEvent) => void;
+    onMouseUpOnEquipment: (id: string) => void;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
-  const [hoveredEquipment, setHoveredEquipment] = useState<string | null>(null);
+  const [hoveredEquipmentId, setHoveredEquipmentId] = useState<string | null>(null);
   const [pourVolume, setPourVolume] = useState(10);
   
   const hasBurette = state.equipment.some((e) => e.type === 'burette');
@@ -285,14 +282,14 @@ export function Workbench({
 
   const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
     let targetId: string | null = null;
-    const currentHeldId = heldEquipment?.id;
     
-    if ((isHoldingSomething || dragState.current) && workbenchRef.current) {
+    if (isHoldingSomething && workbenchRef.current) {
         const elements = Array.from(workbenchRef.current.children);
         // Find the element under the cursor
         for (const elem of elements) {
             const equipmentId = elem.getAttribute('data-equipment-id');
-            if (equipmentId && equipmentId !== (dragState.current?.id || currentHeldId)) {
+            // Can't drop on itself
+            if (equipmentId && equipmentId !== heldEquipment?.id) {
                  const rect = elem.getBoundingClientRect();
                  if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
                      targetId = equipmentId;
@@ -301,8 +298,8 @@ export function Workbench({
             }
         }
     }
-    setHoveredEquipment(targetId);
-  }, [isHoldingSomething, heldEquipment, dragState]);
+    setHoveredEquipmentId(targetId);
+  }, [isHoldingSomething, heldEquipment]);
   
   useEffect(() => {
     window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -328,7 +325,7 @@ export function Workbench({
           {heldEquipment && !pouringState && (
             <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
               <Hand className="h-4 w-4"/>
-              Holding: {heldEquipment.name}. Click on another apparatus to pour. (Press Esc to cancel)
+              Holding: {heldEquipment.name}. Drag over another apparatus and release to pour. (Press Esc to cancel)
             </CardDescription>
           )}
         </CardHeader>
@@ -337,9 +334,14 @@ export function Workbench({
               ref={workbenchRef}
               className={cn(
                 "relative w-full flex-1",
-                (heldItem || heldEquipment) && "cursor-copy"
+                (heldItem || heldEquipment) && "cursor-grabbing"
               )}
               onMouseDown={onWorkbenchClick}
+              onMouseUp={() => {
+                if (heldItem && hoveredEquipmentId) {
+                  onDropOnApparatus(hoveredEquipmentId);
+                }
+              }}
             >
               <div 
                 id="lab-slab" 
@@ -358,10 +360,11 @@ export function Workbench({
                               item={item} 
                               onMouseDown={onDragStart}
                               onClick={onEquipmentClick}
+                              onMouseUp={onMouseUpOnEquipment}
                               onRemove={onRemoveSelectedEquipment}
                               onResize={onResizeEquipment}
-                              isHoverTarget={(isHoldingSomething || !!dragState.current) && hoveredEquipment === item.id}
-                              isHeld={heldEquipment?.id === item.id || dragState.current?.id === item.id}
+                              isHoverTarget={isHoldingSomething && hoveredEquipmentId === item.id}
+                              isHeld={heldEquipment?.id === item.id}
                           />
                       ))}
                   </>

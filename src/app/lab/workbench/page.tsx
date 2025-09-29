@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -23,21 +24,18 @@ export default function WorkbenchPage() {
     handleTitrate,
     handleRemoveSelectedEquipment,
     handleResizeEquipment,
-    handleMoveEquipment,
     handleSelectEquipment,
     heldItem,
     heldEquipment,
     handlePickUpChemical,
-    handlePickUpEquipment,
     handleClearHeldItem,
     handlePour,
-    handleInitiatePour,
     handleCancelPour,
     pouringState,
-    dragState,
     handleDragStart,
     handleWorkbenchClick,
     handleEquipmentClick,
+    handleMouseUpOnEquipment,
   } = useExperiment();
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
@@ -100,22 +98,18 @@ export default function WorkbenchPage() {
                 state={experimentState} 
                 onTitrate={handleTitrate}
                 onResizeEquipment={handleResizeEquipment}
-                onMoveEquipment={handleMoveEquipment}
                 onSelectEquipment={handleSelectEquipment}
                 onDropOnApparatus={handleDropOnApparatus}
-                onPickUpEquipment={handlePickUpEquipment}
                 onPour={handlePour}
-                onInitiatePour={handleInitiatePour}
                 onCancelPour={handleCancelPour}
                 heldItem={heldItem}
                 heldEquipment={heldEquipment}
                 onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
-                onClearHeldItem={handleClearHeldItem}
                 pouringState={pouringState}
-                dragState={dragState}
                 onDragStart={handleDragStart}
                 onWorkbenchClick={handleWorkbenchClick}
                 onEquipmentClick={handleEquipmentClick}
+                onMouseUpOnEquipment={handleMouseUpOnEquipment}
             />
             {selectedEquipment && !heldEquipment && !pouringState && (
               <div className="absolute top-4 right-4 z-20 w-80">

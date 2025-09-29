@@ -61,6 +61,7 @@ type ExperimentContextType = {
   handleDragStart: (id: string, e: React.MouseEvent) => void;
   handleWorkbenchClick: (e: React.MouseEvent) => void;
   handleEquipmentClick: (id: string, e: React.MouseEvent) => void;
+  handleMouseUpOnEquipment: (id: string) => void;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -78,6 +79,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>([]);
 
   const dragState = useRef<DragState>(null);
+  const mouseDownTimer = useRef<NodeJS.Timeout | null>(null);
 
   const addLog = useCallback((text: string, isCustom: boolean = false) => {
     setLabLogs(prevLogs => {
@@ -139,7 +141,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, []);
   
   const handleSelectEquipment = useCallback((equipmentId: string | null) => {
+    if (pouringState) return;
     setExperimentState(prevState => {
+        // If we are holding an item, don't unselect it by clicking something else
+        if (heldEquipment && equipmentId !== heldEquipment.id) {
+            return prevState;
+        }
         return {
             ...prevState,
             equipment: prevState.equipment.map(e => ({
@@ -148,7 +155,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             })),
         };
     });
-  }, []);
+  }, [heldEquipment, pouringState]);
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
@@ -350,8 +357,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
        setPouringState({ sourceId: heldEquipment.id, targetId });
     } else {
         setTimeout(() => toast({ title: 'Invalid Action', description: `You cannot pour into a ${target.name}.`, variant: 'destructive' }), 0);
-        handleClearHeldItem();
     }
+    handleClearHeldItem();
   }, [heldEquipment, experimentState.equipment, toast, handleClearHeldItem]);
   
   const handlePickUpChemical = useCallback((chemical: Chemical) => {
@@ -361,16 +368,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [pouringState, handleClearHeldItem]);
 
   const handlePickUpEquipment = useCallback((id: string) => {
-    if(pouringState || heldItem) return;
-
-    handleClearHeldItem();
     const equipment = experimentState.equipment.find(e => e.id === id);
-    if (equipment && equipment.solutions && equipment.solutions.length > 0) {
+    if (!equipment || equipment.isReacting) return;
+    
+    handleClearHeldItem();
+    handleSelectEquipment(id); // Select the item being picked up.
+    
+    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
+    if (equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type)) {
       setHeldEquipment(equipment);
-    } else if (equipment) {
-        handleSelectEquipment(id);
     }
-  }, [experimentState.equipment, pouringState, handleClearHeldItem, heldItem, handleSelectEquipment]);
+  }, [experimentState.equipment, handleClearHeldItem, handleSelectEquipment]);
 
   const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
     if (inventoryChemicals.some((c) => c.id === chemical.id)) {
@@ -444,7 +452,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handleDragStart = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    handleSelectEquipment(id);
+    
+    // Timer to distinguish click from drag/hold
+    if (mouseDownTimer.current) clearTimeout(mouseDownTimer.current);
+    mouseDownTimer.current = setTimeout(() => {
+        if (!dragState.current) { // If not already dragging, start holding for pour
+            handlePickUpEquipment(id);
+        }
+    }, 200); // 200ms hold to pick up for pouring
+    
     const equip = experimentState.equipment.find(eq => eq.id === id);
     if (equip && e.button === 0) { // Only drag on left-click
         const workbenchEl = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
@@ -459,7 +475,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             hasMoved: false,
         };
     }
-  }, [experimentState.equipment, handleSelectEquipment]);
+  }, [experimentState.equipment, handlePickUpEquipment]);
   
   const handleWorkbenchClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).id === 'lab-slab') {
@@ -473,25 +489,38 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleEquipmentClick = useCallback((id: string, e: React.MouseEvent) => {
       e.stopPropagation();
       if (dragState.current && dragState.current.hasMoved) {
+          // This was a drag, not a click
           return;
       }
       
+      // If we are holding a chemical, drop it
       if (heldItem) {
           handleDropOnApparatus(id);
-      } else if (heldEquipment) {
-          if (heldEquipment.id !== id) {
-              handleInitiatePour(id);
-          } else {
-              handleClearHeldItem();
-          }
-      } else {
-          handlePickUpEquipment(id);
+          return;
       }
-  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleInitiatePour, handleClearHeldItem, handlePickUpEquipment]);
+      
+      // If we are not holding anything, select the item.
+      handleSelectEquipment(id);
+
+  }, [dragState, heldItem, handleDropOnApparatus, handleSelectEquipment]);
+
+  const handleMouseUpOnEquipment = useCallback((id: string) => {
+    if (mouseDownTimer.current) {
+        clearTimeout(mouseDownTimer.current);
+        mouseDownTimer.current = null;
+    }
+    // If we are holding equipment (from a long press) and we are over a different item
+    if (heldEquipment && heldEquipment.id !== id) {
+        handleInitiatePour(id);
+    } else {
+        handleClearHeldItem();
+    }
+  }, [heldEquipment, handleInitiatePour, handleClearHeldItem]);
+
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-        if (dragState.current) {
+        if (dragState.current && !heldEquipment) { // Only move if not holding for pour
             const item = dragState.current;
             const workbench = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
             if (workbench) {
@@ -499,8 +528,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 const newX = e.clientX - rect.left - item.offset.x;
                 const newY = e.clientY - rect.top - item.offset.y;
                 
-                if (!item.hasMoved && (Math.abs(newX - (experimentState.equipment.find(eq=>eq.id===item.id)?.position.x || 0)) > 5 || Math.abs(newY - (experimentState.equipment.find(eq=>eq.id===item.id)?.position.y || 0)) > 5)) {
+                const currentPos = experimentState.equipment.find(eq=>eq.id===item.id)?.position;
+                
+                if (!item.hasMoved && currentPos && (Math.abs(newX - currentPos.x) > 5 || Math.abs(newY - currentPos.y) > 5)) {
                     item.hasMoved = true;
+                     if (mouseDownTimer.current) {
+                        clearTimeout(mouseDownTimer.current);
+                        mouseDownTimer.current = null;
+                    }
+                    handleClearHeldItem(); // Cancel pickup for pour if mouse moves
                 }
 
                 if (item.hasMoved) {
@@ -511,6 +547,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     };
 
     const handleMouseUp = (e: MouseEvent) => {
+        if (dragState.current?.hasMoved) {
+            handleSelectEquipment(dragState.current.id);
+        }
         dragState.current = null;
     };
 
@@ -519,8 +558,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+         if (mouseDownTimer.current) {
+            clearTimeout(mouseDownTimer.current);
+        }
     };
-  }, [handleMoveEquipment, experimentState.equipment]);
+  }, [handleMoveEquipment, experimentState.equipment, handleSelectEquipment, heldEquipment, handleClearHeldItem]);
   
   // A local pH calculation function as a fallback/helper
   const calculatePH = (solutions: Solution[]): number => {
@@ -553,7 +595,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           const pOH = concentrationOH > 0 ? -Math.log10(concentrationOH) : 7;
           return 14 - pOH;
       } else {
-          return 7;
+          return 7; // Equivalence point
       }
   };
 
@@ -590,6 +632,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDragStart,
     handleWorkbenchClick,
     handleEquipmentClick,
+    handleMouseUpOnEquipment,
   }), [
     experimentState, 
     labLogs, 
@@ -621,6 +664,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDragStart,
     handleWorkbenchClick,
     handleEquipmentClick,
+    handleMouseUpOnEquipment
   ]);
 
   return (
