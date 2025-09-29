@@ -295,30 +295,39 @@ const EquipmentDisplay = ({
     };
 
     const renderContent = () => {
-        const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
-        
-        // Liquid containers
-        if (item.type === 'beaker') return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
-        if (item.type === 'erlenmeyer-flask') return <ErlenmeyerFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
-        if (item.type === 'graduated-cylinder') return <GraduatedCylinderIcon item={item} fillPercentage={fillPercentage} size={size} />;
-        if (item.type === 'volumetric-flask') return <VolumetricFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
-        if (item.type === 'test-tube') return <TestTubeIcon item={item} fillPercentage={fillPercentage} size={size} />;
-
-        // Non-container equipment
-        const baseId = item.id.split('-')[0];
         const iconSizeStyle = { height: `${6 * size}rem`, width: `${6 * size}rem` };
         
-        if (baseId === 'thermometer') return <FunctionalThermometerIcon item={item} size={size} />;
-        if (baseId === 'ph-meter') return <PhMeterIcon item={item} size={size} />;
-        if (item.type === 'burette' || baseId === 'burette') return <Pipette className={iconClass} style={iconSizeStyle} />;
-        if (item.type === 'pipette' || baseId === 'pipette') return <Pipette className={iconClass} style={iconSizeStyle} />;
-        if (item.type === 'funnel' || baseId === 'funnel') return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
-        if (item.type === 'heating') return <Flame className={iconClass} style={iconSizeStyle} />;
-        if (baseId === 'balance') return <Scale className={iconClass} style={iconSizeStyle} />;
-        if (baseId === 'microscope') return <Microscope className={iconClass} style={iconSizeStyle} />;
-        
-        // Default fallback for any other type
-        return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
+        switch (item.type) {
+            case 'beaker':
+                return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
+            case 'erlenmeyer-flask':
+                return <ErlenmeyerFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
+            case 'graduated-cylinder':
+                return <GraduatedCylinderIcon item={item} fillPercentage={fillPercentage} size={size} />;
+            case 'volumetric-flask':
+                return <VolumetricFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
+            case 'test-tube':
+                return <TestTubeIcon item={item} fillPercentage={fillPercentage} size={size} />;
+            case 'thermometer':
+                return <FunctionalThermometerIcon item={item} size={size} />;
+            case 'ph-meter':
+                return <PhMeterIcon item={item} size={size} />;
+            case 'burette':
+            case 'pipette':
+                return <Pipette className={iconClass} style={iconSizeStyle} />;
+            case 'funnel':
+                return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
+            case 'heating':
+                return <Flame className={iconClass} style={iconSizeStyle} />;
+            case 'measurement': // This could be a balance/scale
+                return <Scale className={iconClass} style={iconSizeStyle} />;
+            case 'microscopy':
+                return <Microscope className={iconClass} style={iconSizeStyle} />;
+            // Add other specific types here
+            default:
+                // Fallback for other types like 'glassware', 'safety', etc.
+                return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
+        }
     };
 
     return (
@@ -600,5 +609,7 @@ export function Workbench({
     </div>
   );
 }
+
+    
 
     
