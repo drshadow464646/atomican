@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,11 @@ export default function ProcedurePage() {
   const [isGenerating, startGenerationTransition] = useTransition();
   const { labLogs, handleAddCustomLog } = useExperiment();
   const [customNote, setCustomNote] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleGenerate = () => {
     if (!goal) return;
@@ -35,6 +40,11 @@ export default function ProcedurePage() {
   };
 
   const hasError = procedure?.title === 'AI Feature Disabled' || procedure?.title === 'Error Generating Procedure';
+  
+  if (!isClient) {
+    // Render a loading state or null on the server to avoid hydration mismatch
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
