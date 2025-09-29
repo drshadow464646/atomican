@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -266,7 +266,7 @@ const EquipmentDisplay = ({
         if (id.includes('burette')) return <Pipette className={iconClass} style={iconStyle} />;
         if (id.includes('pipette')) return <Pipette className={iconClass} style={iconStyle} />;
         if (id.includes('funnel')) return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
-        if (id.includes('ph-meter') || id.includes('thermometer')) return <Pipette className={iconClass} style={iconStyle} />; // Placeholder
+        if (id.includes('ph-meter') || id.includes('thermometer')) return <Thermometer className={iconClass} style={iconStyle} />;
         if (id.includes('balance')) return <Scale className={iconClass} style={iconStyle} />;
         if (id.includes('microscope')) return <Microscope className={iconClass} style={iconStyle} />;
         

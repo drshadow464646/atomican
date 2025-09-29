@@ -389,7 +389,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     // If pouring into a funnel, retarget to the container it's attached to
     if(target.type === 'funnel' && target.attachedTo) {
         finalTargetId = target.attachedTo;
-    } else if (target.attachedFunnels && target.attachedFunnels.length > 0) {
+    } else if (target.attachedFunnels && target.attachedFunnels.length > 0 && target.type !== 'funnel') {
         toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${target.name}.`, variant: 'destructive'});
         handleClearHeldItem();
         return;
@@ -417,7 +417,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleSelectEquipment(id);
     
     const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
-    if ((equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type)) || equipment.type === 'funnel') {
+    if (equipment.type === 'funnel' || (equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type))) {
       setHeldEquipment(equipment);
     }
   }, [experimentState.equipment, handleClearHeldItem, handleSelectEquipment]);
