@@ -104,7 +104,7 @@ export default function WorkbenchPage() {
                 onCancelPour={handleCancelPour}
                 heldItem={heldItem}
                 heldEquipment={heldEquipment}
-                onRemoveSelectedEquipment={onRemoveSelectedEquipment}
+                onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
                 pouringState={pouringState}
                 onDragStart={handleDragStart}
                 onWorkbenchClick={handleWorkbenchClick}
