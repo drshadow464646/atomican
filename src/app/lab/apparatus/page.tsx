@@ -25,7 +25,7 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
   'volumetric-flask': <FlaskConical className={iconClass} />,
   'funnel': <Wind className={iconClass} />,
   'thermometer': <Thermometer className={iconClass} />,
-  'ph-meter': <Thermometer className={iconClass} />,
+  'ph-meter': <Thermometer className={iconClass} strokeWidth={1} />,
   'balance': <Scale className={iconClass} />,
   'heating': <Flame className={iconClass} />,
   'microscope': <Microscope className={iconClass} />,
@@ -36,7 +36,7 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
   'other': <TestTube className={iconClass} />,
 };
 
-function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | 'size'>): React.ReactNode {
+function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>): React.ReactNode {
   const baseId = item.id.split('-')[0];
   
   if (equipmentIcons[item.id]) return equipmentIcons[item.id];
@@ -155,3 +155,5 @@ export default function ApparatusPage() {
     </div>
   );
 }
+
+    

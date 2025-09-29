@@ -231,6 +231,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     let targetId = equipmentId;
     const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
+    if (!targetContainer) return;
     
     // If dropping on a funnel, retarget to the container it's attached to
     if(targetContainer?.type === 'funnel' && targetContainer.attachedTo) {
@@ -254,7 +255,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
         setPouringState({ sourceId: 'inventory', targetId: targetId });
 
-    } else if (heldEquipment) { // Attaching a funnel
+    } else if (heldEquipment) { // Attaching a funnel or instrument
         if (heldEquipment.type === 'funnel') {
             if (['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask'].includes(finalTarget.type)) {
                 setExperimentState(prevState => {
@@ -273,6 +274,27 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 });
                 handleClearHeldItem();
             }
+        } else if (['thermometer', 'ph-meter'].includes(heldEquipment.type)) {
+            if (finalTarget.solutions && finalTarget.solutions.length > 0) {
+                 setExperimentState(prevState => {
+                    const instrument = prevState.equipment.find(e => e.id === heldEquipment!.id);
+                    if (!instrument) return prevState;
+
+                    const readingTemp = finalTarget.reactionEffects?.temperatureChange ? 20 + finalTarget.reactionEffects.temperatureChange : 20;
+                    const readingPh = finalTarget.ph || 7;
+
+                    const updatedInstrument = { ...instrument, measuredTemp: readingTemp, measuredPh: readingPh };
+                    addLog(`Measured ${finalTarget.name} with ${instrument.name}. Temp: ${readingTemp.toFixed(1)}°C, pH: ${readingPh.toFixed(1)}`);
+                    
+                    return {
+                        ...prevState,
+                        equipment: prevState.equipment.map(e => e.id === heldEquipment!.id ? updatedInstrument : e),
+                    };
+                });
+            } else {
+                toast({ title: 'No Measurement', description: `${finalTarget.name} is empty.`, variant: 'destructive'});
+            }
+            handleClearHeldItem();
         }
     }
   }, [handleSafetyCheck, heldItem, heldEquipment, experimentState.equipment, toast, addLog, handleClearHeldItem]);
@@ -410,8 +432,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleClearHeldItem();
     handleSelectEquipment(id);
     
-    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
-    if (equipment.type === 'funnel' || (equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type))) {
+    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube', 'funnel', 'thermometer', 'ph-meter'];
+    if ((equipment.solutions && equipment.solutions.length > 0) || validPouringEquipment.includes(equipment.type)) {
       setHeldEquipment(equipment);
     }
   }, [experimentState.equipment, handleClearHeldItem, handleSelectEquipment]);
@@ -539,8 +561,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           handleDropOnApparatus(id);
           return;
       }
-      if (heldEquipment?.type === 'funnel') {
-          handleDropOnApparatus(id); 
+      if (heldEquipment?.id !== id) {
+          handleDropOnApparatus(id);
           return;
       }
       
@@ -726,3 +748,5 @@ export function useExperiment() {
   }
   return context;
 }
+
+    

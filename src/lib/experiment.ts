@@ -1,5 +1,4 @@
 
-
 import type { GenerateExperimentStepsOutput } from "@/ai/flows/ai-guided-experiment-steps";
 import { z } from 'zod';
 
@@ -33,7 +32,7 @@ export type ReactionPrediction = {
 export type Equipment = {
   id:string;
   name: string;
-  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other' | 'glassware' | 'vacuum' | 'safety';
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other' | 'glassware' | 'vacuum' | 'safety' | 'thermometer' | 'ph-meter';
   volume?: number; // in ml
   description: string;
   size: number; // scale factor, e.g., 1 for 100%
@@ -41,6 +40,8 @@ export type Equipment = {
   isSelected: boolean;
   solutions: Solution[];
   ph?: number;
+  measuredPh?: number;
+  measuredTemp?: number;
   color: string;
   isReacting: boolean;
   isAttached?: boolean; // For funnels
@@ -131,3 +132,5 @@ export function getIndicatorColor(indicatorId: string, ph: number): string {
             return 'transparent';
     }
 }
+
+    

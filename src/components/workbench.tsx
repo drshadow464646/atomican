@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer, Cylinder } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -202,6 +202,49 @@ const TestTubeIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPer
     );
 };
 
+const FunctionalThermometerIcon = ({ item, size }: { item: Equipment, size: number }) => {
+    const width = 3 * size;
+    const height = 10 * size;
+    const temp = item.measuredTemp ?? 20; // Default to room temp
+    const readingHeight = Math.max(0, Math.min(80, (temp / 100) * 80));
+
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+            <svg viewBox="0 0 40 120" className="w-full h-full">
+                <path d="M20,115 a 15,15 0 1,0 0,-30 a 15,15 0 0,0 0,30 Z" fill="hsl(0 80% 50%)" />
+                <rect x="17" y="15" width="6" height="70" rx="3" fill="hsl(var(--foreground) / 0.1)" />
+                <rect x="17" y={85 - readingHeight} width="6" height={readingHeight} rx="3" fill="hsl(0 80% 50%)" className="transition-all" />
+            </svg>
+            <div className="absolute -top-4 -right-8 w-20 text-center">
+                 <p className="text-xs text-muted-foreground">Temp</p>
+                 <p className="text-lg font-bold font-mono">{temp.toFixed(1)}°C</p>
+            </div>
+        </div>
+    );
+};
+
+const PhMeterIcon = ({ item, size }: { item: Equipment, size: number }) => {
+    const width = 4 * size;
+    const height = 10 * size;
+    const ph = item.measuredPh ?? 7.0;
+
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+            <svg viewBox="0 0 50 120" className="w-full h-full">
+                 {/* Body */}
+                <rect x="10" y="10" width="30" height="80" rx="5" fill="hsl(var(--foreground) / 0.1)" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" />
+                {/* Screen */}
+                <rect x="15" y="20" width="20" height="20" rx="2" fill="hsl(var(--background))" />
+                <text x="25" y="35" fontFamily="monospace" fontSize="12" fill="hsl(var(--foreground))" textAnchor="middle">{ph.toFixed(1)}</text>
+                 {/* Probe */}
+                <path d="M25,90 L 25,110" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" />
+                <circle cx="25" cy="115" r="5" fill="hsl(var(--foreground) / 0.2)" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="1" />
+            </svg>
+        </div>
+    );
+};
+
+
 const EquipmentDisplay = ({ 
   item, 
   onMouseDown,
@@ -265,10 +308,12 @@ const EquipmentDisplay = ({
         const baseId = item.id.split('-')[0];
         const iconSizeStyle = { height: `${6 * size}rem`, width: `${6 * size}rem` };
         
+        if (baseId === 'thermometer') return <FunctionalThermometerIcon item={item} size={size} />;
+        if (baseId === 'ph-meter') return <PhMeterIcon item={item} size={size} />;
         if (item.type === 'burette' || baseId === 'burette') return <Pipette className={iconClass} style={iconSizeStyle} />;
         if (item.type === 'pipette' || baseId === 'pipette') return <Pipette className={iconClass} style={iconSizeStyle} />;
         if (item.type === 'funnel' || baseId === 'funnel') return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
-        if (item.type === 'measurement' || item.type === 'heating' || baseId === 'thermometer' || baseId === 'ph-meter') return <Thermometer className={iconClass} style={iconSizeStyle} />;
+        if (item.type === 'heating') return <Flame className={iconClass} style={iconSizeStyle} />;
         if (baseId === 'balance') return <Scale className={iconClass} style={iconSizeStyle} />;
         if (baseId === 'microscope') return <Microscope className={iconClass} style={iconSizeStyle} />;
         
@@ -555,3 +600,5 @@ export function Workbench({
     </div>
   );
 }
+
+    
