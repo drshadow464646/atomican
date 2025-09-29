@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,12 +13,15 @@ type LabNotebookProps = {
 export function LabNotebook({ logs }: LabNotebookProps) {
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <h3 className="mb-2 font-medium flex items-center gap-2">
-        <Notebook className="h-4 w-4" />
+      <h3 className="mb-2 font-medium flex items-center gap-2 text-lg">
+        <Notebook className="h-5 w-5" />
         Lab Notebook
       </h3>
-      <ScrollArea className="flex-1 rounded-md border bg-muted/20 p-2">
+      <ScrollArea className="flex-1 rounded-md border bg-muted/20 p-2 h-96">
         <div className="flex flex-col gap-2">
+          {logs.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center p-4">Your experiment logs will appear here.</p>
+          )}
           {logs.slice().reverse().map((log) => (
             <div key={log.id} className={cn(
               "text-sm flex gap-2 items-start p-2 rounded-md",
@@ -30,9 +34,6 @@ export function LabNotebook({ logs }: LabNotebookProps) {
               </div>
             </div>
           ))}
-           {logs.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center p-4">Your experiment logs will appear here.</p>
-          )}
         </div>
       </ScrollArea>
     </div>
