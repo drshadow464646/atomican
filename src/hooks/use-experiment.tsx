@@ -136,6 +136,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [safetyGogglesOn, toast]);
   
   const handleSelectEquipment = useCallback((equipmentId: string | null) => {
+    if (dragState.current?.hasMoved) return;
     setExperimentState(prevState => ({
         ...prevState,
         equipment: prevState.equipment.map(e => ({
