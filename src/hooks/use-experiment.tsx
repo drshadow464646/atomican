@@ -299,13 +299,34 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
             const sourceVolume = newSource.solutions.reduce((t, s) => t + s.volume, 0);
             const actualPourVolume = Math.min(pourVolumeClamped, sourceVolume);
-            const pourFraction = actualPourVolume / sourceVolume;
+            const pourFraction = sourceVolume > 0 ? actualPourVolume / sourceVolume : 0;
 
             newSource.solutions.forEach(s => {
                 s.volume -= s.volume * pourFraction;
             });
             newSource.solutions = newSource.solutions.filter(s => s.volume > 0.01);
             
+            // Recalculate source pH and color if it's not empty
+            const remainingSourceVolume = newSource.solutions.reduce((t, s) => t + s.volume, 0);
+            if (remainingSourceVolume > 0.01) {
+              const sourcePrediction = {
+                products: newSource.solutions,
+                ph: calculatePH(newSource.solutions),
+                color: 'transparent', // Simplified, AI would be too slow here
+                gasProduced: null,
+                precipitateFormed: null,
+                isExplosive: false,
+                temperatureChange: 0,
+                description: 'State after pouring'
+              };
+               newSource.ph = sourcePrediction.ph;
+               newSource.color = sourcePrediction.color;
+            } else {
+              newSource.ph = 7;
+              newSource.color = 'transparent';
+            }
+
+
             return {
                 ...prevState,
                 equipment: prevState.equipment.map(e => e.id === sourceId ? { ...newSource } : e)
@@ -498,6 +519,41 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [handleMoveEquipment, experimentState.equipment]);
+  
+  // A local pH calculation function as a fallback/helper
+  const calculatePH = (solutions: Solution[]): number => {
+      if (!solutions || solutions.length === 0) return 7;
+
+      let molesH = 0;
+      let molesOH = 0;
+      let totalVolumeL = 0;
+
+      for (const solution of solutions) {
+          if (solution.chemical.type === 'indicator') continue;
+          const volumeL = solution.volume / 1000;
+          totalVolumeL += volumeL;
+          if (solution.chemical.type === 'acid' && solution.chemical.concentration) {
+              molesH += volumeL * solution.chemical.concentration;
+          } else if (solution.chemical.type === 'base' && solution.chemical.concentration) {
+              molesOH += volumeL * solution.chemical.concentration;
+          }
+      }
+
+      if (totalVolumeL === 0) return 7;
+
+      if (molesH > molesOH) {
+          const remainingMolesH = molesH - molesOH;
+          const concentrationH = remainingMolesH / totalVolumeL;
+          return concentrationH > 0 ? -Math.log10(concentrationH) : 7;
+      } else if (molesOH > molesH) {
+          const remainingMolesOH = molesOH - molesH;
+          const concentrationOH = remainingMolesOH / totalVolumeL;
+          const pOH = concentrationOH > 0 ? -Math.log10(concentrationOH) : 7;
+          return 14 - pOH;
+      } else {
+          return 7;
+      }
+  };
 
 
   const value = useMemo(() => ({
@@ -573,9 +629,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 }
 
 export function useExperiment() {
-  const context = useContext(ExperimentContext);
+  const context = useContext<ExperimentContextType | undefined>(ExperimentContext);
   if (context === undefined) {
     throw new Error('useExperiment must be used within an ExperimentProvider');
   }
   return context;
 }
+
+    
