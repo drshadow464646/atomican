@@ -136,20 +136,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [safetyGogglesOn, toast]);
   
   const handleSelectEquipment = useCallback((equipmentId: string | null) => {
-    if (pouringState) return;
-    setExperimentState(prevState => {
-        if (heldEquipment && equipmentId !== heldEquipment.id) {
-            return prevState;
-        }
-        return {
-            ...prevState,
-            equipment: prevState.equipment.map(e => ({
+    setExperimentState(prevState => ({
+        ...prevState,
+        equipment: prevState.equipment.map(e => ({
             ...e,
             isSelected: e.id === equipmentId,
-            })),
-        };
-    });
-  }, [heldEquipment, pouringState]);
+        })),
+    }));
+  }, []);
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
@@ -526,12 +520,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handleWorkbenchClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).id === 'lab-slab') {
-      handleSelectEquipment(null);
+      if (!pouringState) {
+        handleSelectEquipment(null);
+      }
       if(heldEquipment || heldItem) {
         handleClearHeldItem();
       }
     }
-  }, [heldItem, heldEquipment, handleClearHeldItem, handleSelectEquipment]);
+  }, [heldItem, heldEquipment, pouringState, handleClearHeldItem, handleSelectEquipment]);
   
   const handleEquipmentClick = useCallback((id: string, e: React.MouseEvent) => {
       e.stopPropagation();
