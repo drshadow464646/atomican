@@ -60,6 +60,7 @@ type ExperimentContextType = {
   handleWorkbenchClick: (e: React.MouseEvent) => void;
   handleEquipmentClick: (id: string, e: React.MouseEvent) => void;
   handleMouseUpOnEquipment: (id: string) => void;
+  handleDetachFunnel: (funnelId: string) => void;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -166,6 +167,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         ph: 7,
         color: 'transparent',
         isReacting: false,
+        attachedFunnels: [],
       }; 
       return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment] };
     });
@@ -231,9 +233,50 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [handleClearHeldItem]);
 
   const handleDropOnApparatus = useCallback((equipmentId: string) => {
-    if (!handleSafetyCheck() || !heldItem) return;
-    setPouringState({ sourceId: 'inventory', targetId: equipmentId });
-  }, [handleSafetyCheck, heldItem]);
+    if (!handleSafetyCheck()) return;
+
+    if (heldItem) { // Pouring from inventory
+        let targetId = equipmentId;
+        const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
+        
+        // If dropping on a funnel, retarget to the container it's attached to
+        if(targetContainer?.type === 'funnel' && targetContainer.attachedTo) {
+            targetId = targetContainer.attachedTo;
+        } else if (targetContainer?.attachedFunnels && targetContainer.attachedFunnels.length > 0) {
+            // Dropping on a container that has a funnel. Pour must go through funnel.
+            toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${targetContainer.name}.`, variant: 'destructive'});
+            handleClearHeldItem();
+            return;
+        } else if (targetContainer?.type === 'volumetric-flask') {
+            toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
+            handleClearHeldItem();
+            return;
+        }
+
+        setPouringState({ sourceId: 'inventory', targetId: targetId });
+    } else if (heldEquipment) { // Attaching a funnel
+        if (heldEquipment.type === 'funnel') {
+            const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
+            if (targetContainer && ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask'].includes(targetContainer.type)) {
+                setExperimentState(prevState => {
+                    const funnel = { ...heldEquipment, isAttached: true, attachedTo: targetContainer.id };
+                    const newEquipment = prevState.equipment.filter(e => e.id !== funnel.id); // remove from top level
+                    
+                    const updatedEquipment = newEquipment.map(e => {
+                        if (e.id === targetContainer.id) {
+                            return { ...e, attachedFunnels: [...(e.attachedFunnels || []), funnel] };
+                        }
+                        return e;
+                    });
+                    
+                    addLog(`Attached ${funnel.name} to ${targetContainer.name}.`);
+                    return { ...prevState, equipment: updatedEquipment };
+                });
+                handleClearHeldItem();
+            }
+        }
+    }
+  }, [handleSafetyCheck, heldItem, heldEquipment, experimentState.equipment, toast, addLog, handleClearHeldItem]);
   
   const handlePour = useCallback(async (volume: number) => {
     if (!pouringState) return;
@@ -332,15 +375,26 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const handleInitiatePour = useCallback((targetId: string) => {
     if (!heldEquipment || heldEquipment.id === targetId) return;
+
+    let finalTargetId = targetId;
     const target = experimentState.equipment.find(e => e.id === targetId);
     if (!target) return;
     
-    const validTargets = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
-    if (validTargets.includes(target.type)) {
-       setPouringState({ sourceId: heldEquipment.id, targetId });
-    } else {
-        setTimeout(() => toast({ title: 'Invalid Action', description: `You cannot pour into a ${target.name}.`, variant: 'destructive' }), 0);
+    // If pouring into a funnel, retarget to the container it's attached to
+    if(target.type === 'funnel' && target.attachedTo) {
+        finalTargetId = target.attachedTo;
+    } else if (target.attachedFunnels && target.attachedFunnels.length > 0) {
+        // Dropping on a container that has a funnel. This is invalid, must pour into funnel.
+        toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${target.name}.`, variant: 'destructive'});
+        handleClearHeldItem();
+        return;
+    } else if (target?.type === 'volumetric-flask') {
+        toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
+        handleClearHeldItem();
+        return;
     }
+
+    setPouringState({ sourceId: heldEquipment.id, targetId: finalTargetId });
     handleClearHeldItem();
   }, [heldEquipment, experimentState.equipment, toast, handleClearHeldItem]);
   
@@ -357,8 +411,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleClearHeldItem();
     handleSelectEquipment(id);
     
+    // Allow picking up any equipment, but only pourable things can be "heldEquipment"
     const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
     if (equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type)) {
+      setHeldEquipment(equipment);
+    }
+    // Also allow picking up a funnel
+    if (equipment.type === 'funnel') {
       setHeldEquipment(equipment);
     }
   }, [experimentState.equipment, handleClearHeldItem, handleSelectEquipment]);
@@ -445,8 +504,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         }
     }, 200);
     
-    const equip = experimentState.equipment.find(eq => eq.id === id);
+    const allEquipment = experimentState.equipment.flatMap(eq => [eq, ...(eq.attachedFunnels || [])]);
+    const equip = allEquipment.find(eq => eq.id === id);
+
     if (equip && e.button === 0) {
+        const isAttachedFunnel = equip.isAttached;
+        if (isAttachedFunnel) return; // Don't allow dragging attached funnels
+
         const workbenchEl = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
         if (!workbenchEl) return;
         const rect = workbenchEl.getBoundingClientRect();
@@ -480,10 +544,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           handleDropOnApparatus(id);
           return;
       }
+      if (heldEquipment?.type === 'funnel') {
+          handleDropOnApparatus(id); // This will handle attaching the funnel
+          return;
+      }
       
       handleSelectEquipment(id);
 
-  }, [dragState, heldItem, handleDropOnApparatus, handleSelectEquipment]);
+  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleSelectEquipment]);
 
   const handleMouseUpOnEquipment = useCallback((id: string) => {
     if (mouseDownTimer.current) {
@@ -497,6 +565,36 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         handleClearHeldItem();
     }
   }, [heldEquipment, handleInitiatePour, handleClearHeldItem]);
+  
+  const handleDetachFunnel = useCallback((funnelId: string) => {
+      setExperimentState(prevState => {
+          const newState = {...prevState};
+          let foundFunnel: Equipment | undefined;
+          let parentContainer: Equipment | undefined;
+
+          // Find the funnel and its parent
+          for (const container of newState.equipment) {
+              const funnel = container.attachedFunnels?.find(f => f.id === funnelId);
+              if (funnel) {
+                  foundFunnel = funnel;
+                  parentContainer = container;
+                  break;
+              }
+          }
+
+          if (foundFunnel && parentContainer) {
+              addLog(`Detached ${foundFunnel.name} from ${parentContainer.name}.`);
+              // Remove funnel from parent's attachedFunnels array
+              parentContainer.attachedFunnels = parentContainer.attachedFunnels?.filter(f => f.id !== funnelId);
+
+              // Add funnel back to the main equipment list
+              const detachedFunnel = { ...foundFunnel, isAttached: false, attachedTo: undefined };
+              newState.equipment.push(detachedFunnel);
+          }
+
+          return { ...newState, equipment: [...newState.equipment] };
+      });
+  }, [addLog]);
 
 
   useEffect(() => {
@@ -509,7 +607,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 const newX = e.clientX - rect.left - item.offset.x;
                 const newY = e.clientY - rect.top - item.offset.y;
                 
-                const currentPos = experimentState.equipment.find(eq=>eq.id===item.id)?.position;
+                const allEquipment = experimentState.equipment.flatMap(eq => [eq, ...(eq.attachedFunnels || [])]);
+                const currentPos = allEquipment.find(eq=>eq.id===item.id)?.position;
                 
                 if (!item.hasMoved && currentPos && (Math.abs(newX - currentPos.x) > 5 || Math.abs(newY - currentPos.y) > 5)) {
                     item.hasMoved = true;
@@ -616,6 +715,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleWorkbenchClick,
     handleEquipmentClick,
     handleMouseUpOnEquipment,
+    handleDetachFunnel,
   }), [
     experimentState, 
     labLogs, 
@@ -646,7 +746,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDragStart,
     handleWorkbenchClick,
     handleEquipmentClick,
-    handleMouseUpOnEquipment
+    handleMouseUpOnEquipment,
+    handleDetachFunnel,
   ]);
 
   return (
@@ -663,9 +764,3 @@ export function useExperiment() {
   }
   return context;
 }
-
-    
-
-    
-
-

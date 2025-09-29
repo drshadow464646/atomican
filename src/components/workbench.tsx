@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -13,10 +13,6 @@ const ReactionEffects = ({ item }: { item: Equipment }) => {
     if (!item.reactionEffects) return null;
     
     const { gas, precipitate, isExplosive, key } = item.reactionEffects;
-    const size = item.size || 1;
-    const totalVolume = item.solutions.reduce((acc, s) => acc + s.volume, 0);
-    const fillPercentage = item.volume ? (totalVolume / item.volume) * 100 : 0;
-    const liquidHeight = 95 * (fillPercentage / 100);
 
     return (
         <div key={key} className="absolute inset-0 pointer-events-none overflow-hidden rounded-b-lg">
@@ -28,14 +24,13 @@ const ReactionEffects = ({ item }: { item: Equipment }) => {
                         left: `${15 + Math.random() * 70}%`,
                         animationDelay: `${Math.random() * 2}s`,
                         animationDuration: `${2 + Math.random() * 2}s`,
-                        transform: `scale(${size})`,
                     }}
                 />
             ))}
             {precipitate && (
                  <div 
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 bg-white/80 animate-precipitate"
-                    style={{ background: precipitate }}
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 animate-precipitate"
+                    style={{ background: precipitate, height: '25%' }}
                  />
             )}
             {isExplosive && (
@@ -47,9 +42,27 @@ const ReactionEffects = ({ item }: { item: Equipment }) => {
     );
 };
 
+// Common Liquid Rendering Logic
+const Liquid = ({ d, color, isReacting }: { d: string, color: string, isReacting?: boolean}) => (
+    <g>
+        <defs>
+            <linearGradient id={`liquidGradient-${color}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor={color} stopOpacity="0.6" />
+                <stop offset="50%" stopColor={color} stopOpacity="0.9" />
+                <stop offset="100%" stopColor={color} stopOpacity="0.6" />
+            </linearGradient>
+        </defs>
+        <path
+            d={d}
+            fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient-${color})`}
+            className={cn("transition-all duration-500", isReacting && "animate-analyzing")}
+        />
+    </g>
+);
+
 
 const BeakerIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
-  const {color, isReacting} = item;
+  const { color, isReacting } = item;
   const liquidHeight = 95 * (fillPercentage / 100);
   const liquidY = 115 - liquidHeight;
   
@@ -58,36 +71,13 @@ const BeakerIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPerce
 
   return (
     <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
-       <ReactionEffects item={item} />
+      <ReactionEffects item={item} />
       <svg viewBox="0 0 100 120" className="h-full w-full">
-        <defs>
-           <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor={color} stopOpacity="0.7" />
-              <stop offset="50%" stopColor={color} stopOpacity="1" />
-              <stop offset="100%" stopColor={color} stopOpacity="0.7" />
-          </linearGradient>
-        </defs>
-        {fillPercentage > 0 && (
-          <g>
-            <path
-              d={`M20,${liquidY} L 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`}
-              fill={color === 'transparent' ? 'hsl(var(--background))' : color}
-              className={cn("transition-all duration-500", isReacting && "animate-analyzing")}
-            />
-          </g>
+        {fillPercentage > 0 && color && (
+          <Liquid d={`M20,${liquidY} L 80,${liquidY} L 80,115 A 5,5 0 0 1 75,120 H 25 A 5,5 0 0 1 20,115 Z`} color={color} isReacting={isReacting}/>
         )}
-        <path
-          d="M10,10 L20,115 A 5,5 0 0 0 25,120 H 75 A 5,5 0 0 0 80,115 L 90,10"
-          stroke="hsl(var(--foreground) / 0.3)"
-          strokeWidth="2"
-          fill="transparent"
-        />
-        <path
-          d="M10,10 H 90"
-          stroke="hsl(var(--foreground) / 0.3)"
-          strokeWidth="3"
-          fill="none"
-        />
+        <path d="M10,10 L20,115 A 5,5 0 0 0 25,120 H 75 A 5,5 0 0 0 80,115 L 90,10" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+        <path d="M10,10 H 90" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="3" fill="none" />
       </svg>
       {isReacting && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
@@ -98,6 +88,96 @@ const BeakerIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPerce
   );
 };
 
+const ErlenmeyerFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
+    const { color, isReacting } = item;
+    const liquidHeight = 70 * (fillPercentage / 100);
+    const liquidY = 115 - liquidHeight;
+
+    const width = 7 * size;
+    const height = 10 * size;
+
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+            <ReactionEffects item={item} />
+            <svg viewBox="0 0 100 120" className="w-full h-full">
+                {fillPercentage > 0 && color && (
+                    <Liquid d={`M10,${liquidY} L 90,${liquidY} L 90,115 A 5,5 0 0 1 85,120 H 15 A 5,5 0 0 1 10,115 Z`} color={color} isReacting={isReacting}/>
+                )}
+                <path d="M35,10 H 65 M30,20 H 70 M30,20 L10,115 A 5,5 0 0 0 15,120 H 85 A 5,5 0 0 0 90,115 L 70,20" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+            </svg>
+            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+        </div>
+    );
+};
+
+const GraduatedCylinderIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
+    const { color, isReacting } = item;
+    const liquidHeight = 100 * (fillPercentage / 100);
+    const liquidY = 115 - liquidHeight;
+    const width = 4 * size;
+    const height = 10 * size;
+
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+            <ReactionEffects item={item} />
+            <svg viewBox="0 0 60 120" className="w-full h-full">
+                {fillPercentage > 0 && color && (
+                    <Liquid d={`M10,${liquidY} L 50,${liquidY} L 50,115 A 5,5 0 0 1 45,120 H 15 A 5,5 0 0 1 10,115 Z`} color={color} isReacting={isReacting}/>
+                )}
+                <path d="M5,10 H 55 L 50,115 A 5,5 0 0 1 45,120 H 15 A 5,5 0 0 1 10,115 L 5,10 Z" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+                {[...Array(4)].map((_, i) => (
+                    <line key={i} x1="10" y1={30 + i * 20} x2="20" y2={30 + i * 20} stroke="hsl(var(--foreground) / 0.2)" strokeWidth="1.5" />
+                ))}
+            </svg>
+            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+        </div>
+    );
+};
+
+const VolumetricFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
+    const { color, isReacting } = item;
+    // Fill calculation is complex; simplified for visualization
+    const neckFill = Math.min(100, fillPercentage * 2);
+    const bulbFill = Math.max(0, fillPercentage * 2 - 100);
+    const width = 7 * size;
+    const height = 10 * size;
+
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+            <ReactionEffects item={item} />
+            <svg viewBox="0 0 100 120" className="w-full h-full">
+                {bulbFill > 0 && color && <Liquid d="M50,120 C 10,120 10,60 50,60 C 90,60 90,120 50,120 Z" color={color} isReacting={isReacting}/>}
+                {neckFill > 0 && color && <Liquid d={`M42,60 L 58,60 L 58,${60-neckFill*0.5} L 42,${60-neckFill*0.5} Z`} color={color} isReacting={isReacting} />}
+                
+                <path d="M50,120 C 10,120 10,60 50,60 C 90,60 90,120 50,120 Z" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+                <path d="M42,60 L 42,10 H 58 L 58,60" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+                <line x1="35" y1="40" x2="65" y2="40" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="1.5" />
+            </svg>
+            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+        </div>
+    );
+};
+
+const TestTubeIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
+    const { color, isReacting } = item;
+    const liquidHeight = 100 * (fillPercentage / 100);
+    const liquidY = 110 - liquidHeight;
+    const width = 3 * size;
+    const height = 10 * size;
+
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+            <ReactionEffects item={item} />
+            <svg viewBox="0 0 40 120" className="w-full h-full">
+                {fillPercentage > 0 && color && (
+                    <Liquid d={`M5,${liquidY} L 35,${liquidY} V 110 A 15 15 0 0 1 20 110 A 15 15 0 0 1 5 110 Z`} color={color} isReacting={isReacting}/>
+                )}
+                <path d="M5,10 L 5,100 A 15,15 0 1 0 35,100 L 35,10" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+            </svg>
+             {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+        </div>
+    );
+};
 
 const EquipmentDisplay = ({ 
   item, 
@@ -106,6 +186,7 @@ const EquipmentDisplay = ({
   onMouseUp,
   onRemove,
   onResize,
+  onDetachFunnel,
   isHoverTarget,
   isHeld,
 }: { 
@@ -115,6 +196,7 @@ const EquipmentDisplay = ({
   onMouseUp: (id: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
+  onDetachFunnel?: (id: string) => void,
   isHoverTarget: boolean,
   isHeld: boolean,
 }) => {
@@ -151,20 +233,22 @@ const EquipmentDisplay = ({
         const id = item.id.split('-')[0]; // Use base id for matching
         
         // Liquid containers
-        if (['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'].includes(item.type)) {
-            return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
-        }
+        if (item.type === 'beaker') return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
+        if (item.type === 'erlenmeyer-flask') return <ErlenmeyerFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
+        if (item.type === 'graduated-cylinder') return <GraduatedCylinderIcon item={item} fillPercentage={fillPercentage} size={size} />;
+        if (item.type === 'volumetric-flask') return <VolumetricFlaskIcon item={item} fillPercentage={fillPercentage} size={size} />;
+        if (item.type === 'test-tube') return <TestTubeIcon item={item} fillPercentage={fillPercentage} size={size} />;
 
         // Other equipment
         if (id.includes('burette')) return <Pipette className={iconClass} style={iconStyle} />;
         if (id.includes('pipette')) return <Pipette className={iconClass} style={iconStyle} />;
-        if (id.includes('funnel')) return <Wind className={iconClass} style={iconStyle} />;
+        if (id.includes('funnel')) return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
         if (id.includes('ph-meter') || id.includes('thermometer')) return <Pipette className={iconClass} style={iconStyle} />; // Placeholder
         if (id.includes('balance')) return <Scale className={iconClass} style={iconStyle} />;
         if (id.includes('microscope')) return <Microscope className={iconClass} style={iconStyle} />;
         
         // Default fallback
-        return <TestTube className={iconClass} style={iconStyle} />;
+        return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
     };
 
     return (
@@ -181,12 +265,33 @@ const EquipmentDisplay = ({
             style={{ 
                 left: `${item.position.x}px`, 
                 top: `${item.position.y}px`,
+                transform: `translate(-50%, ${item.attachedFunnels && item.attachedFunnels.length > 0 ? '-60%' : '-50%'})`, // Adjust position when funnel is attached
                 touchAction: 'none',
             }}
             onMouseDown={(e) => onMouseDown(item.id, e)}
             onClick={(e) => onClick(item.id, e)}
             onMouseUp={() => onMouseUp(item.id)}
         >
+            {item.attachedFunnels?.map(funnel => (
+                 <div key={funnel.id} className="absolute top-0 transform -translate-y-full flex flex-col items-center">
+                    <EquipmentDisplay 
+                        item={funnel}
+                        onMouseDown={()=>{}}
+                        onClick={()=>{}}
+                        onMouseUp={()=>{}}
+                        onRemove={()=>{}}
+                        onResize={()=>{}}
+                        isHoverTarget={false}
+                        isHeld={false}
+                    />
+                    {onDetachFunnel && (
+                         <Button size="icon" variant="ghost" className="h-6 w-6 -mt-4" onClick={() => onDetachFunnel(funnel.id)}>
+                            <Minus className="h-4 w-4" />
+                         </Button>
+                    )}
+                 </div>
+            ))}
+
             {item.isSelected && !isHeld && !item.isReacting && (
               <>
                 <Button 
@@ -233,6 +338,7 @@ export function Workbench({
     onWorkbenchClick,
     onEquipmentClick,
     onMouseUpOnEquipment,
+    onDetachFunnel,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
@@ -249,6 +355,7 @@ export function Workbench({
     onWorkbenchClick: (e: React.MouseEvent) => void;
     onEquipmentClick: (id: string, e: React.MouseEvent) => void;
     onMouseUpOnEquipment: (id: string) => void;
+    onDetachFunnel: (funnelId: string) => void;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
   const [hoveredEquipmentId, setHoveredEquipmentId] = useState<string | null>(null);
@@ -292,8 +399,13 @@ export function Workbench({
         // Find the element under the cursor
         for (const elem of elements) {
             const equipmentId = elem.getAttribute('data-equipment-id');
-            // Can't drop on itself
-            if (equipmentId && equipmentId !== heldEquipment?.id) {
+            if (!equipmentId) continue;
+            
+            // Can't drop on itself or on an attached funnel
+            const isSelf = equipmentId === heldEquipment?.id;
+            const isAttachedFunnel = state.equipment.some(eq => eq.attachedFunnels?.some(f => f.id === equipmentId));
+            
+            if (!isSelf && !isAttachedFunnel) {
                  const rect = elem.getBoundingClientRect();
                  if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
                      targetId = equipmentId;
@@ -303,7 +415,7 @@ export function Workbench({
         }
     }
     setHoveredEquipmentId(targetId);
-  }, [isHoldingSomething, heldEquipment]);
+  }, [isHoldingSomething, heldEquipment, state.equipment]);
   
   useEffect(() => {
     window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -356,9 +468,9 @@ export function Workbench({
                   boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3), inset 0 0 10px rgba(255,255,255,0.05)'
                 }}
               ></div>
-              {state.equipment.length > 0 ? (
+              {state.equipment.filter(e => !e.isAttached).length > 0 ? (
                   <>
-                      {state.equipment.map(item => (
+                      {state.equipment.filter(e => !e.isAttached).map(item => (
                           <EquipmentDisplay 
                               key={item.id}
                               item={item} 
@@ -367,6 +479,7 @@ export function Workbench({
                               onMouseUp={onMouseUpOnEquipment}
                               onRemove={onRemoveSelectedEquipment}
                               onResize={onResizeEquipment}
+                              onDetachFunnel={onDetachFunnel}
                               isHoverTarget={isHoldingSomething && hoveredEquipmentId === item.id}
                               isHeld={heldEquipment?.id === item.id}
                           />
@@ -418,5 +531,3 @@ export function Workbench({
     </div>
   );
 }
-
-    

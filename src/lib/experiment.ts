@@ -43,6 +43,9 @@ export type Equipment = {
   ph?: number;
   color?: string;
   isReacting: boolean;
+  isAttached?: boolean; // For funnels
+  attachedTo?: string; // ID of equipment it's attached to
+  attachedFunnels?: Equipment[]; // Funnels attached to this container
   // New properties for visual effects
   reactionEffects?: {
     gas?: string;

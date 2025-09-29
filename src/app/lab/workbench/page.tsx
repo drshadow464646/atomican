@@ -36,6 +36,7 @@ export default function WorkbenchPage() {
     handleWorkbenchClick,
     handleEquipmentClick,
     handleMouseUpOnEquipment,
+    handleDetachFunnel,
   } = useExperiment();
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
@@ -110,6 +111,7 @@ export default function WorkbenchPage() {
                 onWorkbenchClick={handleWorkbenchClick}
                 onEquipmentClick={handleEquipmentClick}
                 onMouseUpOnEquipment={handleMouseUpOnEquipment}
+                onDetachFunnel={handleDetachFunnel}
             />
             {selectedEquipment && !heldEquipment && !pouringState && (
               <div className="absolute top-4 right-4 z-20 w-80">
