@@ -30,7 +30,7 @@ const ReactionEffects = ({ item }: { item: Equipment }) => {
             {precipitate && (
                  <div 
                     className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 animate-precipitate"
-                    style={{ background: precipitate, height: '25%' }}
+                    style={{ backgroundColor: precipitate, height: '25%' }}
                  />
             )}
             {isExplosive && (
@@ -46,7 +46,7 @@ const ReactionEffects = ({ item }: { item: Equipment }) => {
 const Liquid = ({ d, color, isReacting }: { d: string, color: string, isReacting?: boolean}) => (
     <g>
         <defs>
-            <linearGradient id={`liquidGradient-${color}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={`liquidGradient-${color.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor={color} stopOpacity="0.6" />
                 <stop offset="50%" stopColor={color} stopOpacity="0.9" />
                 <stop offset="100%" stopColor={color} stopOpacity="0.6" />
@@ -54,7 +54,7 @@ const Liquid = ({ d, color, isReacting }: { d: string, color: string, isReacting
         </defs>
         <path
             d={d}
-            fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient-${color})`}
+            fill={color === 'transparent' ? 'hsl(var(--background))' : `url(#liquidGradient-${color.replace(/[^a-zA-Z0-9]/g, '')})`}
             className={cn("transition-all duration-500", isReacting && "animate-analyzing")}
         />
     </g>
@@ -136,9 +136,32 @@ const GraduatedCylinderIcon = ({ item, fillPercentage, size }: { item: Equipment
 
 const VolumetricFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPercentage: number; size: number }) => {
     const { color, isReacting } = item;
-    // Fill calculation is complex; simplified for visualization
-    const neckFill = Math.min(100, fillPercentage * 2);
-    const bulbFill = Math.max(0, fillPercentage * 2 - 100);
+    const liquidPercentage = fillPercentage / 100;
+    const bulbVolumeFraction = 0.9;
+    
+    let bulbFillD = "";
+    if (liquidPercentage > 0) {
+      const radius = 40;
+      const fillHeight = radius * 2 * Math.min(liquidPercentage / bulbVolumeFraction, 1);
+      const y = 120 - fillHeight;
+      if (fillHeight > radius) {
+        const angle = Math.acos((fillHeight - radius) / radius);
+        const xOffset = radius * Math.sin(angle);
+        bulbFillD = `M ${50 - xOffset} ${y} A ${radius} ${radius} 0 1 1 ${50 + xOffset} ${y} V 120 H ${50-xOffset} Z`;
+      } else {
+         const angle = Math.acos((radius - fillHeight) / radius);
+         const xOffset = radius * Math.sin(angle);
+         bulbFillD = `M ${50-xOffset} ${y} A ${radius} ${radius} 0 0 1 ${50+xOffset} ${y} L ${50+radius} 120 H ${50-radius} Z`;
+      }
+    }
+
+    let neckFillD = "";
+    if (liquidPercentage > bulbVolumeFraction) {
+      const neckFillPercentage = (liquidPercentage - bulbVolumeFraction) / (1 - bulbVolumeFraction);
+      const neckHeight = 50 * neckFillPercentage;
+      neckFillD = `M42,${60 - neckHeight} L 58,${60-neckHeight} L 58,60 L 42,60 Z`;
+    }
+
     const width = 7 * size;
     const height = 10 * size;
 
@@ -146,8 +169,8 @@ const VolumetricFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, 
         <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
             <ReactionEffects item={item} />
             <svg viewBox="0 0 100 120" className="w-full h-full">
-                {bulbFill > 0 && color && <Liquid d="M50,120 C 10,120 10,60 50,60 C 90,60 90,120 50,120 Z" color={color} isReacting={isReacting}/>}
-                {neckFill > 0 && color && <Liquid d={`M42,60 L 58,60 L 58,${60-neckFill*0.5} L 42,${60-neckFill*0.5} Z`} color={color} isReacting={isReacting} />}
+                {bulbFillD && color && <Liquid d={bulbFillD} color={color} isReacting={isReacting}/>}
+                {neckFillD && color && <Liquid d={neckFillD} color={color} isReacting={isReacting} />}
                 
                 <path d="M50,120 C 10,120 10,60 50,60 C 90,60 90,120 50,120 Z" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
                 <path d="M42,60 L 42,10 H 58 L 58,60" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
@@ -170,9 +193,9 @@ const TestTubeIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPer
             <ReactionEffects item={item} />
             <svg viewBox="0 0 40 120" className="w-full h-full">
                 {fillPercentage > 0 && color && (
-                    <Liquid d={`M5,${liquidY} L 35,${liquidY} V 110 A 15 15 0 0 1 20 110 A 15 15 0 0 1 5 110 Z`} color={color} isReacting={isReacting}/>
+                    <Liquid d={`M5,${liquidY} L 35,${liquidY} V 105 A 15 15 0 0 1 20 120 A 15 15 0 0 1 5 105 Z`} color={color} isReacting={isReacting}/>
                 )}
-                <path d="M5,10 L 5,100 A 15,15 0 1 0 35,100 L 35,10" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+                <path d="M5,10 L 5,105 A 15,15 0 1 0 35,105 L 35,10" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
             </svg>
              {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
         </div>
@@ -284,8 +307,8 @@ const EquipmentDisplay = ({
                         isHoverTarget={false}
                         isHeld={false}
                     />
-                    {onDetachFunnel && (
-                         <Button size="icon" variant="ghost" className="h-6 w-6 -mt-4" onClick={() => onDetachFunnel(funnel.id)}>
+                    {onDetachFunnel && item.isSelected && (
+                         <Button size="icon" variant="ghost" className="h-6 w-6 -mt-4 z-30" onClick={(e) => {e.stopPropagation(); onDetachFunnel(funnel.id)}}>
                             <Minus className="h-4 w-4" />
                          </Button>
                     )}
@@ -401,7 +424,6 @@ export function Workbench({
             const equipmentId = elem.getAttribute('data-equipment-id');
             if (!equipmentId) continue;
             
-            // Can't drop on itself or on an attached funnel
             const isSelf = equipmentId === heldEquipment?.id;
             const isAttachedFunnel = state.equipment.some(eq => eq.attachedFunnels?.some(f => f.id === equipmentId));
             

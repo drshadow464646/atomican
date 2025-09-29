@@ -41,7 +41,7 @@ export type Equipment = {
   isSelected: boolean;
   solutions: Solution[];
   ph?: number;
-  color?: string;
+  color: string;
   isReacting: boolean;
   isAttached?: boolean; // For funnels
   attachedTo?: string; // ID of equipment it's attached to
@@ -53,6 +53,7 @@ export type Equipment = {
     isExplosive?: boolean;
     equation?: string;
     description?: string;
+    temperatureChange?: number;
     key: number; // To re-trigger animations
   }
 };

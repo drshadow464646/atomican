@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -108,6 +107,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             isExplosive: prediction.isExplosive,
             equation: prediction.equation,
             description: prediction.description,
+            temperatureChange: prediction.temperatureChange,
             key: Date.now(), // new key to trigger animation
         };
 
@@ -235,41 +235,46 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleDropOnApparatus = useCallback((equipmentId: string) => {
     if (!handleSafetyCheck()) return;
 
+    let targetId = equipmentId;
+    const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
+    
+    // If dropping on a funnel, retarget to the container it's attached to
+    if(targetContainer?.type === 'funnel' && targetContainer.attachedTo) {
+        targetId = targetContainer.attachedTo;
+    }
+
+    const finalTarget = experimentState.equipment.find(e => e.id === targetId);
+    if (!finalTarget) return;
+
     if (heldItem) { // Pouring from inventory
-        let targetId = equipmentId;
-        const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
-        
-        // If dropping on a funnel, retarget to the container it's attached to
-        if(targetContainer?.type === 'funnel' && targetContainer.attachedTo) {
-            targetId = targetContainer.attachedTo;
-        } else if (targetContainer?.attachedFunnels && targetContainer.attachedFunnels.length > 0) {
-            // Dropping on a container that has a funnel. Pour must go through funnel.
-            toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${targetContainer.name}.`, variant: 'destructive'});
+        if (finalTarget.attachedFunnels && finalTarget.attachedFunnels.length > 0 && finalTarget.id === targetId) {
+            toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${finalTarget.name}.`, variant: 'destructive'});
             handleClearHeldItem();
             return;
-        } else if (targetContainer?.type === 'volumetric-flask') {
+        }
+        if (finalTarget.type === 'volumetric-flask' && (!finalTarget.attachedFunnels || finalTarget.attachedFunnels.length === 0)) {
             toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
             handleClearHeldItem();
             return;
         }
 
         setPouringState({ sourceId: 'inventory', targetId: targetId });
+
     } else if (heldEquipment) { // Attaching a funnel
         if (heldEquipment.type === 'funnel') {
-            const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
-            if (targetContainer && ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask'].includes(targetContainer.type)) {
+            if (['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask'].includes(finalTarget.type)) {
                 setExperimentState(prevState => {
-                    const funnel = { ...heldEquipment, isAttached: true, attachedTo: targetContainer.id };
+                    const funnel = { ...heldEquipment!, isAttached: true, attachedTo: finalTarget.id, isSelected: false };
                     const newEquipment = prevState.equipment.filter(e => e.id !== funnel.id); // remove from top level
                     
                     const updatedEquipment = newEquipment.map(e => {
-                        if (e.id === targetContainer.id) {
-                            return { ...e, attachedFunnels: [...(e.attachedFunnels || []), funnel] };
+                        if (e.id === finalTarget.id) {
+                            return { ...e, attachedFunnels: [...(e.attachedFunnels || []), funnel], isSelected: true };
                         }
-                        return e;
+                        return {...e, isSelected: false};
                     });
                     
-                    addLog(`Attached ${funnel.name} to ${targetContainer.name}.`);
+                    addLog(`Attached ${funnel.name} to ${finalTarget.name}.`);
                     return { ...prevState, equipment: updatedEquipment };
                 });
                 handleClearHeldItem();
@@ -356,8 +361,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             
             const remainingSourceVolume = sourceToUpdate.solutions.reduce((t, s) => t + s.volume, 0);
             if (remainingSourceVolume > 0.01) {
-              sourceToUpdate.ph = calculatePH(sourceToUpdate.solutions);
-              sourceToUpdate.color = 'transparent'; // Simplified
+              // The AI should predict the new state of the source, but for now we simplify
+              sourceToUpdate.ph = 7; // simplified
+              sourceToUpdate.color = sourceToUpdate.solutions.length > 0 ? sourceToUpdate.color : 'transparent'; // simplified
             } else {
               sourceToUpdate.ph = 7;
               sourceToUpdate.color = 'transparent';
@@ -384,11 +390,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if(target.type === 'funnel' && target.attachedTo) {
         finalTargetId = target.attachedTo;
     } else if (target.attachedFunnels && target.attachedFunnels.length > 0) {
-        // Dropping on a container that has a funnel. This is invalid, must pour into funnel.
         toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${target.name}.`, variant: 'destructive'});
         handleClearHeldItem();
         return;
-    } else if (target?.type === 'volumetric-flask') {
+    } else if (target.type === 'volumetric-flask' && (!target.attachedFunnels || target.attachedFunnels.length === 0)) {
         toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
         handleClearHeldItem();
         return;
@@ -411,13 +416,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleClearHeldItem();
     handleSelectEquipment(id);
     
-    // Allow picking up any equipment, but only pourable things can be "heldEquipment"
     const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'];
-    if (equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type)) {
-      setHeldEquipment(equipment);
-    }
-    // Also allow picking up a funnel
-    if (equipment.type === 'funnel') {
+    if ((equipment.solutions && equipment.solutions.length > 0 && validPouringEquipment.includes(equipment.type)) || equipment.type === 'funnel') {
       setHeldEquipment(equipment);
     }
   }, [experimentState.equipment, handleClearHeldItem, handleSelectEquipment]);
@@ -508,8 +508,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const equip = allEquipment.find(eq => eq.id === id);
 
     if (equip && e.button === 0) {
-        const isAttachedFunnel = equip.isAttached;
-        if (isAttachedFunnel) return; // Don't allow dragging attached funnels
+        if (equip.isAttached) return; 
 
         const workbenchEl = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
         if (!workbenchEl) return;
@@ -545,7 +544,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           return;
       }
       if (heldEquipment?.type === 'funnel') {
-          handleDropOnApparatus(id); // This will handle attaching the funnel
+          handleDropOnApparatus(id); 
           return;
       }
       
@@ -588,8 +587,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
               parentContainer.attachedFunnels = parentContainer.attachedFunnels?.filter(f => f.id !== funnelId);
 
               // Add funnel back to the main equipment list
-              const detachedFunnel = { ...foundFunnel, isAttached: false, attachedTo: undefined };
+              const detachedFunnel = { ...foundFunnel, isAttached: false, attachedTo: undefined, position: {...parentContainer.position, y: parentContainer.position.y - 100}, isSelected: false };
               newState.equipment.push(detachedFunnel);
+              // Select the parent container after detaching
+              parentContainer.isSelected = true; 
           }
 
           return { ...newState, equipment: [...newState.equipment] };
@@ -647,41 +648,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     };
   }, [handleMoveEquipment, experimentState.equipment, handleSelectEquipment, heldEquipment, handleClearHeldItem]);
   
-  // A local pH calculation function as a fallback/helper
-  const calculatePH = (solutions: Solution[]): number => {
-      if (!solutions || solutions.length === 0) return 7;
-
-      let molesH = 0;
-      let molesOH = 0;
-      let totalVolumeL = 0;
-
-      for (const solution of solutions) {
-          if (solution.chemical.type === 'indicator') continue;
-          const volumeL = solution.volume / 1000;
-          totalVolumeL += volumeL;
-          if (solution.chemical.type === 'acid' && solution.chemical.concentration) {
-              molesH += volumeL * solution.chemical.concentration;
-          } else if (solution.chemical.type === 'base' && solution.chemical.concentration) {
-              molesOH += volumeL * solution.chemical.concentration;
-          }
-      }
-
-      if (totalVolumeL === 0) return 7;
-
-      if (molesH > molesOH) {
-          const remainingMolesH = molesH - molesOH;
-          const concentrationH = remainingMolesH / totalVolumeL;
-          return concentrationH > 0 ? -Math.log10(concentrationH) : 7;
-      } else if (molesOH > molesH) {
-          const remainingMolesOH = molesOH - molesH;
-          const concentrationOH = remainingMolesOH / totalVolumeL;
-          const pOH = concentrationOH > 0 ? -Math.log10(concentrationOH) : 7;
-          return 14 - pOH;
-      } else {
-          return 7; // Equivalence point
-      }
-  };
-
 
   const value = useMemo(() => ({
     experimentState,

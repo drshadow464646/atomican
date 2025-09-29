@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Equipment, Solution } from '@/lib/experiment';
-import { Droplets, Beaker, ChevronsRight } from 'lucide-react';
+import { Droplets, Beaker, ChevronsRight, Thermometer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type EquipmentDetailsPanelProps = {
@@ -39,10 +39,19 @@ export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps)
           </div>
         </div>
 
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-3">
             <div className="font-medium">pH Level</div>
             <div className="font-mono text-base font-bold">{equipment.ph?.toFixed(2) ?? 'N/A'}</div>
         </div>
+        
+        {reaction?.temperatureChange !== undefined && (
+            <div className="flex justify-between items-center mb-4">
+                <div className="font-medium flex items-center gap-1"><Thermometer className="h-4 w-4"/> Temp. Change</div>
+                <div className="font-mono text-base font-bold">
+                    {reaction.temperatureChange > 0 ? '+' : ''}{reaction.temperatureChange.toFixed(1)}°C
+                </div>
+            </div>
+        )}
 
         {reaction?.equation && (
             <>

@@ -42,7 +42,6 @@ export default function WorkbenchPage() {
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
   
   useEffect(() => {
-    // Add a global key listener to drop the held item with Escape key
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (heldItem || heldEquipment) {
@@ -105,7 +104,7 @@ export default function WorkbenchPage() {
                 onCancelPour={handleCancelPour}
                 heldItem={heldItem}
                 heldEquipment={heldEquipment}
-                onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
+                onRemoveSelectedEquipment={onRemoveSelectedEquipment}
                 pouringState={pouringState}
                 onDragStart={handleDragStart}
                 onWorkbenchClick={handleWorkbenchClick}
@@ -113,7 +112,7 @@ export default function WorkbenchPage() {
                 onMouseUpOnEquipment={handleMouseUpOnEquipment}
                 onDetachFunnel={handleDetachFunnel}
             />
-            {selectedEquipment && !heldEquipment && !pouringState && (
+            {selectedEquipment && !heldItem && !heldEquipment && !pouringState && (
               <div className="absolute top-4 right-4 z-20 w-80">
                 <EquipmentDetailsPanel equipment={selectedEquipment} />
               </div>
