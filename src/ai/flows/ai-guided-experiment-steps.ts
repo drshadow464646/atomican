@@ -5,6 +5,7 @@
  * This has been refactored to use a direct API call for reliability.
  */
 import { z } from 'zod';
+import { callOpenRouterWithFallback } from './openrouter-fallback';
 
 const ExperimentStepsSchema = z.object({
   title: z.string().describe('A short, descriptive title for the experiment.'),
@@ -40,30 +41,10 @@ Prioritize safety and clarity in the procedure. Do not include any steps for cle
 IMPORTANT: Your output MUST be only the JSON object, with no other text, markdown formatting, or explanations.`;
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "x-ai/grok-4-fast:free",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API Error:", errorText);
-      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    const textResponse = result.choices[0]?.message?.content;
-
+    const textResponse = await callOpenRouterWithFallback(prompt);
+    
     if (!textResponse) {
-      throw new Error("The AI returned an empty response.");
+      throw new Error("The AI returned an empty response from both models.");
     }
     
     const parsedOutput = JSON.parse(textResponse);

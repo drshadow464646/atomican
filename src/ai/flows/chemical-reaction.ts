@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import type { ReactionPrediction, Solution } from '@/lib/experiment';
 import { ChemicalSchema, SolutionSchema } from '@/lib/experiment';
+import { callOpenRouterWithFallback } from './openrouter-fallback';
 
 const ReactionPredictionSchema = z.object({
   products: z.array(SolutionSchema).describe('The resulting solutions after the reaction. This should include unreacted chemicals and newly formed products.'),
@@ -47,30 +48,10 @@ Your response MUST be only a valid JSON object that conforms to the following sc
 Consider acid-base neutralization, redox reactions, precipitation, and gas evolution. For indicators like phenolphthalein, calculate the color based on the final pH. The sum of product volumes must equal the sum of reactant volumes. If no reaction occurs, return the original solutions combined, with pH calculated for the mixture.`;
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "x-ai/grok-4-fast:free",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API Error (Reaction Prediction):", errorText);
-      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    const textResponse = result.choices[0]?.message?.content;
+    const textResponse = await callOpenRouterWithFallback(prompt);
 
     if (!textResponse) {
-      throw new Error("The AI returned an empty response.");
+      throw new Error("The AI returned an empty response from both models.");
     }
     
     const parsedOutput = JSON.parse(textResponse);
