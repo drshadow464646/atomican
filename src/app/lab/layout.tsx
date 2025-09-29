@@ -17,14 +17,18 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     heldEquipment
   } = useExperiment();
   
-  const [isClient, setIsClient] = useState(false);
-
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    const isHolding = !!heldItem || !!heldEquipment;
+    document.body.classList.toggle('cursor-copy', isHolding);
+    
+    // Cleanup function to remove the class when component unmounts
+    return () => {
+      document.body.classList.remove('cursor-copy');
+    }
+  }, [heldItem, heldEquipment]);
 
   return (
-    <div className={cn("flex flex-col h-screen fade-in", isClient && (heldItem || heldEquipment) && "cursor-copy")}>
+    <div className={cn("flex flex-col h-screen fade-in")}>
       <main className="flex-1 overflow-auto">
         {children}
       </main>
