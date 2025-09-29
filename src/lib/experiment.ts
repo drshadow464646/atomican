@@ -1,4 +1,5 @@
 
+
 import type { GenerateExperimentStepsOutput } from "@/ai/flows/ai-guided-experiment-steps";
 import { z } from 'zod';
 
@@ -54,7 +55,6 @@ export type Equipment = {
 };
 
 export type ExperimentState = {
-  title: string;
   equipment: Equipment[];
   // Legacy state, to be deprecated
   volumeAdded: number; // in ml, legacy for simple titration

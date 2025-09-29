@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -24,8 +25,6 @@ import { Tooltip, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { TooltipContent } from '@radix-ui/react-tooltip';
 
 type LabHeaderProps = {
-  experimentTitle: string;
-  onTitleChange: (newTitle: string) => void;
   safetyGogglesOn: boolean;
   onGoggleToggle: (toggled: boolean) => void;
   onResetExperiment: () => void;
@@ -111,25 +110,12 @@ function MobileNav() {
 
 
 export function LabHeader({ 
-  experimentTitle,
-  onTitleChange,
   safetyGogglesOn, 
   onGoggleToggle, 
   onResetExperiment 
 }: LabHeaderProps) {
   const pathname = usePathname();
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [localTitle, setLocalTitle] = useState(experimentTitle);
   const isMobile = useIsMobile();
-  
-  const debouncedTitleChange = useDebouncedCallback((value: string) => {
-    onTitleChange(value);
-  }, 500);
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalTitle(e.target.value);
-    debouncedTitleChange(e.target.value);
-  }
 
   return (
     <header className="z-10 flex h-16 items-center justify-between border-t bg-card px-4 md:px-6">
@@ -140,26 +126,6 @@ export function LabHeader({
             <h1 className="text-xl font-semibold sm:block">LabSphere</h1>
         </Link>
         <div className="hidden md:flex flex-1 min-w-0">
-          {isEditingTitle ? (
-            <Input 
-              value={localTitle}
-              onChange={handleTitleChange}
-              onBlur={() => setIsEditingTitle(false)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
-              className="h-8 text-lg font-semibold"
-              autoFocus
-              placeholder=""
-              suppressHydrationWarning
-            />
-          ) : (
-            <div 
-              className="flex items-center gap-2 cursor-pointer group"
-              onClick={() => setIsEditingTitle(true)}
-            >
-              <h2 className="text-lg font-semibold truncate h-6" title={experimentTitle}>{experimentTitle || ""}</h2>
-              <Pen className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          )}
         </div>
         <nav className="hidden md:flex items-center gap-2">
            <TooltipProvider>

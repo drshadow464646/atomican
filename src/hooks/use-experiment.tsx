@@ -15,7 +15,6 @@ const getUniqueLogId = () => {
 let equipmentIdCounter = 0;
 
 const initialExperimentState: ExperimentState = {
-  title: 'Untitled Experiment',
   equipment: [],
   volumeAdded: 0,
   ph: null,
@@ -39,7 +38,6 @@ type ExperimentContextType = {
   heldEquipment: Equipment | null;
   pouringState: { sourceId: string; targetId: string; } | null;
   setSafetyGogglesOn: (on: boolean) => void;
-  setExperimentTitle: (title: string) => void;
   handleAddEquipmentToWorkbench: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   handleAddEquipmentToInventory: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   handleRemoveSelectedEquipment: (id: string) => void;
@@ -135,10 +133,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
     return true;
   }, [safetyGogglesOn, toast]);
-
-  const setExperimentTitle = useCallback((title: string) => {
-    setExperimentState(prev => ({ ...prev, title }));
-  }, []);
   
   const handleSelectEquipment = useCallback((equipmentId: string | null) => {
     if (pouringState) return;
@@ -600,7 +594,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     heldEquipment,
     pouringState,
     setSafetyGogglesOn,
-    setExperimentTitle,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleRemoveSelectedEquipment,
@@ -632,7 +625,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     heldItem,
     heldEquipment,
     pouringState,
-    setExperimentTitle,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleRemoveSelectedEquipment,

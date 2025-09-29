@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { LabHeader } from '@/components/lab-header';
@@ -9,11 +10,9 @@ import { useEffect, useState } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { 
-    experimentState,
     safetyGogglesOn, 
     setSafetyGogglesOn, 
     handleResetExperiment, 
-    setExperimentTitle,
     heldItem,
     heldEquipment
   } = useExperiment();
@@ -25,13 +24,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className={cn("flex flex-col h-screen fade-in", (heldItem || heldEquipment) && "cursor-copy")}>
+    <div className={cn("flex flex-col h-screen fade-in", isClient && (heldItem || heldEquipment) && "cursor-copy")}>
       <main className="flex-1 overflow-auto">
         {children}
       </main>
       <LabHeader
-        experimentTitle={experimentState.title}
-        onTitleChange={setExperimentTitle}
         safetyGogglesOn={safetyGogglesOn}
         onGoggleToggle={setSafetyGogglesOn}
         onResetExperiment={handleResetExperiment}
