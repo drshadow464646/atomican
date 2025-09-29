@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useDebouncedCallback } from 'use-debounce';
 import type { Equipment } from '@/lib/experiment';
 import { findApparatus } from '@/app/actions';
+import { commonApparatus } from '@/lib/apparatus-catalog';
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
   glassware: <Beaker className="h-10 w-10 text-primary" />,
@@ -42,26 +43,24 @@ function getIconForEquipment(item: Omit<Equipment, 'position' | 'isSelected' | '
 }
 
 export default function ApparatusPage() {
-  const [searchTerm, setSearchTerm] = useState('common lab equipment');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, startSearchTransition] = useTransition();
-  const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[]>([]);
+  const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[]>(commonApparatus);
   const { handleAddEquipmentToInventory, inventoryEquipment } = useExperiment();
+  const [isAiSearch, setIsAiSearch] = useState(false);
 
   const performSearch = (query: string) => {
     if (!query) {
-      setResults([]);
+      setResults(commonApparatus);
+      setIsAiSearch(false);
       return;
     };
+    setIsAiSearch(true);
     startSearchTransition(async () => {
       const searchResults = await findApparatus(query);
       setResults(searchResults);
     });
   };
-
-  useEffect(() => {
-    // Show common items on initial load
-    performSearch('common lab glassware');
-  }, []);
 
   const debouncedSearch = useDebouncedCallback((query: string) => {
     performSearch(query);
@@ -145,7 +144,7 @@ export default function ApparatusPage() {
         
         {!isSearching && results.length === 0 && (
             <div className="w-full text-center col-span-full py-16">
-                <p className="text-muted-foreground">No equipment found matching your search.</p>
+                <p className="text-muted-foreground">{isAiSearch ? 'AI could not find equipment matching your search.' : 'No common equipment loaded.'}</p>
             </div>
         )}
       </div>

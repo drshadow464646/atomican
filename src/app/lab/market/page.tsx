@@ -10,28 +10,27 @@ import type { Chemical } from '@/lib/experiment';
 import { useDebouncedCallback } from 'use-debounce';
 import { useExperiment } from '@/hooks/use-experiment';
 import { findChemicals } from '@/app/actions';
+import { commonChemicals } from '@/lib/chemical-catalog';
 
 export default function MarketPage() {
-  const [searchTerm, setSearchTerm] = useState('common acids and bases');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, startSearchTransition] = useTransition();
-  const [results, setResults] = useState<Chemical[]>([]);
+  const [results, setResults] = useState<Chemical[]>(commonChemicals);
   const { handleAddChemicalToInventory, inventoryChemicals } = useExperiment();
+  const [isAiSearch, setIsAiSearch] = useState(false);
 
   const performSearch = (query: string) => {
     if (!query) {
-        setResults([]);
+        setResults(commonChemicals);
+        setIsAiSearch(false);
         return;
     }
+    setIsAiSearch(true);
     startSearchTransition(async () => {
       const searchResults = await findChemicals(query);
       setResults(searchResults);
     });
   };
-
-  useEffect(() => {
-    // Show common items on initial load
-    performSearch('common acids and bases');
-  }, []);
 
   const debouncedSearch = useDebouncedCallback((query: string) => {
     performSearch(query);
@@ -63,11 +62,6 @@ export default function MarketPage() {
               value={searchTerm}
               onChange={handleSearchChange}
             />
-             {isSearching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
-             )}
           </div>
         </div>
 
@@ -128,7 +122,7 @@ export default function MarketPage() {
 
         {!isSearching && results.length === 0 && (
           <div className="text-center col-span-full py-16">
-              <p className="text-muted-foreground">No chemicals found matching your search.</p>
+              <p className="text-muted-foreground">{isAiSearch ? 'AI could not find chemicals matching your search.' : 'No common chemicals loaded.'}</p>
           </div>
         )}
       </div>
