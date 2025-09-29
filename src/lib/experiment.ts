@@ -29,6 +29,12 @@ export type ReactionPrediction = {
   equation: string;
 };
 
+export type EquipmentConnection = {
+    id: string;
+    from: string; // equipment id
+    to: string; // equipment id
+};
+
 export type Equipment = {
   id:string;
   name: string;
@@ -61,6 +67,7 @@ export type Equipment = {
 
 export type ExperimentState = {
   equipment: Equipment[];
+  connections: EquipmentConnection[];
   // Legacy state, to be deprecated
   volumeAdded: number; // in ml, legacy for simple titration
   ph: number | null; // legacy
@@ -132,5 +139,3 @@ export function getIndicatorColor(indicatorId: string, ph: number): string {
             return 'transparent';
     }
 }
-
-    

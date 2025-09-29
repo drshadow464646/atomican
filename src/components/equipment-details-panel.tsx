@@ -4,30 +4,52 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Equipment, Solution } from '@/lib/experiment';
-import { Droplets, Beaker, ChevronsRight, Thermometer } from 'lucide-react';
+import { Droplets, Beaker, ChevronsRight, Thermometer, Link, Link2Off } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from './ui/button';
+import { useExperiment } from '@/hooks/use-experiment';
 
 type EquipmentDetailsPanelProps = {
   equipment: Equipment;
 };
 
 export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps) {
+  const { handleInitiateAttachment, attachmentState, handleCancelAttachment } = useExperiment();
   const totalVolume = equipment.solutions?.reduce((acc, s) => acc + s.volume, 0) || 0;
   const hasContents = equipment.solutions && equipment.solutions.length > 0;
   const reaction = equipment.reactionEffects;
 
+  const isAttaching = attachmentState?.sourceId === equipment.id;
+
   return (
     <Card className="shadow-lg backdrop-blur-xl bg-background/70 border-border/50">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Beaker className="h-5 w-5" />
-          {equipment.name}
-        </CardTitle>
-        <CardDescription>
-            {equipment.description}
-        </CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                <Beaker className="h-5 w-5" />
+                {equipment.name}
+                </CardTitle>
+                <CardDescription>
+                    {equipment.description}
+                </CardDescription>
+            </div>
+            <Button
+                variant={isAttaching ? 'destructive' : 'outline'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => isAttaching ? handleCancelAttachment() : handleInitiateAttachment(equipment.id)}
+            >
+                {isAttaching ? <Link2Off className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+            </Button>
+        </div>
       </CardHeader>
       <CardContent className="text-sm">
+        {isAttaching && (
+            <div className="bg-accent text-accent-foreground text-xs p-2 rounded-md mb-3 text-center">
+                Click another apparatus to connect.
+            </div>
+        )}
         <div className="flex justify-between items-center mb-3">
           <div className="font-medium">Solution Color</div>
           <div className="flex items-center gap-2">

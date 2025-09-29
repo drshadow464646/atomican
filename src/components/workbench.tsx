@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder, Link2Off } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -413,16 +413,18 @@ export function Workbench({
     heldEquipment,
     onRemoveSelectedEquipment,
     pouringState,
+    attachmentState,
     onDragStart,
     onWorkbenchClick,
     onEquipmentClick,
     onMouseUpOnEquipment,
     onDetachFunnel,
+    onRemoveConnection,
 }: { 
     state: ExperimentState, 
     onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
     onResizeEquipment: (id: string, size: number) => void;
-    onSelectEquipment: (id: string | null) => void;
+    onSelectEquipment: (id: string | null, append?: boolean) => void;
     onDropOnApparatus: (equipmentId: string) => void;
     onPour: (volume: number) => void;
     onCancelPour: () => void;
@@ -430,11 +432,13 @@ export function Workbench({
     heldEquipment: Equipment | null;
     onRemoveSelectedEquipment: (id: string) => void;
     pouringState: { sourceId: string; targetId: string; } | null;
+    attachmentState: { sourceId: string } | null;
     onDragStart: (id: string, e: React.MouseEvent) => void;
     onWorkbenchClick: (e: React.MouseEvent) => void;
     onEquipmentClick: (id: string, e: React.MouseEvent) => void;
     onMouseUpOnEquipment: (id: string) => void;
     onDetachFunnel: (funnelId: string) => void;
+    onRemoveConnection: (connectionId: string) => void;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
   const [hoveredEquipmentId, setHoveredEquipmentId] = useState<string | null>(null);
@@ -522,13 +526,20 @@ export function Workbench({
               Holding: {heldEquipment.name}. Drag over another apparatus and release to pour. (Press Esc to cancel)
             </CardDescription>
           )}
+          {attachmentState && (
+            <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
+              <Hand className="h-4 w-4"/>
+              Attachment Mode: Click another apparatus to create a connection. (Press Esc to cancel)
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-2 md:p-6 text-foreground bg-muted">
             <div 
               ref={workbenchRef}
               className={cn(
                 "relative w-full flex-1",
-                (heldItem || heldEquipment) && "cursor-grabbing"
+                (heldItem || heldEquipment) && "cursor-grabbing",
+                attachmentState && "cursor-crosshair",
               )}
               onMouseDown={onWorkbenchClick}
               onMouseUp={() => {
@@ -546,6 +557,37 @@ export function Workbench({
                   boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3), inset 0 0 10px rgba(255,255,255,0.05)'
                 }}
               ></div>
+               <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                {state.connections.map(conn => {
+                    const from = state.equipment.find(e => e.id === conn.from);
+                    const to = state.equipment.find(e => e.id === conn.to);
+                    if (!from || !to) return null;
+                    return (
+                        <g key={conn.id} className="group">
+                           <line
+                                x1={from.position.x}
+                                y1={from.position.y}
+                                x2={to.position.x}
+                                y2={to.position.y}
+                                stroke="hsl(var(--foreground) / 0.3)"
+                                strokeWidth="3"
+                                strokeDasharray="5 5"
+                            />
+                            {/* Invisible wider line for easier hovering */}
+                             <line
+                                x1={from.position.x}
+                                y1={from.position.y}
+                                x2={to.position.x}
+                                y2={to.position.y}
+                                stroke="transparent"
+                                strokeWidth="20"
+                                className="cursor-pointer pointer-events-stroke"
+                                onClick={() => onRemoveConnection(conn.id)}
+                            />
+                        </g>
+                    );
+                })}
+              </svg>
               {state.equipment.filter(e => !e.isAttached).length > 0 ? (
                   <>
                       {state.equipment.filter(e => !e.isAttached).map(item => (
@@ -558,7 +600,7 @@ export function Workbench({
                               onRemove={onRemoveSelectedEquipment}
                               onResize={onResizeEquipment}
                               onDetachFunnel={onDetachFunnel}
-                              isHoverTarget={isHoldingSomething && hoveredEquipmentId === item.id}
+                              isHoverTarget={(isHoldingSomething || !!attachmentState) && hoveredEquipmentId === item.id}
                               isHeld={heldEquipment?.id === item.id}
                           />
                       ))}
@@ -609,7 +651,3 @@ export function Workbench({
     </div>
   );
 }
-
-    
-
-    

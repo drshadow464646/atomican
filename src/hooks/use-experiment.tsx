@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { ExperimentState, LabLog, Chemical, Equipment, Solution, ReactionPrediction } from '@/lib/experiment';
+import type { ExperimentState, LabLog, Chemical, Equipment, Solution, ReactionPrediction, EquipmentConnection } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 import { getReactionPrediction } from '@/app/actions';
 
@@ -12,9 +12,11 @@ const getUniqueLogId = () => {
 };
 
 let equipmentIdCounter = 0;
+let connectionIdCounter = 0;
 
 const initialExperimentState: ExperimentState = {
   equipment: [],
+  connections: [],
   volumeAdded: 0,
   ph: null,
   color: 'transparent',
@@ -24,6 +26,10 @@ type DragState = {
   id: string; 
   offset: { x: number; y: number; }; 
   hasMoved: boolean; 
+} | null;
+
+type AttachmentState = {
+    sourceId: string;
 } | null;
 
 
@@ -36,13 +42,14 @@ type ExperimentContextType = {
   heldItem: Chemical | null;
   heldEquipment: Equipment | null;
   pouringState: { sourceId: string; targetId: string; } | null;
+  attachmentState: AttachmentState;
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   handleAddEquipmentToInventory: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   handleRemoveSelectedEquipment: (id: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
-  handleSelectEquipment: (equipmentId: string | null) => void;
+  handleSelectEquipment: (equipmentId: string | null, append?: boolean) => void;
   handleDropOnApparatus: (equipmentId: string) => void;
   handlePickUpEquipment: (id: string) => void;
   handlePour: (volume: number) => void;
@@ -60,6 +67,9 @@ type ExperimentContextType = {
   handleEquipmentClick: (id: string, e: React.MouseEvent) => void;
   handleMouseUpOnEquipment: (id: string) => void;
   handleDetachFunnel: (funnelId: string) => void;
+  handleInitiateAttachment: (sourceId: string) => void;
+  handleCancelAttachment: () => void;
+  handleRemoveConnection: (connectionId: string) => void;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
@@ -71,6 +81,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const [heldItem, setHeldItem] = useState<Chemical | null>(null);
   const [heldEquipment, setHeldEquipment] = useState<Equipment | null>(null);
   const [pouringState, setPouringState] = useState<{ sourceId: string; targetId: string; } | null>(null);
+  const [attachmentState, setAttachmentState] = useState<AttachmentState>(null);
   const { toast } = useToast();
 
   const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>([]);
@@ -135,16 +146,40 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     return true;
   }, [safetyGogglesOn, toast]);
   
-  const handleSelectEquipment = useCallback((equipmentId: string | null) => {
+  const handleSelectEquipment = useCallback((equipmentId: string | null, append: boolean = false) => {
     if (dragState.current?.hasMoved) return;
+
+    if (attachmentState && equipmentId) {
+        if (attachmentState.sourceId === equipmentId) {
+            setAttachmentState(null); // Cancel attachment if clicking the source again
+            return;
+        }
+        // Complete the attachment
+        connectionIdCounter++;
+        const newConnection: EquipmentConnection = {
+            id: `conn-${connectionIdCounter}`,
+            from: attachmentState.sourceId,
+            to: equipmentId,
+        };
+        setExperimentState(prevState => ({
+            ...prevState,
+            connections: [...prevState.connections, newConnection],
+        }));
+        const sourceName = experimentState.equipment.find(e => e.id === attachmentState.sourceId)?.name;
+        const targetName = experimentState.equipment.find(e => e.id === equipmentId)?.name;
+        addLog(`Connected ${sourceName} to ${targetName}.`);
+        setAttachmentState(null);
+        return;
+    }
+
     setExperimentState(prevState => ({
         ...prevState,
         equipment: prevState.equipment.map(e => ({
             ...e,
-            isSelected: e.id === equipmentId,
+            isSelected: append ? (e.isSelected || e.id === equipmentId) : e.id === equipmentId,
         })),
     }));
-  }, []);
+  }, [attachmentState, addLog, experimentState.equipment]);
 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
@@ -164,7 +199,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         isReacting: false,
         attachedFunnels: [],
       }; 
-      return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment] };
+      return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment], connections: prevState.connections };
     });
   }, [addLog, handleSafetyCheck]);
 
@@ -191,10 +226,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
       
       const newEquipment = prevState.equipment.filter(e => e.id !== id);
+      // Also remove any connections associated with this equipment
+      const newConnections = prevState.connections.filter(c => c.from !== id && c.to !== id);
       
       return {
         ...prevState,
         equipment: newEquipment,
+        connections: newConnections,
       };
     });
   }, [addLog]);
@@ -205,6 +243,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       equipment: prevState.equipment.map(e => 
         e.id === equipmentId ? { ...e, size } : e
       ),
+      connections: prevState.connections,
     }));
   }, []);
   
@@ -214,6 +253,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       equipment: prevState.equipment.map(e =>
         e.id === equipmentId ? { ...e, position } : e
       ),
+      connections: prevState.connections,
     }));
   }, []);
 
@@ -354,7 +394,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     
     setExperimentState(prevState => ({
       ...prevState,
-      equipment: prevState.equipment.map(e => e.id === targetId ? {...e, isReacting: true} : e)
+      equipment: prevState.equipment.map(e => e.id === targetId ? {...e, isReacting: true} : e),
+      connections: prevState.connections,
     }));
 
     const prediction = await getReactionPrediction(reactants);
@@ -389,7 +430,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
             return {
                 ...newState,
-                equipment: newState.equipment.map(e => e.id === sourceId ? { ...sourceToUpdate } : e)
+                equipment: newState.equipment.map(e => e.id === sourceId ? { ...sourceToUpdate } : e),
+                connections: newState.connections,
             };
         });
     }
@@ -474,7 +516,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     
     setExperimentState(prevState => ({
         ...prevState,
-        equipment: prevState.equipment.map(e => e.id === beaker.id ? {...e, isReacting: true} : e)
+        equipment: prevState.equipment.map(e => e.id === beaker.id ? {...e, isReacting: true} : e),
+        connections: prevState.connections,
     }));
 
     const prediction = await getReactionPrediction(reactants);
@@ -508,6 +551,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setLabLogs([]);
     handleClearHeldItem();
     setPouringState(null);
+    setAttachmentState(null);
     addLog('Experiment reset.');
   }, [addLog, handleClearHeldItem]);
   
@@ -543,14 +587,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handleWorkbenchClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).id === 'lab-slab') {
-      if (!pouringState) {
+      if (!pouringState && !attachmentState) {
         handleSelectEquipment(null);
       }
       if(heldEquipment || heldItem) {
         handleClearHeldItem();
       }
+      if (attachmentState) {
+          handleCancelAttachment();
+      }
     }
-  }, [heldItem, heldEquipment, pouringState, handleClearHeldItem, handleSelectEquipment]);
+  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleSelectEquipment]);
   
   const handleEquipmentClick = useCallback((id: string, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -567,7 +614,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           return;
       }
       
-      handleSelectEquipment(id);
+      handleSelectEquipment(id, e.shiftKey);
 
   }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleSelectEquipment]);
 
@@ -612,10 +659,33 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
               parentContainer.isSelected = true; 
           }
 
-          return { ...newState, equipment: [...newState.equipment] };
+          return { ...newState, equipment: [...newState.equipment], connections: newState.connections };
       });
   }, [addLog]);
 
+  const handleInitiateAttachment = useCallback((sourceId: string) => {
+    setAttachmentState({ sourceId });
+    addLog('Select another piece of equipment to connect to.');
+  }, [addLog]);
+  
+  const handleCancelAttachment = useCallback(() => {
+    setAttachmentState(null);
+  }, []);
+
+  const handleRemoveConnection = useCallback((connectionId: string) => {
+    setExperimentState(prevState => {
+        const conn = prevState.connections.find(c => c.id === connectionId);
+        if (conn) {
+            const sourceName = prevState.equipment.find(e => e.id === conn.from)?.name;
+            const targetName = prevState.equipment.find(e => e.id === conn.to)?.name;
+            addLog(`Disconnected ${sourceName} from ${targetName}.`);
+        }
+        return {
+            ...prevState,
+            connections: prevState.connections.filter(c => c.id !== connectionId),
+        };
+    });
+  }, [addLog]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -677,6 +747,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     heldItem,
     heldEquipment,
     pouringState,
+    attachmentState,
     setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
@@ -701,6 +772,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleEquipmentClick,
     handleMouseUpOnEquipment,
     handleDetachFunnel,
+    handleInitiateAttachment,
+    handleCancelAttachment,
+    handleRemoveConnection,
   }), [
     experimentState, 
     labLogs, 
@@ -710,6 +784,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     heldItem,
     heldEquipment,
     pouringState,
+    attachmentState,
     handleAddEquipmentToWorkbench,
     handleAddEquipmentToInventory,
     handleRemoveSelectedEquipment,
@@ -733,6 +808,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleEquipmentClick,
     handleMouseUpOnEquipment,
     handleDetachFunnel,
+    handleInitiateAttachment,
+    handleCancelAttachment,
+    handleRemoveConnection,
   ]);
 
   return (
@@ -749,5 +827,3 @@ export function useExperiment() {
   }
   return context;
 }
-
-    
