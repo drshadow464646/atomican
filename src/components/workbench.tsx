@@ -1,10 +1,9 @@
 
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2 } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -36,7 +35,7 @@ const ReactionEffects = ({ item }: { item: Equipment }) => {
             {precipitate && (
                  <div 
                     className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 bg-white/80 animate-precipitate"
-                    style={{ background: precipitate === 'white' ? 'rgba(255,255,255,0.8)' : precipitate }}
+                    style={{ background: precipitate }}
                  />
             )}
             {isExplosive && (
@@ -149,18 +148,23 @@ const EquipmentDisplay = ({
 
     const renderContent = () => {
         const iconStyle = { height: `${8 * size}rem`, width: `${8 * size}rem` };
-        switch (item.type) {
-            case 'beaker':
-            case 'erlenmeyer-flask':
-            case 'graduated-cylinder':
-            case 'volumetric-flask':
-            case 'test-tube':
-                return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
-            case 'burette':
-                return <Pipette className={iconClass} style={iconStyle} />;
-            default:
-                return <TestTube className={iconClass} style={iconStyle} />;
+        const id = item.id.split('-')[0]; // Use base id for matching
+        
+        // Liquid containers
+        if (['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube'].includes(item.type)) {
+            return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
         }
+
+        // Other equipment
+        if (id.includes('burette')) return <Pipette className={iconClass} style={iconStyle} />;
+        if (id.includes('pipette')) return <Pipette className={iconClass} style={iconStyle} />;
+        if (id.includes('funnel')) return <Wind className={iconClass} style={iconStyle} />;
+        if (id.includes('ph-meter') || id.includes('thermometer')) return <Pipette className={iconClass} style={iconStyle} />; // Placeholder
+        if (id.includes('balance')) return <Scale className={iconClass} style={iconStyle} />;
+        if (id.includes('microscope')) return <Microscope className={iconClass} style={iconStyle} />;
+        
+        // Default fallback
+        return <TestTube className={iconClass} style={iconStyle} />;
     };
 
     return (
@@ -414,3 +418,5 @@ export function Workbench({
     </div>
   );
 }
+
+    
