@@ -27,7 +27,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, [heldItem, heldEquipment]);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen pb-[env(safe-area-inset-bottom)]">
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
