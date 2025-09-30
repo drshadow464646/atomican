@@ -278,6 +278,27 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleClearHeldItem();
   }, [handleClearHeldItem]);
 
+  const handleInitiatePour = useCallback((targetId: string) => {
+    if (!heldEquipment || heldEquipment.id === targetId) return;
+
+    let finalTargetId = targetId;
+    const target = experimentState.equipment.find(e => e.id === targetId);
+    if (!target) return;
+    
+    if (target.attachments?.some(att => att.type === 'funnel') && target.type !== 'funnel') {
+        toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${target.name}.`, variant: 'destructive'});
+        handleClearHeldItem();
+        return;
+    } else if (target.type === 'volumetric-flask' && !target.attachments?.some(att => att.type === 'funnel')) {
+        toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
+        handleClearHeldItem();
+        return;
+    }
+
+    setPouringState({ sourceId: heldEquipment.id, targetId: finalTargetId });
+    handleClearHeldItem();
+  }, [heldEquipment, experimentState.equipment, toast, handleClearHeldItem]);
+
   const handleDropOnApparatus = useCallback((targetId: string) => {
     if (!handleSafetyCheck()) return;
 
@@ -434,27 +455,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
 
   }, [addLog, pouringState, experimentState.equipment, heldItem, handleClearHeldItem, toast]);
-
-  const handleInitiatePour = useCallback((targetId: string) => {
-    if (!heldEquipment || heldEquipment.id === targetId) return;
-
-    let finalTargetId = targetId;
-    const target = experimentState.equipment.find(e => e.id === targetId);
-    if (!target) return;
-    
-    if (target.attachments?.some(att => att.type === 'funnel') && target.type !== 'funnel') {
-        toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${target.name}.`, variant: 'destructive'});
-        handleClearHeldItem();
-        return;
-    } else if (target.type === 'volumetric-flask' && !target.attachments?.some(att => att.type === 'funnel')) {
-        toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
-        handleClearHeldItem();
-        return;
-    }
-
-    setPouringState({ sourceId: heldEquipment.id, targetId: finalTargetId });
-    handleClearHeldItem();
-  }, [heldEquipment, experimentState.equipment, toast, handleClearHeldItem]);
   
   const handlePickUpChemical = useCallback((chemical: Chemical) => {
     if (pouringState) return;
@@ -592,7 +592,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           handleCancelAttachment();
       }
     }
-  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleSelectEquipment]);
+  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleSelectEquipment, handleCancelAttachment]);
   
   const handleEquipmentClick = useCallback((id: string, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -803,6 +803,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
+    handleInitiatePour, // Added to dependency array
   ]);
 
   return (
