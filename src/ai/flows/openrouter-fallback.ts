@@ -5,7 +5,7 @@
  */
 
 const PRIMARY_MODEL = "x-ai/grok-4-fast:free";
-const FALLBACK_MODEL = "meta-llama/llama-3.1-8b-instruct:free";
+const FALLBACK_MODEL = "google/gemma-2-9b-it:free";
 
 /**
  * Calls the OpenRouter API with a given prompt, attempting the primary model first
