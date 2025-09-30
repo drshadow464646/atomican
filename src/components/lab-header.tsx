@@ -110,7 +110,7 @@ export function LabHeader({
   const isMobile = useIsMobile();
 
   return (
-    <header className="z-10 flex h-16 items-center justify-between border-t bg-card px-4 md:px-6">
+    <header className="z-10 flex h-16 items-center justify-between border-t bg-card px-4 md:px-6 pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center gap-4">
         {isMobile && <MobileNav />}
         <Link href="/lab/workbench" className="hidden sm:flex items-center gap-2">
