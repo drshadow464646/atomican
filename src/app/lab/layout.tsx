@@ -50,6 +50,14 @@ export default function LabLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <ExperimentProvider>
