@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { LabHeader } from '@/components/lab-header';
