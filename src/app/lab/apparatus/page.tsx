@@ -82,7 +82,7 @@ export default function ApparatusPage() {
         <header className="text-center mb-8 animate-fade-in-up">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-glow">Apparatus Catalog</h1>
           <p className="text-muted-foreground mt-2 text-md md:text-lg">
-            Explore the tools and equipment available in the LabSphere laboratory.
+            Explore the tools and equipment available in the Atomican laboratory.
           </p>
         </header>
 

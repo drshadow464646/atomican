@@ -4,7 +4,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook, TestTube } from 'lucide-react';
+import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
@@ -72,8 +72,8 @@ function MobileNav() {
         <SheetHeader>
             <SheetTitle>
                  <Link href="/lab/workbench" className="flex items-center gap-2 text-lg font-semibold">
-                    <span className="text-2xl">🌌</span>
-                    <span>LabSphere</span>
+                    <span className="text-2xl">⚛️</span>
+                    <span>Atomican</span>
                 </Link>
             </SheetTitle>
             <SheetDescription>
@@ -117,8 +117,8 @@ export function LabHeader({
       <div className="flex items-center gap-4 md:gap-6">
         {isMobile && <MobileNav />}
         <Link href="/lab/workbench" className="flex items-center gap-2">
-            <span className="text-2xl">🌌</span>
-            <h1 className="text-xl font-semibold sm:block">LabSphere</h1>
+            <span className="text-2xl">⚛️</span>
+            <h1 className="text-xl font-semibold sm:block">Atomican</h1>
         </Link>
         <div className="hidden md:flex flex-1 min-w-0">
         </div>

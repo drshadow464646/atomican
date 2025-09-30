@@ -12,7 +12,7 @@ type Settings = {
 };
 
 export const defaultSettings: Settings = {
-  displayName: 'Astera',
+  displayName: 'Atomican',
   appearanceMode: 'system',
   baseGradient: 'moon',
   uiMotionLevel: 'medium',

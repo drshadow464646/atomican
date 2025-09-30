@@ -12,7 +12,7 @@ const fontSans = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'LabSphere: Virtual Chemistry Laboratory',
+  title: 'Atomican: Virtual Chemistry Laboratory',
   description: 'An interactive virtual chemistry laboratory for students to learn and experiment.',
 };
 
