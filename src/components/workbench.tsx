@@ -334,7 +334,6 @@ const EquipmentDisplay = ({
     };
 
     const renderContent = () => {
-        // First, handle special cases with custom SVG rendering
         switch (item.type) {
             case 'beaker':
                 return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
@@ -355,20 +354,7 @@ const EquipmentDisplay = ({
             case 'clamp':
                 return <ClampIcon item={item} size={size} />;
             default:
-                // Fallback to lucide icons for everything else
-                const iconMap: { [key: string]: React.ElementType } = {
-                    'burette': Pipette,
-                    'pipette': Pipette,
-                    'funnel': Wind,
-                    'heating': Flame,
-                    'measurement': Scale,
-                    'microscopy': Microscope,
-                    'other': Beaker,
-                    'glassware': Beaker,
-                    'safety': Beaker,
-                    'vacuum': Wind,
-                };
-                const Icon = iconMap[item.type] || Beaker;
+                const Icon = equipmentIcons[item.type] || Beaker;
                 return renderIconWithContainer(Icon, {});
         }
     };

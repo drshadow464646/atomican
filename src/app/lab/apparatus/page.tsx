@@ -23,7 +23,6 @@ export const equipmentIcons: { [key: string]: React.ReactNode } = {
   'burette': <Pipette className={iconClass} />, // Using Pipette as it's visually similar for this context
   'pipette': <Pipette className={iconClass} />,
   'volumetric-flask': <FlaskConical className={iconClass} />, // Using Flask as it's visually similar
-  'funnel': <Wind className={iconClass} />,
   'thermometer': <Thermometer className={iconClass} />,
   'ph-meter': <Thermometer className={iconClass} strokeWidth={1.5} />,
   'balance': <Scale className={iconClass} />,

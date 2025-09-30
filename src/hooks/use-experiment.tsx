@@ -291,24 +291,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
     const target = experimentState.equipment.find(e => e.id === targetId);
     if (!target) return;
-    
-    // Check if pouring into funnel
-    const funnel = target.attachments?.find(att => att.type === 'funnel');
-    if (funnel) {
-        setPouringState({ sourceId: heldEquipment.id, targetId: targetId });
-        handleClearHeldItem();
-        return;
-    }
-    
-    if (target.type === 'volumetric-flask' && !funnel) {
-        toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
-        handleClearHeldItem();
-        return;
-    }
 
     setPouringState({ sourceId: heldEquipment.id, targetId: targetId });
     handleClearHeldItem();
-  }, [heldEquipment, experimentState.equipment, toast, handleClearHeldItem]);
+  }, [heldEquipment, experimentState.equipment, handleClearHeldItem]);
 
   const handleDropOnApparatus = useCallback((targetId: string) => {
     if (!handleSafetyCheck()) return;
@@ -317,16 +303,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (!targetContainer) return;
 
     if (heldItem) { // Adding a chemical from inventory
-        const funnel = targetContainer.attachments?.find(att => att.type === 'funnel');
-        if (targetContainer.type === 'volumetric-flask' && !funnel) {
-            toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
-            handleClearHeldItem();
-            return;
-        }
-        setPouringState({ sourceId: 'inventory', targetId: funnel ? targetContainer.id : targetId });
+        setPouringState({ sourceId: 'inventory', targetId: targetId });
     
     } else if (heldEquipment) { // Attaching an item or initiating a pour
-        const attachmentTypes = ['funnel', 'thermometer', 'ph-meter', 'clamp'];
+        const attachmentTypes = ['thermometer', 'ph-meter', 'clamp'];
         if (attachmentTypes.includes(heldEquipment.type)) {
             // Logic for attaching items
             const canAttachTo = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'stand', 'test-tube'];
@@ -341,9 +321,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                     } else if (equipmentToAttach.type === 'ph-meter') {
                         equipmentToAttach.attachmentPoint = {x: (targetContainer.size * 35), y: 0};
                         equipmentToAttach.measuredPh = targetContainer.ph;
-                        addLog(`Attached ${equipmentToAttach.name} to ${targetContainer.name}.`);
-                    } else if (equipmentToAttach.type === 'funnel') {
-                        equipmentToAttach.attachmentPoint = {x: 0, y: -(targetContainer.size * 50)};
                         addLog(`Attached ${equipmentToAttach.name} to ${targetContainer.name}.`);
                     } else if (equipmentToAttach.type === 'clamp' && targetContainer.type === 'stand') {
                          equipmentToAttach.attachmentPoint = {x: 20, y: 50};
@@ -485,7 +462,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     
     handleClearHeldItem();
     
-    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube', 'funnel', 'thermometer', 'ph-meter', 'clamp'];
+    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube', 'thermometer', 'ph-meter', 'clamp'];
     if ((equipment.solutions && equipment.solutions.length > 0) || validPouringEquipment.includes(equipment.type)) {
       setHeldEquipment(equipment);
       handleSelectEquipment(id);

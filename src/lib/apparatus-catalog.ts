@@ -52,12 +52,6 @@ export const commonApparatus: Omit<Equipment, 'position' | 'isSelected' | 'size'
         description: 'A type of laboratory flask, calibrated to contain a precise volume at a particular temperature.',
     },
     {
-        id: 'funnel',
-        name: 'Funnel',
-        type: 'funnel',
-        description: 'Used to guide liquid or powder into a small opening.',
-    },
-    {
         id: 'thermometer',
         name: 'Thermometer',
         type: 'thermometer',

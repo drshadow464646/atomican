@@ -38,7 +38,7 @@ export type EquipmentConnection = {
 export type Equipment = {
   id:string;
   name: string;
-  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'microscopy' | 'other' | 'glassware' | 'vacuum' | 'safety' | 'thermometer' | 'ph-meter' | 'stand' | 'clamp';
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'heating' | 'measurement' | 'microscopy' | 'other' | 'glassware' | 'vacuum' | 'safety' | 'thermometer' | 'ph-meter' | 'stand' | 'clamp';
   volume?: number; // in ml
   description: string;
   size: number; // scale factor, e.g., 1 for 100%
