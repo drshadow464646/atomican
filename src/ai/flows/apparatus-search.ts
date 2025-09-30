@@ -10,7 +10,7 @@ import { callOpenRouterWithFallback } from './openrouter-fallback';
 const ApparatusSchema = z.object({
   id: z.string().describe('A unique lowercase, kebab-case identifier for the equipment, e.g., "erlenmeyer-flask-250ml".'),
   name: z.string().describe('The common name of the equipment, including size if applicable, e.g., "Erlenmeyer Flask (250ml)".'),
-  type: z.enum(['beaker', 'burette', 'pipette', 'graduated-cylinder', 'erlenmeyer-flask', 'volumetric-flask', 'test-tube', 'funnel', 'heating', 'measurement', 'other', 'glassware', 'vacuum', 'safety', 'thermometer', 'ph-meter', 'stand', 'clamp']).describe('The general category of the equipment.'),
+  type: z.enum(['beaker', 'burette', 'pipette', 'graduated-cylinder', 'erlenmeyer-flask', 'volumetric-flask', 'test-tube', 'heating', 'measurement', 'other', 'glassware', 'vacuum', 'safety', 'thermometer', 'ph-meter', 'stand', 'clamp']).describe('The general category of the equipment.'),
   volume: z.number().optional().describe('The capacity of the equipment in milliliters (ml), if applicable.'),
   description: z.string().describe('A brief, one-sentence description of the equipment and its primary use.'),
 });
@@ -26,7 +26,7 @@ Your response MUST be only a valid JSON object. The JSON can either be an array 
 {
   id: string (lowercase, kebab-case identifier, e.g., "erlenmeyer-flask-250ml"),
   name: string (common name, e.g., "Erlenmeyer Flask (250ml)"),
-  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'other' | 'glassware' | 'vacuum' | 'safety' | 'thermometer' | 'ph-meter' | 'stand' | 'clamp',
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'heating' | 'measurement' | 'other' | 'glassware' | 'vacuum' | 'safety' | 'thermometer' | 'ph-meter' | 'stand' | 'clamp',
   volume?: number (capacity in ml, if applicable),
   description: string (a brief one-sentence description)
 }
