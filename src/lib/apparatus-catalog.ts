@@ -57,4 +57,28 @@ export const commonApparatus: Omit<Equipment, 'position' | 'isSelected' | 'size'
         type: 'funnel',
         description: 'Used to guide liquid or powder into a small opening.',
     },
+    {
+        id: 'thermometer',
+        name: 'Thermometer',
+        type: 'thermometer',
+        description: 'Measures temperature.',
+    },
+    {
+        id: 'ph-meter',
+        name: 'pH Meter',
+        type: 'ph-meter',
+        description: 'Measures the pH of a solution.',
+    },
+    {
+        id: 'stand',
+        name: 'Ring Stand',
+        type: 'stand',
+        description: 'Used to support other pieces of equipment and glassware.',
+    },
+    {
+        id: 'clamp',
+        name: 'Utility Clamp',
+        type: 'clamp',
+        description: 'Attaches to a ring stand to hold glassware, such as a burette or flask.',
+    },
 ];

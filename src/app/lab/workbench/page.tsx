@@ -36,7 +36,7 @@ export default function WorkbenchPage() {
     handleWorkbenchClick,
     handleEquipmentClick,
     handleMouseUpOnEquipment,
-    handleDetachFunnel,
+    handleDetach,
     handleCancelAttachment,
     handleRemoveConnection,
   } = useExperiment();
@@ -117,7 +117,7 @@ export default function WorkbenchPage() {
                 onWorkbenchClick={handleWorkbenchClick}
                 onEquipmentClick={handleEquipmentClick}
                 onMouseUpOnEquipment={handleMouseUpOnEquipment}
-                onDetachFunnel={handleDetachFunnel}
+                onDetach={handleDetach}
                 onRemoveConnection={handleRemoveConnection}
             />
             {selectedEquipment && selectedCount === 1 && !heldItem && !heldEquipment && !pouringState && !attachmentState && (

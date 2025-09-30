@@ -66,7 +66,7 @@ type ExperimentContextType = {
   handleWorkbenchClick: (e: React.MouseEvent) => void;
   handleEquipmentClick: (id: string, e: React.MouseEvent) => void;
   handleMouseUpOnEquipment: (id: string) => void;
-  handleDetachFunnel: (funnelId: string) => void;
+  handleDetach: (equipmentId: string) => void;
   handleInitiateAttachment: (sourceId: string) => void;
   handleCancelAttachment: () => void;
   handleRemoveConnection: (connectionId: string) => void;
@@ -126,6 +126,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         if(prediction.isExplosive) {
              toast({ title: 'DANGER!', description: 'The reaction is explosive!', variant: 'destructive' });
         }
+
+        // Update any attached instruments
+        container.attachments?.forEach(instrument => {
+            instrument.measuredPh = container.ph;
+            instrument.measuredTemp = 20 + (container.reactionEffects?.temperatureChange ?? 0);
+        });
 
         return { ...newState, equipment: [...newState.equipment] };
     });
@@ -197,7 +203,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         ph: 7,
         color: 'transparent',
         isReacting: false,
-        attachedFunnels: [],
+        attachments: [],
       }; 
       return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment], connections: prevState.connections };
     });
@@ -220,12 +226,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const handleRemoveSelectedEquipment = useCallback((id: string) => {
     setExperimentState(prevState => {
-      const equipmentToRemove = prevState.equipment.find(e => e.id === id);
+      const allEquipment = [...prevState.equipment, ...prevState.equipment.flatMap(e => e.attachments || [])];
+      const equipmentToRemove = allEquipment.find(e => e.id === id);
       if (!equipmentToRemove) return prevState;
 
       addLog(`Removed ${equipmentToRemove.name} from the workbench.`);
       
-      const newEquipment = prevState.equipment.filter(e => e.id !== id);
+      const newEquipment = prevState.equipment.filter(e => e.id !== id).map(e => ({
+          ...e,
+          attachments: e.attachments?.filter(att => att.id !== id)
+      }));
+
       // Also remove any connections associated with this equipment
       const newConnections = prevState.connections.filter(c => c.from !== id && c.to !== id);
       
@@ -267,79 +278,65 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleClearHeldItem();
   }, [handleClearHeldItem]);
 
-  const handleDropOnApparatus = useCallback((equipmentId: string) => {
+  const handleDropOnApparatus = useCallback((targetId: string) => {
     if (!handleSafetyCheck()) return;
 
-    let targetId = equipmentId;
-    const targetContainer = experimentState.equipment.find(e => e.id === equipmentId);
+    const targetContainer = experimentState.equipment.find(e => e.id === targetId);
     if (!targetContainer) return;
-    
-    // If dropping on a funnel, retarget to the container it's attached to
-    if(targetContainer?.type === 'funnel' && targetContainer.attachedTo) {
-        targetId = targetContainer.attachedTo;
-    }
-
-    const finalTarget = experimentState.equipment.find(e => e.id === targetId);
-    if (!finalTarget) return;
 
     if (heldItem) { // Pouring from inventory
-        if (finalTarget.attachedFunnels && finalTarget.attachedFunnels.length > 0 && finalTarget.id === targetId) {
-            toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${finalTarget.name}.`, variant: 'destructive'});
+        if (targetContainer.attachments?.some(att => att.type === 'funnel')) {
+            toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${targetContainer.name}.`, variant: 'destructive'});
             handleClearHeldItem();
             return;
         }
-        if (finalTarget.type === 'volumetric-flask' && (!finalTarget.attachedFunnels || finalTarget.attachedFunnels.length === 0)) {
+        if (targetContainer.type === 'volumetric-flask' && !targetContainer.attachments?.some(att => att.type === 'funnel')) {
             toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
             handleClearHeldItem();
             return;
         }
 
-        setPouringState({ sourceId: 'inventory', targetId: targetId });
-
-    } else if (heldEquipment) { // Attaching a funnel or instrument
-        if (heldEquipment.type === 'funnel') {
-            if (['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask'].includes(finalTarget.type)) {
+        setPouringState({ sourceId: 'inventory', targetId });
+    
+    } else if (heldEquipment) { // Attaching an item or initiating a pour
+        const attachmentTypes = ['funnel', 'thermometer', 'ph-meter', 'clamp'];
+        if (attachmentTypes.includes(heldEquipment.type)) {
+            // Logic for attaching items
+            const canAttachTo = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'stand'];
+            if (canAttachTo.includes(targetContainer.type)) {
                 setExperimentState(prevState => {
-                    const funnel = { ...heldEquipment!, isAttached: true, attachedTo: finalTarget.id, isSelected: false };
-                    const newEquipment = prevState.equipment.filter(e => e.id !== funnel.id); // remove from top level
+                    const attachment = { ...heldEquipment, attachedTo: targetId, isSelected: false };
+                    
+                    if (attachment.type === 'thermometer' || attachment.type === 'ph-meter') {
+                        attachment.attachmentPoint = {x: (targetContainer.size * 35), y: 0};
+                        attachment.measuredPh = targetContainer.ph;
+                        attachment.measuredTemp = 20 + (targetContainer.reactionEffects?.temperatureChange ?? 0);
+                        addLog(`Attached ${attachment.name} to ${targetContainer.name}.`);
+                    } else if (attachment.type === 'funnel') {
+                        attachment.attachmentPoint = {x: 0, y: -(targetContainer.size * 50)};
+                        addLog(`Attached ${attachment.name} to ${targetContainer.name}.`);
+                    }
+
+                    const newEquipment = prevState.equipment.filter(e => e.id !== attachment.id); // remove from top level
                     
                     const updatedEquipment = newEquipment.map(e => {
-                        if (e.id === finalTarget.id) {
-                            return { ...e, attachedFunnels: [...(e.attachedFunnels || []), funnel], isSelected: true };
+                        if (e.id === targetId) {
+                            return { ...e, attachments: [...(e.attachments || []), attachment], isSelected: true };
                         }
                         return {...e, isSelected: false};
                     });
                     
-                    addLog(`Attached ${funnel.name} to ${finalTarget.name}.`);
                     return { ...prevState, equipment: updatedEquipment };
                 });
                 handleClearHeldItem();
             }
-        } else if (['thermometer', 'ph-meter'].includes(heldEquipment.type)) {
-            if (finalTarget.solutions && finalTarget.solutions.length > 0) {
-                 setExperimentState(prevState => {
-                    const instrument = prevState.equipment.find(e => e.id === heldEquipment!.id);
-                    if (!instrument) return prevState;
-
-                    const readingTemp = finalTarget.reactionEffects?.temperatureChange ? 20 + finalTarget.reactionEffects.temperatureChange : 20;
-                    const readingPh = finalTarget.ph || 7;
-
-                    const updatedInstrument = { ...instrument, measuredTemp: readingTemp, measuredPh: readingPh };
-                    addLog(`Measured ${finalTarget.name} with ${instrument.name}. Temp: ${readingTemp.toFixed(1)}°C, pH: ${readingPh.toFixed(1)}`);
-                    
-                    return {
-                        ...prevState,
-                        equipment: prevState.equipment.map(e => e.id === heldEquipment!.id ? updatedInstrument : e),
-                    };
-                });
-            } else {
-                toast({ title: 'No Measurement', description: `${finalTarget.name} is empty.`, variant: 'destructive'});
-            }
-            handleClearHeldItem();
+        } else {
+            // Logic for initiating a pour from another container
+            handleInitiatePour(targetId);
         }
     }
-  }, [handleSafetyCheck, heldItem, heldEquipment, experimentState.equipment, toast, addLog, handleClearHeldItem]);
-  
+}, [handleSafetyCheck, heldItem, heldEquipment, experimentState.equipment, toast, addLog, handleClearHeldItem, handleInitiatePour]);
+
   const handlePour = useCallback(async (volume: number) => {
     if (!pouringState) return;
     const { sourceId, targetId } = pouringState;
@@ -445,14 +442,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const target = experimentState.equipment.find(e => e.id === targetId);
     if (!target) return;
     
-    // If pouring into a funnel, retarget to the container it's attached to
-    if(target.type === 'funnel' && target.attachedTo) {
-        finalTargetId = target.attachedTo;
-    } else if (target.attachedFunnels && target.attachedFunnels.length > 0 && target.type !== 'funnel') {
+    if (target.attachments?.some(att => att.type === 'funnel') && target.type !== 'funnel') {
         toast({ title: 'Invalid Action', description: `Please pour into the funnel attached to ${target.name}.`, variant: 'destructive'});
         handleClearHeldItem();
         return;
-    } else if (target.type === 'volumetric-flask' && (!target.attachedFunnels || target.attachedFunnels.length === 0)) {
+    } else if (target.type === 'volumetric-flask' && !target.attachments?.some(att => att.type === 'funnel')) {
         toast({ title: 'Invalid Action', description: 'Volumetric flasks have narrow necks. Please attach a funnel first.', variant: 'destructive'});
         handleClearHeldItem();
         return;
@@ -469,13 +463,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [pouringState, handleClearHeldItem]);
 
   const handlePickUpEquipment = useCallback((id: string) => {
-    const equipment = experimentState.equipment.find(e => e.id === id);
+    const allEquipment = [...experimentState.equipment, ...experimentState.equipment.flatMap(e => e.attachments || [])];
+    const equipment = allEquipment.find(e => e.id === id);
     if (!equipment || equipment.isReacting) return;
     
     handleClearHeldItem();
     handleSelectEquipment(id);
     
-    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube', 'funnel', 'thermometer', 'ph-meter'];
+    const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube', 'funnel', 'thermometer', 'ph-meter', 'clamp'];
     if ((equipment.solutions && equipment.solutions.length > 0) || validPouringEquipment.includes(equipment.type)) {
       setHeldEquipment(equipment);
     }
@@ -565,11 +560,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         }
     }, 200);
     
-    const allEquipment = experimentState.equipment.flatMap(eq => [eq, ...(eq.attachedFunnels || [])]);
+    const allEquipment = [...experimentState.equipment, ...experimentState.equipment.flatMap(e => e.attachments || [])];
     const equip = allEquipment.find(eq => eq.id === id);
 
     if (equip && e.button === 0) {
-        if (equip.isAttached) return; 
+        if (equip.attachedTo) return; 
 
         const workbenchEl = (e.target as HTMLElement).closest('.relative.w-full.flex-1');
         if (!workbenchEl) return;
@@ -625,37 +620,34 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
     
     if (heldEquipment && heldEquipment.id !== id) {
-        handleInitiatePour(id);
+        handleDropOnApparatus(id);
     } else if (heldEquipment && heldEquipment.id === id) {
         handleClearHeldItem();
     }
-  }, [heldEquipment, handleInitiatePour, handleClearHeldItem]);
+  }, [heldEquipment, handleDropOnApparatus, handleClearHeldItem]);
   
-  const handleDetachFunnel = useCallback((funnelId: string) => {
+  const handleDetach = useCallback((equipmentId: string) => {
       setExperimentState(prevState => {
           const newState = {...prevState};
-          let foundFunnel: Equipment | undefined;
+          let foundAttachment: Equipment | undefined;
           let parentContainer: Equipment | undefined;
 
-          // Find the funnel and its parent
           for (const container of newState.equipment) {
-              const funnel = container.attachedFunnels?.find(f => f.id === funnelId);
-              if (funnel) {
-                  foundFunnel = funnel;
+              const attachment = container.attachments?.find(att => att.id === equipmentId);
+              if (attachment) {
+                  foundAttachment = attachment;
                   parentContainer = container;
                   break;
               }
           }
 
-          if (foundFunnel && parentContainer) {
-              addLog(`Detached ${foundFunnel.name} from ${parentContainer.name}.`);
-              // Remove funnel from parent's attachedFunnels array
-              parentContainer.attachedFunnels = parentContainer.attachedFunnels?.filter(f => f.id !== funnelId);
+          if (foundAttachment && parentContainer) {
+              addLog(`Detached ${foundAttachment.name} from ${parentContainer.name}.`);
+              parentContainer.attachments = parentContainer.attachments?.filter(att => att.id !== equipmentId);
 
-              // Add funnel back to the main equipment list
-              const detachedFunnel = { ...foundFunnel, isAttached: false, attachedTo: undefined, position: {...parentContainer.position, y: parentContainer.position.y - 100}, isSelected: false };
-              newState.equipment.push(detachedFunnel);
-              // Select the parent container after detaching
+              const detachedItem = { ...foundAttachment, attachedTo: undefined, attachmentPoint: undefined, position: {...parentContainer.position, y: parentContainer.position.y - 100}, isSelected: false };
+              newState.equipment.push(detachedItem);
+              
               parentContainer.isSelected = true; 
           }
 
@@ -697,7 +689,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 const newX = e.clientX - rect.left - item.offset.x;
                 const newY = e.clientY - rect.top - item.offset.y;
                 
-                const allEquipment = experimentState.equipment.flatMap(eq => [eq, ...(eq.attachedFunnels || [])]);
+                const allEquipment = experimentState.equipment.flatMap(eq => [eq, ...(eq.attachments || [])]);
                 const currentPos = allEquipment.find(eq=>eq.id===item.id)?.position;
                 
                 if (!item.hasMoved && currentPos && (Math.abs(newX - currentPos.x) > 5 || Math.abs(newY - currentPos.y) > 5)) {
@@ -771,7 +763,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleWorkbenchClick,
     handleEquipmentClick,
     handleMouseUpOnEquipment,
-    handleDetachFunnel,
+    handleDetach,
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
@@ -807,7 +799,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleWorkbenchClick,
     handleEquipmentClick,
     handleMouseUpOnEquipment,
-    handleDetachFunnel,
+    handleDetach,
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,

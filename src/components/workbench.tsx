@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder, Link2Off } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder, Link2Off, Ungroup } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -244,6 +244,31 @@ const PhMeterIcon = ({ item, size }: { item: Equipment, size: number }) => {
     );
 };
 
+const StandIcon = ({ item, size }: { item: Equipment, size: number }) => {
+    const width = 8 * size;
+    const height = 12 * size;
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+             <svg viewBox="0 0 80 120" className="w-full h-full">
+                <rect x="0" y="110" width="80" height="10" rx="2" stroke="hsl(var(--foreground) / 0.4)" strokeWidth="1" fill="hsl(var(--foreground) / 0.2)" />
+                <rect x="10" y="0" width="8" height="110" rx="2" stroke="hsl(var(--foreground) / 0.4)" strokeWidth="1" fill="hsl(var(--foreground) / 0.2)" />
+            </svg>
+        </div>
+    );
+}
+
+const ClampIcon = ({ item, size }: { item: Equipment, size: number }) => {
+    const width = 4 * size;
+    const height = 2 * size;
+    return (
+        <div className="relative" style={{ height: `${height}rem`, width: `${width}rem`}}>
+             <svg viewBox="0 0 40 20" className="w-full h-full">
+                <path d="M0,10 H 20 M 25,5 V 15 L 40,15 L 40,5 L 25,5 Z" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
+            </svg>
+        </div>
+    );
+}
+
 
 const EquipmentDisplay = ({ 
   item, 
@@ -252,7 +277,7 @@ const EquipmentDisplay = ({
   onMouseUp,
   onRemove,
   onResize,
-  onDetachFunnel,
+  onDetach,
   isHoverTarget,
   isHeld,
 }: { 
@@ -262,7 +287,7 @@ const EquipmentDisplay = ({
   onMouseUp: (id: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
-  onDetachFunnel?: (id: string) => void,
+  onDetach?: (id: string) => void,
   isHoverTarget: boolean,
   isHeld: boolean,
 }) => {
@@ -319,17 +344,23 @@ const EquipmentDisplay = ({
                 return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
             case 'heating':
                 return <Flame className={iconClass} style={iconSizeStyle} />;
-            case 'measurement': // This could be a balance/scale
+            case 'measurement': 
                 return <Scale className={iconClass} style={iconSizeStyle} />;
             case 'microscopy':
                 return <Microscope className={iconClass} style={iconSizeStyle} />;
-            // Add other specific types here
+            case 'stand':
+                return <StandIcon item={item} size={size} />;
+            case 'clamp':
+                return <ClampIcon item={item} size={size} />;
             default:
-                // Fallback for other types like 'glassware', 'safety', etc.
                 return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
         }
     };
 
+    const attachmentStyle = item.attachmentPoint ? {
+        transform: `translate(${item.attachmentPoint.x}px, ${item.attachmentPoint.y}px)`
+    } : {};
+    
     return (
         <div 
             id={item.id}
@@ -344,31 +375,27 @@ const EquipmentDisplay = ({
             style={{ 
                 left: `${item.position.x}px`, 
                 top: `${item.position.y}px`,
-                transform: `translate(-50%, ${item.attachedFunnels && item.attachedFunnels.length > 0 ? '-60%' : '-50%'})`, // Adjust position when funnel is attached
+                transform: `translate(-50%, ${item.attachedTo ? '0' : '-50%'})`,
+                ...attachmentStyle,
                 touchAction: 'none',
             }}
             onMouseDown={(e) => onMouseDown(item.id, e)}
             onClick={(e) => onClick(item.id, e)}
             onMouseUp={() => onMouseUp(item.id)}
         >
-            {item.attachedFunnels?.map(funnel => (
-                 <div key={funnel.id} className="absolute top-0 transform -translate-y-full flex flex-col items-center">
-                    <EquipmentDisplay 
-                        item={funnel}
-                        onMouseDown={()=>{}}
-                        onClick={()=>{}}
-                        onMouseUp={()=>{}}
-                        onRemove={()=>{}}
-                        onResize={()=>{}}
-                        isHoverTarget={false}
-                        isHeld={false}
-                    />
-                    {onDetachFunnel && item.isSelected && (
-                         <Button size="icon" variant="ghost" className="h-6 w-6 -mt-4 z-30" onClick={(e) => {e.stopPropagation(); onDetachFunnel(funnel.id)}}>
-                            <Minus className="h-4 w-4" />
-                         </Button>
-                    )}
-                 </div>
+             {item.attachments?.map(att => (
+                 <EquipmentDisplay 
+                    key={att.id}
+                    item={att}
+                    onMouseDown={()=>{}}
+                    onClick={()=>{}}
+                    onMouseUp={()=>{}}
+                    onRemove={()=>{}}
+                    onResize={()=>{}}
+                    onDetach={onDetach}
+                    isHoverTarget={false}
+                    isHeld={false}
+                 />
             ))}
 
             {item.isSelected && !isHeld && !item.isReacting && (
@@ -384,6 +411,11 @@ const EquipmentDisplay = ({
                 >
                     <X className="h-4 w-4" />
                 </Button>
+                {onDetach && item.attachedTo && (
+                    <Button size="icon" variant="secondary" className="absolute -top-3 -left-3 h-6 w-6 rounded-full z-20" onClick={(e) => {e.stopPropagation(); onDetach(item.id)}}>
+                        <Ungroup className="h-4 w-4" />
+                    </Button>
+                )}
                 <div 
                     ref={resizeHandleRef}
                     className="absolute -bottom-2 -right-2 h-5 w-5 bg-primary rounded-full z-20 cursor-nwse-resize flex items-center justify-center"
@@ -418,7 +450,7 @@ export function Workbench({
     onWorkbenchClick,
     onEquipmentClick,
     onMouseUpOnEquipment,
-    onDetachFunnel,
+    onDetach,
     onRemoveConnection,
 }: { 
     state: ExperimentState, 
@@ -437,7 +469,7 @@ export function Workbench({
     onWorkbenchClick: (e: React.MouseEvent) => void;
     onEquipmentClick: (id: string, e: React.MouseEvent) => void;
     onMouseUpOnEquipment: (id: string) => void;
-    onDetachFunnel: (funnelId: string) => void;
+    onDetach: (equipmentId: string) => void;
     onRemoveConnection: (connectionId: string) => void;
 }) {
   const workbenchRef = useRef<HTMLDivElement>(null);
@@ -485,9 +517,10 @@ export function Workbench({
             if (!equipmentId) continue;
             
             const isSelf = equipmentId === heldEquipment?.id;
-            const isAttachedFunnel = state.equipment.some(eq => eq.attachedFunnels?.some(f => f.id === equipmentId));
+            const allAttachments = state.equipment.flatMap(eq => eq.attachments || []);
+            const isAttached = allAttachments.some(att => att.id === equipmentId);
             
-            if (!isSelf && !isAttachedFunnel) {
+            if (!isSelf && !isAttached) {
                  const rect = elem.getBoundingClientRect();
                  if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
                      targetId = equipmentId;
@@ -523,7 +556,7 @@ export function Workbench({
           {heldEquipment && !pouringState && (
             <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
               <Hand className="h-4 w-4"/>
-              Holding: {heldEquipment.name}. Drag over another apparatus and release to pour. (Press Esc to cancel)
+              Holding: {heldEquipment.name}. Drag over another apparatus and release to pour or attach. (Press Esc to cancel)
             </CardDescription>
           )}
           {attachmentState && (
@@ -588,9 +621,9 @@ export function Workbench({
                     );
                 })}
               </svg>
-              {state.equipment.filter(e => !e.isAttached).length > 0 ? (
+              {state.equipment.filter(e => !e.attachedTo).length > 0 ? (
                   <>
-                      {state.equipment.filter(e => !e.isAttached).map(item => (
+                      {state.equipment.filter(e => !e.attachedTo).map(item => (
                           <EquipmentDisplay 
                               key={item.id}
                               item={item} 
@@ -599,7 +632,7 @@ export function Workbench({
                               onMouseUp={onMouseUpOnEquipment}
                               onRemove={onRemoveSelectedEquipment}
                               onResize={onResizeEquipment}
-                              onDetachFunnel={onDetachFunnel}
+                              onDetach={onDetach}
                               isHoverTarget={(isHoldingSomething || !!attachmentState) && hoveredEquipmentId === item.id}
                               isHeld={heldEquipment?.id === item.id}
                           />
