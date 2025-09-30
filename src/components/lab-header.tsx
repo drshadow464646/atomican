@@ -152,7 +152,7 @@ export function LabHeader({
           <span className="hidden md:inline">Reset</span>
         </Button>
         <div className="flex items-center space-x-2">
-          <Label htmlFor="goggle-switch" className="sr-only sm:not-sr-only text-sm font-medium">
+          <Label htmlFor="goggle-switch" className="text-sm font-medium">
             Goggles
           </Label>
           <Switch
