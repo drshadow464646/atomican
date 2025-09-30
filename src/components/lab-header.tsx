@@ -4,14 +4,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Glasses, RefreshCw, Pen, Menu, Bot, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook } from 'lucide-react';
+import { Glasses, RefreshCw, Menu, LayoutGrid, Store, Library, Settings as SettingsIcon, Notebook } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Input } from './ui/input';
-import { useState } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 import {
   Sheet,
   SheetContent,
@@ -43,7 +40,7 @@ const menuItems = [
   },
   {
     href: '/lab/market',
-    label: 'Chemical Market',
+    label: 'Chemicals',
     icon: Store,
   },
   {
@@ -114,14 +111,12 @@ export function LabHeader({
 
   return (
     <header className="z-10 flex h-16 items-center justify-between border-t bg-card px-4 md:px-6">
-      <div className="flex items-center gap-4 md:gap-6">
+      <div className="flex items-center gap-4">
         {isMobile && <MobileNav />}
-        <Link href="/lab/workbench" className="flex items-center gap-2">
+        <Link href="/lab/workbench" className="hidden sm:flex items-center gap-2">
             <span className="text-2xl">⚛️</span>
             <h1 className="text-xl font-semibold sm:block">Atomican</h1>
         </Link>
-        <div className="hidden md:flex flex-1 min-w-0">
-        </div>
         <nav className="hidden md:flex items-center gap-2">
            <TooltipProvider>
             {menuItems.map(item => {
@@ -157,9 +152,8 @@ export function LabHeader({
           <span className="hidden md:inline">Reset</span>
         </Button>
         <div className="flex items-center space-x-2">
-          <Glasses className="h-5 w-5 text-muted-foreground" />
-          <Label htmlFor="goggle-switch" className="text-sm font-medium hidden sm:block">
-            Safety Goggles
+          <Label htmlFor="goggle-switch" className="sr-only sm:not-sr-only text-sm font-medium">
+            Goggles
           </Label>
           <Switch
             id="goggle-switch"

@@ -1,10 +1,9 @@
 
 'use client';
 
-import { Beaker, FlaskConical, Pipette, Droplets, Plus, PanelLeftClose, PanelRightClose, Package, Hand } from 'lucide-react';
+import { Beaker, FlaskConical, Pipette, Droplets, Package, Hand } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import type { Chemical, Equipment } from '@/lib/experiment';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -50,14 +49,14 @@ export function InventoryPanel({
     );
   }
   return (
-    <Card className="h-full flex flex-col border-0 rounded-none">
-      <CardHeader>
+    <Card className="h-full flex flex-col border-0 rounded-none bg-transparent sm:bg-card sm:border-border">
+      <CardHeader className="hidden sm:block">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Package className="h-5 w-5" />
           Inventory
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto pt-0">
+      <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto pt-0 sm:pt-0">
         <Accordion type="multiple" defaultValue={['equipment', 'chemicals']} className="w-full">
           <AccordionItem value="equipment">
             <AccordionTrigger className="text-base font-medium">Equipment ({equipment.length})</AccordionTrigger>

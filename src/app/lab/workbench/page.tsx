@@ -12,6 +12,9 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
 import { useExperiment } from '@/hooks/use-experiment';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Package, LayoutGrid } from 'lucide-react';
 
 export default function WorkbenchPage() {
   const { 
@@ -42,6 +45,7 @@ export default function WorkbenchPage() {
   } = useExperiment();
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,6 +73,57 @@ export default function WorkbenchPage() {
 
   const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
   const selectedCount = experimentState.equipment.filter(e => e.isSelected).length;
+  
+  const workbenchContent = (
+      <Workbench 
+          state={experimentState} 
+          onTitrate={handleTitrate}
+          onResizeEquipment={handleResizeEquipment}
+          onSelectEquipment={handleSelectEquipment}
+          onDropOnApparatus={handleDropOnApparatus}
+          onPour={handlePour}
+          onCancelPour={handleCancelPour}
+          heldItem={heldItem}
+          heldEquipment={heldEquipment}
+          onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
+          pouringState={pouringState}
+          attachmentState={attachmentState}
+          onDragStart={handleDragStart}
+          onWorkbenchClick={handleWorkbenchClick}
+          onEquipmentClick={handleEquipmentClick}
+          onMouseUpOnEquipment={handleMouseUpOnEquipment}
+          onDetach={handleDetach}
+          onRemoveConnection={handleRemoveConnection}
+      />
+  );
+  
+  const inventoryContent = (
+      <InventoryPanel
+        equipment={inventoryEquipment}
+        chemicals={inventoryChemicals}
+        onAddEquipment={handleAddEquipmentToWorkbench}
+        onPickUpChemical={handlePickUpChemical}
+        isCollapsed={isMobile ? false : !isInventoryPanelVisible}
+        heldItem={heldItem}
+      />
+  );
+
+  if (isMobile) {
+    return (
+        <Tabs defaultValue="workbench" className="w-full h-full flex flex-col p-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="workbench"><LayoutGrid className="mr-2 h-4 w-4"/> Workbench</TabsTrigger>
+            <TabsTrigger value="inventory"><Package className="mr-2 h-4 w-4"/> Inventory</TabsTrigger>
+          </TabsList>
+          <TabsContent value="workbench" className="flex-1 overflow-auto mt-2">
+            {workbenchContent}
+          </TabsContent>
+          <TabsContent value="inventory" className="flex-1 overflow-auto mt-2">
+            {inventoryContent}
+          </TabsContent>
+        </Tabs>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full bg-transparent text-foreground">
@@ -89,37 +144,11 @@ export default function WorkbenchPage() {
             !isInventoryPanelVisible && 'w-0 min-w-0'
           )}
         >
-          <InventoryPanel
-            equipment={inventoryEquipment}
-            chemicals={inventoryChemicals}
-            onAddEquipment={handleAddEquipmentToWorkbench}
-            onPickUpChemical={handlePickUpChemical}
-            isCollapsed={!isInventoryPanelVisible}
-            heldItem={heldItem}
-          />
+          {inventoryContent}
         </ResizablePanel>
         <ResizableHandle withHandle suppressHydrationWarning />
         <ResizablePanel defaultSize={75} className="relative">
-            <Workbench 
-                state={experimentState} 
-                onTitrate={handleTitrate}
-                onResizeEquipment={handleResizeEquipment}
-                onSelectEquipment={handleSelectEquipment}
-                onDropOnApparatus={handleDropOnApparatus}
-                onPour={handlePour}
-                onCancelPour={handleCancelPour}
-                heldItem={heldItem}
-                heldEquipment={heldEquipment}
-                onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
-                pouringState={pouringState}
-                attachmentState={attachmentState}
-                onDragStart={handleDragStart}
-                onWorkbenchClick={handleWorkbenchClick}
-                onEquipmentClick={handleEquipmentClick}
-                onMouseUpOnEquipment={handleMouseUpOnEquipment}
-                onDetach={handleDetach}
-                onRemoveConnection={handleRemoveConnection}
-            />
+            {workbenchContent}
             {selectedEquipment && selectedCount === 1 && !heldItem && !heldEquipment && !pouringState && !attachmentState && (
               <div className="absolute top-4 right-4 z-20 w-80">
                 <EquipmentDetailsPanel equipment={selectedEquipment} />
