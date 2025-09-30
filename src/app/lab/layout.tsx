@@ -27,7 +27,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, [heldItem, heldEquipment]);
 
   return (
-    <div className={cn("flex flex-col h-screen")}>
+    <div className="flex flex-col h-screen">
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
