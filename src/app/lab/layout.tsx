@@ -28,8 +28,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, [heldItem, heldEquipment]);
 
   return (
-    <div className={cn("flex flex-col h-screen fade-in")}>
-      <main className="flex-1 overflow-auto">
+    <div className={cn("flex flex-col h-screen overflow-hidden")}>
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
       <LabHeader
