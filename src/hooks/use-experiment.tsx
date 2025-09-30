@@ -152,6 +152,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     return true;
   }, [safetyGogglesOn, toast]);
   
+  const handleCancelAttachment = useCallback(() => {
+    setAttachmentState(null);
+  }, []);
+
   const handleSelectEquipment = useCallback((equipmentId: string | null, append: boolean = false) => {
     if (dragState.current?.hasMoved) return;
 
@@ -660,10 +664,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     addLog('Select another piece of equipment to connect to.');
   }, [addLog]);
   
-  const handleCancelAttachment = useCallback(() => {
-    setAttachmentState(null);
-  }, []);
-
   const handleRemoveConnection = useCallback((connectionId: string) => {
     setExperimentState(prevState => {
         const conn = prevState.connections.find(c => c.id === connectionId);
@@ -803,7 +803,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
-    handleInitiatePour, // Added to dependency array
   ]);
 
   return (
@@ -820,3 +819,5 @@ export function useExperiment() {
   }
   return context;
 }
+
+    
