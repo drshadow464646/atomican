@@ -3,11 +3,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder, Link2Off, Ungroup } from 'lucide-react';
+import { Beaker, Pipette, FlaskConical, TestTube, X, Hand, Scaling, Flame, Wind, Loader2, Microscope, Scale, Minus, Thermometer as ThermometerIcon, Cylinder, Link2Off, Ungroup, Library } from 'lucide-react';
 import type { Chemical, Equipment, ExperimentState } from '@/lib/experiment';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Slider } from './ui/slider';
+import { equipmentIcons } from '@/app/lab/apparatus/page';
 
 const ReactionEffects = ({ item }: { item: Equipment }) => {
     if (!item.reactionEffects) return null;
@@ -295,7 +296,6 @@ const EquipmentDisplay = ({
     const fillPercentage = item.volume ? (totalVolume / item.volume) * 100 : 0;
     
     const size = item.size ?? 1;
-    const iconClass = "text-muted-foreground/50 transition-all";
     
     const resizeHandleRef = useRef<HTMLDivElement>(null);
 
@@ -319,9 +319,22 @@ const EquipmentDisplay = ({
         document.addEventListener('mouseup', handleMouseUp);
     };
 
+    const renderIconWithContainer = (IconComponent: React.ElementType, props: any) => {
+        const iconSize = 8 * size;
+        return (
+            <div className="relative flex items-center justify-center" style={{ height: `${iconSize}rem`, width: `${iconSize}rem` }}>
+                <IconComponent
+                    className="text-primary/70"
+                    style={{ height: `${iconSize * 0.75}rem`, width: `${iconSize * 0.75}rem` }}
+                    strokeWidth={1.5}
+                    {...props}
+                />
+            </div>
+        );
+    };
+
     const renderContent = () => {
-        const iconSizeStyle = { height: `${6 * size}rem`, width: `${6 * size}rem` };
-        
+        // First, handle special cases with custom SVG rendering
         switch (item.type) {
             case 'beaker':
                 return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
@@ -337,23 +350,26 @@ const EquipmentDisplay = ({
                 return <FunctionalThermometerIcon item={item} size={size} />;
             case 'ph-meter':
                 return <PhMeterIcon item={item} size={size} />;
-            case 'burette':
-            case 'pipette':
-                return <Pipette className={iconClass} style={iconSizeStyle} />;
-            case 'funnel':
-                return <Wind className={iconClass} style={{ height: `${4 * size}rem`, width: `${4 * size}rem` }} />;
-            case 'heating':
-                return <Flame className={iconClass} style={iconSizeStyle} />;
-            case 'measurement': 
-                return <Scale className={iconClass} style={iconSizeStyle} />;
-            case 'microscopy':
-                return <Microscope className={iconClass} style={iconSizeStyle} />;
             case 'stand':
                 return <StandIcon item={item} size={size} />;
             case 'clamp':
                 return <ClampIcon item={item} size={size} />;
             default:
-                return <BeakerIcon item={item} fillPercentage={fillPercentage} size={size} />;
+                // Fallback to lucide icons for everything else
+                const iconMap: { [key: string]: React.ElementType } = {
+                    'burette': Pipette,
+                    'pipette': Pipette,
+                    'funnel': Wind,
+                    'heating': Flame,
+                    'measurement': Scale,
+                    'microscopy': Microscope,
+                    'other': Beaker,
+                    'glassware': Beaker,
+                    'safety': Beaker,
+                    'vacuum': Wind,
+                };
+                const Icon = iconMap[item.type] || Beaker;
+                return renderIconWithContainer(Icon, {});
         }
     };
 
