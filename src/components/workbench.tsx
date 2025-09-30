@@ -585,7 +585,7 @@ export function Workbench({
             >
               <div 
                 id="lab-slab" 
-                className="absolute inset-4 rounded-xl bg-background/70 shadow-2xl backdrop-blur-sm border border-black/10"
+                className="absolute inset-x-4 inset-y-8 rounded-xl bg-background/70 shadow-2xl backdrop-blur-sm border border-black/10"
                 style={{
                   backgroundSize: '40px 40px',
                   backgroundImage: 'repeating-linear-gradient(0deg, hsl(var(--border) / 0.5) 0, hsl(var(--border) / 0.5) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, hsl(var(--border) / 0.5) 0, hsl(var(--border) / 0.5) 1px, transparent 1px, transparent 40px)',
