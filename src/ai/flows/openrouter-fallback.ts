@@ -5,7 +5,7 @@
  */
 
 const PRIMARY_MODEL = "x-ai/grok-4-fast:free";
-const FALLBACK_MODEL = "google/gemma-3n-e2b-it:free";
+const FALLBACK_MODEL = "meta-llama/llama-3.1-8b-instruct:free";
 
 /**
  * Calls the OpenRouter API with a given prompt, attempting the primary model first
@@ -52,8 +52,8 @@ export async function callOpenRouterWithFallback(prompt: string): Promise<string
       return await attemptCall(FALLBACK_MODEL);
     } catch (fallbackError: any) {
       console.error(`Fallback model also failed: ${fallbackError.message}`);
-      // Re-throw the original error to be caught by the calling function
-      throw error; 
+      // Throw the error from the FALLBACK model to see why it failed.
+      throw fallbackError; 
     }
   }
 }
