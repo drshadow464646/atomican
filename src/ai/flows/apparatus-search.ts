@@ -10,7 +10,7 @@ import { callOpenRouterWithFallback } from './openrouter-fallback';
 const ApparatusSchema = z.object({
   id: z.string().describe('A unique lowercase, kebab-case identifier for the equipment, e.g., "erlenmeyer-flask-250ml".'),
   name: z.string().describe('The common name of the equipment, including size if applicable, e.g., "Erlenmeyer Flask (250ml)".'),
-  type: z.enum(['beaker', 'burette', 'pipette', 'graduated-cylinder', 'erlenmeyer-flask', 'volumetric-flask', 'test-tube', 'funnel', 'heating', 'measurement', 'other', 'glassware', 'vacuum', 'safety']).describe('The general category of the equipment.'),
+  type: z.enum(['beaker', 'burette', 'pipette', 'graduated-cylinder', 'erlenmeyer-flask', 'volumetric-flask', 'test-tube', 'funnel', 'heating', 'measurement', 'other', 'glassware', 'vacuum', 'safety', 'thermometer', 'ph-meter', 'stand', 'clamp']).describe('The general category of the equipment.'),
   volume: z.number().optional().describe('The capacity of the equipment in milliliters (ml), if applicable.'),
   description: z.string().describe('A brief, one-sentence description of the equipment and its primary use.'),
 });
@@ -22,14 +22,14 @@ export async function searchApparatus(query: string): Promise<ApparatusSearchOut
   const prompt = `You are a laboratory supply catalog AI. A user is searching for equipment with the query: "${query}".
 Generate a list of 5 to 10 relevant pieces of laboratory equipment.
 
-Your response MUST be only a valid JSON object that conforms to the following schema, where the top-level key is "equipment":
-{ "equipment": Array<{
+Your response MUST be only a valid JSON object. The JSON can either be an array of equipment items, or an object with a single key "equipment" which contains the array of items. The schema for each item in the array is:
+{
   id: string (lowercase, kebab-case identifier, e.g., "erlenmeyer-flask-250ml"),
   name: string (common name, e.g., "Erlenmeyer Flask (250ml)"),
-  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'other' | 'glassware' | 'vacuum' | 'safety',
+  type: 'beaker' | 'burette' | 'pipette' | 'graduated-cylinder' | 'erlenmeyer-flask' | 'volumetric-flask' | 'test-tube' | 'funnel' | 'heating' | 'measurement' | 'other' | 'glassware' | 'vacuum' | 'safety' | 'thermometer' | 'ph-meter' | 'stand' | 'clamp',
   volume?: number (capacity in ml, if applicable),
   description: string (a brief one-sentence description)
-}>}
+}
 
 Prioritize common and essential lab equipment. If the query is generic, list common items.
 Do not include any other text, markdown formatting, or explanations.`;
@@ -43,10 +43,12 @@ Do not include any other text, markdown formatting, or explanations.`;
     
     const parsedOutput = JSON.parse(textResponse);
     
-    const dataArray = parsedOutput.equipment || parsedOutput;
+    // The AI might return an array directly, or an object with an "equipment" key.
+    // This handles both cases safely.
+    const dataArray = Array.isArray(parsedOutput) ? parsedOutput : parsedOutput.equipment;
 
     if (!Array.isArray(dataArray)) {
-        throw new Error("AI returned a JSON object, but the 'equipment' array was not found inside it.");
+        throw new Error("AI returned a JSON object, but the expected array was not found inside it.");
     }
 
     const validation = ApparatusSearchOutputSchema.safeParse(dataArray);
@@ -55,7 +57,12 @@ Do not include any other text, markdown formatting, or explanations.`;
       throw new Error("AI returned data in an unexpected format.");
     }
 
-    return validation.data;
+    // Add types that might be missing from the AI response
+    return validation.data.map(item => ({
+        ...item,
+        type: item.type || 'other'
+    }));
+
 
   } catch (error: any) {
     console.error("Error searching apparatus:", error);
