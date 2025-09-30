@@ -127,10 +127,17 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         }
 
         // Update any attached instruments
-        container.attachments?.forEach(instrument => {
-            instrument.measuredPh = container.ph;
-            instrument.measuredTemp = 20 + (container.reactionEffects?.temperatureChange ?? 0);
-        });
+        if (container.attachments) {
+            container.attachments = container.attachments.map(instrument => {
+                if (instrument.type === 'thermometer') {
+                    return { ...instrument, measuredTemp: 20 + (container.reactionEffects?.temperatureChange ?? 0) };
+                }
+                if (instrument.type === 'ph-meter') {
+                    return { ...instrument, measuredPh: container.ph };
+                }
+                return instrument;
+            });
+        }
 
         return { ...newState, equipment: [...newState.equipment] };
     });
@@ -150,6 +157,16 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
     return true;
   }, [safetyGogglesOn, toast]);
+
+  const handleClearHeldItem = useCallback(() => {
+    setHeldItem(null);
+    setHeldEquipment(null);
+  }, []);
+
+  const handleCancelPour = useCallback(() => {
+    setPouringState(null);
+    handleClearHeldItem();
+  }, [handleClearHeldItem]);
 
   const handleCancelAttachment = useCallback(() => {
     setAttachmentState(null);
@@ -269,16 +286,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }));
   }, []);
 
-  const handleClearHeldItem = useCallback(() => {
-    setHeldItem(null);
-    setHeldEquipment(null);
-  }, []);
-  
-  const handleCancelPour = useCallback(() => {
-    setPouringState(null);
-    handleClearHeldItem();
-  }, [handleClearHeldItem]);
-
   const handleInitiatePour = useCallback((targetId: string) => {
     if (!heldEquipment || heldEquipment.id === targetId) return;
 
@@ -327,10 +334,13 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                 setExperimentState(prevState => {
                     const equipmentToAttach = { ...heldEquipment, attachedTo: targetId, isSelected: false };
                     
-                    if (equipmentToAttach.type === 'thermometer' || equipmentToAttach.type === 'ph-meter') {
+                    if (equipmentToAttach.type === 'thermometer') {
+                        equipmentToAttach.attachmentPoint = {x: (targetContainer.size * 35), y: 0};
+                        equipmentToAttach.measuredTemp = 20 + (targetContainer.reactionEffects?.temperatureChange ?? 0);
+                        addLog(`Attached ${equipmentToAttach.name} to ${targetContainer.name}.`);
+                    } else if (equipmentToAttach.type === 'ph-meter') {
                         equipmentToAttach.attachmentPoint = {x: (targetContainer.size * 35), y: 0};
                         equipmentToAttach.measuredPh = targetContainer.ph;
-                        equipmentToAttach.measuredTemp = 20 + (targetContainer.reactionEffects?.temperatureChange ?? 0);
                         addLog(`Attached ${equipmentToAttach.name} to ${targetContainer.name}.`);
                     } else if (equipmentToAttach.type === 'funnel') {
                         equipmentToAttach.attachmentPoint = {x: 0, y: -(targetContainer.size * 50)};
@@ -575,8 +585,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             },
             hasMoved: false,
         };
+        // If we start dragging, we should only be concerned with the dragged item.
+        // Deselect all others to prevent confusion.
+        handleSelectEquipment(id);
     }
-  }, [experimentState.equipment]);
+  }, [experimentState.equipment, handleSelectEquipment]);
   
   const handleWorkbenchClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).id === 'lab-slab') {
@@ -614,7 +627,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleSelectEquipment]);
 
   const handleMouseUpOnEquipment = useCallback((id: string) => {
-    if (!dragState.current?.hasMoved) {
+    if (dragState.current?.hasMoved) {
+        // Drag just ended on this item
+    } else {
         // This was a click, not a drag. If not holding anything, pick up the item.
         if (!heldItem && !heldEquipment) {
             handlePickUpEquipment(id);
@@ -693,7 +708,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                     const currentPos = allEquipment.find(eq => eq.id === item.id)?.position;
                     if (currentPos && (Math.abs(newX - currentPos.x) > 5 || Math.abs(newY - currentPos.y) > 5)) {
                         item.hasMoved = true;
-                        handleClearHeldItem(); // Ensure we are not in a 'held' state while dragging
                     }
                 }
 
@@ -705,11 +719,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     };
 
     const handleMouseUp = () => {
-        if (dragState.current?.hasMoved) {
-            // After dragging, the item should be selected.
-            handleSelectEquipment(dragState.current.id);
-        }
-        // Always reset drag state on mouse up.
         dragState.current = null;
     };
 
@@ -719,7 +728,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleMoveEquipment, experimentState.equipment, handleSelectEquipment, heldEquipment, handleClearHeldItem]);
+  }, [handleMoveEquipment, experimentState.equipment, heldEquipment]);
   
 
   const value = useMemo(() => ({
