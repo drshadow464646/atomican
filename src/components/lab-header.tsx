@@ -51,11 +51,6 @@ const menuItems = [
     label: 'Apparatus',
     icon: Library,
   },
-    {
-    href: '/lab/model-test',
-    label: 'Model Test',
-    icon: TestTube,
-  },
   {
     href: '/lab/settings',
     label: 'Settings',
