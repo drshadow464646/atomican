@@ -1,17 +1,20 @@
 
 'use server';
 /**
- * @fileOverview A helper function to call the OpenRouter API with a fallback API key.
+ * @fileOverview A helper function to call the OpenRouter API with a fallback model and API key.
  */
 
-const MODEL_TO_USE = "x-ai/grok-4-fast:free";
+const MODELS_TO_TRY = [
+  "qwen/qwen3-coder:free",
+  "meituan/longcat-flash-chat:free",
+];
 
 /**
- * Calls the OpenRouter API with a given prompt, cycling through available API keys
+ * Calls the OpenRouter API with a given prompt, cycling through available models and API keys
  * if rate-limiting or other errors occur.
  * @param prompt The prompt to send to the model.
  * @returns The string content of the AI's response.
- * @throws An error if all API key attempts fail.
+ * @throws An error if all attempts fail.
  */
 export async function callOpenRouterWithFallback(prompt: string): Promise<string | null> {
     
@@ -26,10 +29,15 @@ export async function callOpenRouterWithFallback(prompt: string): Promise<string
     
   let lastError: any = null;
 
-  for (let i = 0; i < apiKeys.length; i++) {
-    const apiKey = apiKeys[i];
+  // We will try each model with the corresponding key.
+  // If there are more models than keys, the last key will be reused.
+  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+    const model = MODELS_TO_TRY[i];
+    // Use the corresponding key, or the last available key if we run out.
+    const apiKey = apiKeys[Math.min(i, apiKeys.length - 1)];
+
     try {
-      console.log(`Attempting API call with key #${i + 1}`);
+      console.log(`Attempting API call with model: ${model} and key #${Math.min(i, apiKeys.length - 1) + 1}`);
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -37,7 +45,7 @@ export async function callOpenRouterWithFallback(prompt: string): Promise<string
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: MODEL_TO_USE,
+          model: model,
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" },
         }),
@@ -45,7 +53,6 @@ export async function callOpenRouterWithFallback(prompt: string): Promise<string
 
       if (!response.ok) {
         const errorText = await response.text();
-        // This will be caught by the catch block below and trigger a retry with the next key.
         throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
 
@@ -55,12 +62,12 @@ export async function callOpenRouterWithFallback(prompt: string): Promise<string
 
     } catch (error) {
       lastError = error;
-      console.warn(`API key #${i + 1} failed: ${error.message}.`);
-      // The loop will continue to the next key.
+      console.warn(`Attempt with model ${model} failed: ${error.message}.`);
+      // The loop will continue to the next model/key combination.
     }
   }
   
-  // If the loop completes without a successful return, it means all keys failed.
-  console.error("All API key attempts failed.");
+  // If the loop completes without a successful return, it means all attempts failed.
+  console.error("All API model/key attempts failed.");
   throw lastError; // Throw the last recorded error.
 }
