@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -81,7 +82,7 @@ const BeakerIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPerce
         <path d="M10,10 H 90" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="3" fill="none" />
       </svg>
       {isReacting && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-transparent">
             <Loader2 className="w-1/2 h-1/2 text-primary animate-spin" />
         </div>
       )}
@@ -106,7 +107,7 @@ const ErlenmeyerFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, 
                 )}
                 <path d="M35,10 H 65 M30,20 H 70 M30,20 L10,115 A 5,5 0 0 0 15,120 H 85 A 5,5 0 0 0 90,115 L 70,20" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
             </svg>
-            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-transparent"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
         </div>
     );
 };
@@ -130,7 +131,7 @@ const GraduatedCylinderIcon = ({ item, fillPercentage, size }: { item: Equipment
                     <line key={i} x1="10" y1={30 + i * 20} x2="20" y2={30 + i * 20} stroke="hsl(var(--foreground) / 0.2)" strokeWidth="1.5" />
                 ))}
             </svg>
-            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-transparent"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
         </div>
     );
 };
@@ -177,7 +178,7 @@ const VolumetricFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, 
                 <path d="M42,60 L 42,10 H 58 L 58,60" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
                 <line x1="35" y1="40" x2="65" y2="40" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="1.5" />
             </svg>
-            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+            {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-transparent"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
         </div>
     );
 };
@@ -198,7 +199,7 @@ const TestTubeIcon = ({ item, fillPercentage, size }: { item: Equipment, fillPer
                 )}
                 <path d="M5,10 L 5,105 A 15,15 0 1 0 35,105 L 35,10" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
             </svg>
-             {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
+             {isReacting && <div className="absolute inset-0 flex items-center justify-center bg-transparent"><Loader2 className="w-1/2 h-1/2 text-primary animate-spin" /></div>}
         </div>
     );
 };

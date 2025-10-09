@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -323,99 +324,82 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
 }, [handleSafetyCheck, inventoryContext, heldEquipment, experimentState.equipment, toast, addLog, handleInitiatePour]);
 
-  const handlePour = useCallback(async (volume: number) => {
+  const handlePour = useCallback((volume: number) => {
     if (!pouringState) return;
     const { sourceId, targetId } = pouringState;
 
-    const target = experimentState.equipment.find(e => e.id === targetId);
-    if (!target) {
-        setPouringState(null);
-        return;
-    }
+    // --- Immediate UI Update ---
+    let pouredSolutions: Solution[] = [];
+    setExperimentState(prevState => {
+      const newState = { ...prevState };
+      const target = newState.equipment.find(e => e.id === targetId);
+      if (!target) return prevState;
 
-    const currentTargetVolume = target.solutions.reduce((acc, s) => acc + s.volume, 0);
-    const availableCapacity = (target.volume || Infinity) - currentTargetVolume;
-    const pourVolumeClamped = Math.min(volume, availableCapacity);
+      const currentTargetVolume = target.solutions.reduce((acc, s) => acc + s.volume, 0);
+      const availableCapacity = (target.volume || Infinity) - currentTargetVolume;
+      const pourVolumeClamped = Math.min(volume, availableCapacity);
 
-    if (pourVolumeClamped <= 0) {
+      if (pourVolumeClamped <= 0) {
         toast({ title: 'Container Full', description: `${target.name} cannot hold any more liquid.`, variant: 'destructive' });
-        setPouringState(null);
-        inventoryContext.handleClearHeldItem();
-        return;
-    }
+        return prevState;
+      }
 
-    let reactants: Solution[] = [...(target.solutions || [])];
-    let sourceVolumeToAdjust = 0;
-    
-    if (sourceId === 'inventory') {
-        if (!inventoryContext.heldItem) return;
+      if (sourceId === 'inventory') {
+        if (!inventoryContext.heldItem) return prevState;
         addLog(`Adding ${pourVolumeClamped.toFixed(1)}ml of ${inventoryContext.heldItem.name} to ${target.name}.`);
-        reactants.push({ chemical: inventoryContext.heldItem, volume: pourVolumeClamped });
-    } else {
-        const source = experimentState.equipment.find(e => e.id === sourceId);
-        if (!source || !source.solutions) return;
-
+        pouredSolutions = [{ chemical: inventoryContext.heldItem, volume: pourVolumeClamped }];
+      } else {
+        const source = newState.equipment.find(e => e.id === sourceId);
+        if (!source || !source.solutions) return prevState;
+        
         const sourceVolume = source.solutions.reduce((t, s) => t + s.volume, 0);
         if (sourceVolume <= 0) {
-             toast({ title: 'Cannot Pour', description: `${source.name} is empty.`, variant: 'destructive' });
-             setPouringState(null);
-             return;
+          toast({ title: 'Cannot Pour', description: `${source.name} is empty.`, variant: 'destructive' });
+          return prevState;
         }
 
-        sourceVolumeToAdjust = Math.min(pourVolumeClamped, sourceVolume);
+        const sourceVolumeToAdjust = Math.min(pourVolumeClamped, sourceVolume);
         const pourFraction = sourceVolumeToAdjust / sourceVolume;
         addLog(`Pouring ${sourceVolumeToAdjust.toFixed(1)}ml from ${source.name} to ${target.name}.`);
+
+        pouredSolutions = source.solutions.map(sol => ({ ...sol, volume: sol.volume * pourFraction }));
         
-        for (const sol of source.solutions) {
-            reactants.push({ ...sol, volume: sol.volume * pourFraction });
+        // Update source immediately
+        source.solutions = source.solutions.map(s => ({
+            ...s,
+            volume: s.volume * (1 - pourFraction)
+        })).filter(s => s.volume > 0.01);
+        
+        if (source.solutions.length === 0) {
+            source.color = 'transparent';
+            source.ph = 7;
         }
-    }
+      }
+
+      // Update target immediately with poured liquids
+      for (const pouredSol of pouredSolutions) {
+        const existingSol = target.solutions.find(s => s.chemical.id === pouredSol.chemical.id);
+        if (existingSol) {
+          existingSol.volume += pouredSol.volume;
+        } else {
+          target.solutions.push(pouredSol);
+        }
+      }
+
+      target.isReacting = true; // Set analyzing state
+      return { ...newState, equipment: [...newState.equipment] };
+    });
     
+    // --- Cleanup and Background AI Call ---
+    const allReactants = [...(experimentState.equipment.find(e => e.id === targetId)?.solutions || []), ...pouredSolutions];
     setPouringState(null);
     inventoryContext.handleClearHeldItem();
     addLog('Analyzing reaction...');
     
-    setExperimentState(prevState => ({
-      ...prevState,
-      equipment: prevState.equipment.map(e => e.id === targetId ? {...e, isReacting: true} : e),
-    }));
-
-    const prediction = await getReactionPrediction(reactants);
-    
-    applyReactionPrediction(targetId, prediction);
-
-    if (sourceId !== 'inventory') {
-        setExperimentState(prevState => {
-            const newState = { ...prevState };
-            const sourceToUpdate = newState.equipment.find(e => e.id === sourceId);
-            if (!sourceToUpdate || !sourceToUpdate.solutions) return prevState;
-
-            const originalSourceVolume = sourceToUpdate.solutions.reduce((t, s) => t + s.volume, 0);
-            if (originalSourceVolume > 0) {
-                const fractionToRemove = sourceVolumeToAdjust / originalSourceVolume;
-                sourceToUpdate.solutions = sourceToUpdate.solutions.map(s => ({
-                    ...s,
-                    volume: s.volume * (1 - fractionToRemove)
-                })).filter(s => s.volume > 0.01);
-            }
-            
-            const remainingSourceVolume = sourceToUpdate.solutions.reduce((t, s) => t + s.volume, 0);
-            if (remainingSourceVolume > 0.01) {
-              // The AI should predict the new state of the source, but for now we simplify
-              sourceToUpdate.ph = 7; // simplified
-              sourceToUpdate.color = sourceToUpdate.solutions.length > 0 ? sourceToUpdate.color : 'transparent'; // simplified
-            } else {
-              sourceToUpdate.ph = 7;
-              sourceToUpdate.color = 'transparent';
-              sourceToUpdate.solutions = [];
-            }
-
-            return {
-                ...newState,
-                equipment: newState.equipment.map(e => e.id === sourceId ? { ...sourceToUpdate } : e),
-            };
-        });
-    }
+    // Run AI prediction in the background
+    getReactionPrediction(allReactants).then(prediction => {
+      applyReactionPrediction(targetId, prediction);
+    });
 
   }, [addLog, pouringState, experimentState.equipment, inventoryContext, toast]);
   
