@@ -4,8 +4,7 @@
 import { LabHeader } from '@/components/lab-header';
 import { SettingsForm } from '@/components/settings-form';
 import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
-import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { 
@@ -27,7 +26,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, [heldItem, heldEquipment]);
 
   return (
-    <div className="flex flex-col h-screen pb-[env(safe-area-inset-bottom)]">
+    <div className="h-screen flex flex-col pb-[env(safe-area-inset-bottom)]">
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
@@ -43,21 +42,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-
 export default function LabLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return null;
-  }
-
   return (
     <ExperimentProvider>
       <LayoutContent>{children}</LayoutContent>

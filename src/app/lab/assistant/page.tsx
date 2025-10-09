@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,11 +18,6 @@ export default function ProcedurePage() {
   const [isGenerating, startGenerationTransition] = useTransition();
   const { labLogs, handleAddCustomLog } = useExperiment();
   const [customNote, setCustomNote] = useState('');
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleGenerate = () => {
     if (!goal) return;
@@ -39,13 +34,8 @@ export default function ProcedurePage() {
     }
   };
 
-  const hasError = procedure?.title === 'AI Feature Disabled' || procedure?.title === 'Error Generating Procedure';
+  const hasError = procedure?.title === 'Error Generating Procedure';
   
-  if (!isClient) {
-    // Render a loading state or null on the server to avoid hydration mismatch
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -66,9 +56,8 @@ export default function ProcedurePage() {
                 placeholder="e.g., 'Titrate a strong acid with a strong base'"
                 className="flex-1"
                 onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                suppressHydrationWarning
               />
-              <Button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto" suppressHydrationWarning>
+              <Button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto">
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

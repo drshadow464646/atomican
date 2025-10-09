@@ -12,16 +12,19 @@ type TestStatus = 'idle' | 'loading' | 'success' | 'error';
 export default function ModelTestPage() {
   const [modelList, setModelList] = useState<Model[]>([]);
   const [listStatus, setListStatus] = useState<TestStatus>('idle');
-  const [grokFound, setGrokFound] = useState<boolean | null>(null);
+  const [primaryModelFound, setPrimaryModelFound] = useState<boolean | null>(null);
+  const [secondaryModelFound, setSecondaryModelFound] = useState<boolean | null>(null);
 
   const [postStatus, setPostStatus] = useState<TestStatus>('idle');
   const [postResponse, setPostResponse] = useState<TestResult | null>(null);
 
-  const modelIdToTest = 'x-ai/grok-4-fast:free';
+  const primaryModelId = "qwen/qwen3-coder:free";
+  const secondaryModelId = "meituan/longcat-flash-chat:free";
 
   const fetchModels = async () => {
     setListStatus('loading');
-    setGrokFound(null);
+    setPrimaryModelFound(null);
+    setSecondaryModelFound(null);
     try {
       const result = await fetchOpenRouterModels();
       if(result.error) {
@@ -31,8 +34,8 @@ export default function ModelTestPage() {
       const models = result.data || [];
       setModelList(models);
 
-      const found = models.some(model => model.id === modelIdToTest);
-      setGrokFound(found);
+      setPrimaryModelFound(models.some(model => model.id === primaryModelId));
+      setSecondaryModelFound(models.some(model => model.id === secondaryModelId));
       setListStatus('success');
     } catch (error: any) {
       setListStatus('error');
@@ -60,6 +63,7 @@ export default function ModelTestPage() {
 
   useEffect(() => {
     fetchModels();
+    testPost();
   }, []);
 
   const StatusIcon = ({ status }: { status: TestStatus }) => {
@@ -69,13 +73,25 @@ export default function ModelTestPage() {
     return <HelpCircle className="h-5 w-5 text-muted-foreground" />;
   };
 
+  const ModelStatusCheck = ({ found, name }: { found: boolean | null, name: string }) => {
+    if (found === null) return null;
+    return (
+        <div className="mt-4 flex items-center space-x-3 p-4 bg-muted/50 rounded-md">
+            {found ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-destructive" />}
+            <p>
+                Model <strong>{name}</strong> was {found ? '' : 'not'} found in the list.
+            </p>
+        </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-transparent text-foreground p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-glow">OpenRouter Model Test</h1>
           <p className="text-muted-foreground mt-2 text-md md:text-lg">
-            Diagnosing model availability for your API key.
+            Diagnosing model availability for your API key. Tests run automatically on page load.
           </p>
         </header>
 
@@ -96,16 +112,14 @@ export default function ModelTestPage() {
                 {listStatus === 'idle' && <p>Test not started.</p>}
               </div>
                <Button onClick={fetchModels} disabled={listStatus === 'loading'} variant="outline">
-                Re-run
+                {listStatus === 'loading' ? 'Checking...' : 'Check Again'}
               </Button>
             </div>
             {listStatus === 'success' && (
-              <div className="mt-4 flex items-center space-x-3 p-4 bg-muted/50 rounded-md">
-                {grokFound ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-destructive" />}
-                <p>
-                  Model <strong>{modelIdToTest}</strong> was {grokFound ? '' : 'not'} found in the list.
-                </p>
-              </div>
+              <>
+                <ModelStatusCheck found={primaryModelFound} name={primaryModelId} />
+                <ModelStatusCheck found={secondaryModelFound} name={secondaryModelId} />
+              </>
             )}
           </CardContent>
         </Card>
@@ -114,7 +128,7 @@ export default function ModelTestPage() {
           <CardHeader>
             <CardTitle>2. Test Chat Completions (POST)</CardTitle>
             <CardDescription>
-              This attempts to send a simple "Hello" message to the model via a secure server action.
+              This attempts to send a simple &quot;Hello&quot; message to the model via a secure server action.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -127,7 +141,7 @@ export default function ModelTestPage() {
                 {postStatus === 'idle' && <p>Ready to test.</p>}
               </div>
                <Button onClick={testPost} disabled={postStatus === 'loading'}>
-                Run Test
+                {postStatus === 'loading' ? 'Testing...' : 'Test Again'}
               </Button>
             </div>
             {postResponse && (
