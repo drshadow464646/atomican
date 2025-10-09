@@ -36,15 +36,7 @@ type AttachmentState = {
 
 type ExperimentContextType = {
   experimentState: ExperimentState;
-  labLogs: LabLog[]; // Kept for notebook on workbench page
-  inventoryChemicals: Chemical[];
-  inventoryEquipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[];
-  safetyGogglesOn: boolean;
-  heldItem: Chemical | null;
-  heldEquipment: Equipment | null;
-  pouringState: { sourceId: string; targetId: string; } | null;
-  attachmentState: AttachmentState;
-  setSafetyGogglesOn: (on: boolean) => void;
+  handleResetWorkbench: () => void;
   handleAddEquipmentToWorkbench: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   handleRemoveSelectedEquipment: (id: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
@@ -56,7 +48,6 @@ type ExperimentContextType = {
   handleInitiatePour: (targetId: string) => void;
   handleCancelPour: () => void;
   handleTitrate: (volume: number) => void;
-  handlePickUpChemical: (chemical: Chemical) => void;
   handleClearHeldItem: () => void;
   dragState: React.RefObject<DragState>;
   handleDragStart: (id: string, e: React.MouseEvent) => void;
@@ -67,13 +58,25 @@ type ExperimentContextType = {
   handleInitiateAttachment: (sourceId: string) => void;
   handleCancelAttachment: () => void;
   handleRemoveConnection: (connectionId: string) => void;
+  
+  // From InventoryContext
+  labLogs: LabLog[];
+  inventoryChemicals: Chemical[];
+  inventoryEquipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[];
+  safetyGogglesOn: boolean;
+  heldItem: Chemical | null;
+  heldEquipment: Equipment | null;
+  pouringState: { sourceId: string; targetId: string; } | null;
+  attachmentState: AttachmentState;
+  setSafetyGogglesOn: (on: boolean) => void;
+  handlePickUpChemical: (chemical: Chemical) => void;
 };
 
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
 
 export function ExperimentProvider({ children }: { children: React.ReactNode }) {
-  // We get the global state from the lightweight InventoryProvider
   const inventoryContext = useInventory();
+  const { addLog } = inventoryContext;
 
   const [experimentState, setExperimentState] = useState<ExperimentState>(initialExperimentState);
   const [heldEquipment, setHeldEquipment] = useState<Equipment | null>(null);
@@ -83,20 +86,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   
   const dragState = useRef<DragState>(null);
 
-  const addLog = inventoryContext.handleAddCustomLog;
-
-  useEffect(() => {
-    const handleReset = () => {
-        setExperimentState(initialExperimentState);
-        setHeldEquipment(null);
-        setPouringState(null);
-        setAttachmentState(null);
-        addLog('Workbench has been cleared.');
-    };
-    window.addEventListener('reset-experiment', handleReset);
-    return () => {
-        window.removeEventListener('reset-experiment', handleReset);
-    };
+  const handleResetWorkbench = useCallback(() => {
+    setExperimentState(initialExperimentState);
+    setHeldEquipment(null);
+    setPouringState(null);
+    setAttachmentState(null);
+    addLog('Workbench has been cleared.');
   }, [addLog]);
   
   const applyReactionPrediction = (containerId: string, prediction: ReactionPrediction) => {
@@ -653,9 +648,36 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     };
   }, [handleMoveEquipment, experimentState.equipment, heldEquipment]);
   
+  const handleClearHeldItem = useCallback(() => {
+    inventoryContext.handleClearHeldItem();
+    setHeldEquipment(null);
+  }, [inventoryContext]);
 
   const value = useMemo(() => ({
     experimentState,
+    handleResetWorkbench,
+    handleAddEquipmentToWorkbench,
+    handleRemoveSelectedEquipment,
+    handleResizeEquipment,
+    handleMoveEquipment,
+    handleSelectEquipment,
+    handleDropOnApparatus,
+    handlePickUpEquipment,
+    handlePour,
+    handleInitiatePour,
+    handleCancelPour,
+    handleTitrate,
+    handleClearHeldItem,
+    dragState,
+    handleDragStart,
+    handleWorkbenchClick,
+    handleEquipmentClick,
+    handleMouseUpOnEquipment,
+    handleDetach,
+    handleInitiateAttachment,
+    handleCancelAttachment,
+    handleRemoveConnection,
+    // From inventory context
     labLogs: inventoryContext.labLogs,
     inventoryChemicals: inventoryContext.inventoryChemicals,
     inventoryEquipment: inventoryContext.inventoryEquipment,
@@ -665,6 +687,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     pouringState,
     attachmentState,
     setSafetyGogglesOn: inventoryContext.setSafetyGogglesOn,
+    handlePickUpChemical: inventoryContext.handlePickUpChemical,
+  }), [
+    experimentState,
+    handleResetWorkbench,
     handleAddEquipmentToWorkbench,
     handleRemoveSelectedEquipment,
     handleResizeEquipment,
@@ -676,11 +702,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleInitiatePour,
     handleCancelPour,
     handleTitrate,
-    handlePickUpChemical: inventoryContext.handlePickUpChemical,
-    handleClearHeldItem: () => {
-        inventoryContext.handleClearHeldItem();
-        setHeldEquipment(null);
-    },
+    handleClearHeldItem,
     dragState,
     handleDragStart,
     handleWorkbenchClick,
@@ -690,32 +712,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
-  }), [
-    experimentState, 
     inventoryContext,
     heldEquipment,
     pouringState,
     attachmentState,
-    handleAddEquipmentToWorkbench,
-    handleRemoveSelectedEquipment,
-    handleResizeEquipment,
-    handleMoveEquipment,
-    handleSelectEquipment,
-    handleDropOnApparatus,
-    handlePickUpEquipment,
-    handlePour,
-    handleInitiatePour,
-    handleCancelPour,
-    handleTitrate,
-    dragState,
-    handleDragStart,
-    handleWorkbenchClick,
-    handleEquipmentClick,
-    handleMouseUpOnEquipment,
-    handleDetach,
-    handleInitiateAttachment,
-    handleCancelAttachment,
-    handleRemoveConnection,
   ]);
 
   return (

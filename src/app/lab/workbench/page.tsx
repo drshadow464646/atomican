@@ -20,9 +20,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 // The actual page content is now in its own component
 function WorkbenchPageContent() {
   const { 
-    experimentState, 
+    experimentState,
+    // Data from inventory context
     inventoryChemicals,
     inventoryEquipment,
+    // Actions from experiment context
     handleAddEquipmentToWorkbench,
     handleDropOnApparatus,
     handleTitrate,
@@ -45,6 +47,7 @@ function WorkbenchPageContent() {
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
+    handleResetWorkbench,
   } = useExperiment();
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
@@ -73,11 +76,15 @@ function WorkbenchPageContent() {
         selectedIds.forEach(id => handleRemoveSelectedEquipment(id));
       }
     };
+
+    const resetListener = () => handleResetWorkbench();
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('reset-workbench', resetListener);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('reset-workbench', resetListener);
     };
-  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleCancelPour, handleCancelAttachment, experimentState.equipment, handleRemoveSelectedEquipment]);
+  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleCancelPour, handleCancelAttachment, experimentState.equipment, handleRemoveSelectedEquipment, handleResetWorkbench]);
 
   const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
   const selectedCount = experimentState.equipment.filter(e => e.isSelected).length;

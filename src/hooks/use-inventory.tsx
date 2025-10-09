@@ -16,10 +16,10 @@ type InventoryContextType = {
     labLogs: LabLog[];
     safetyGogglesOn: boolean;
     heldItem: Chemical | null;
-    heldEquipment: null; // heldEquipment is not managed here
     setSafetyGogglesOn: (on: boolean) => void;
     handleAddChemicalToInventory: (chemical: Chemical) => void;
     handleAddEquipmentToInventory: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
+    addLog: (text: string, isCustom?: boolean) => void;
     handleAddCustomLog: (note: string) => void;
     handleResetExperiment: () => void;
     handlePickUpChemical: (chemical: Chemical) => void;
@@ -72,8 +72,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }, [addLog]);
 
     const handleResetExperiment = useCallback(() => {
-        // This is now a global reset. It clears inventories and logs.
-        // The workbench will have its own reset logic within its provider.
         setInventoryChemicals([]);
         setInventoryEquipment([]);
         setLabLogs([]);
@@ -82,8 +80,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('atomican_inventory_equipment');
         localStorage.removeItem('atomican_lab_logs');
         addLog('Global inventory and logs have been reset.');
-        // We also need to signal the experiment context to reset if it's mounted
-        window.dispatchEvent(new Event('reset-experiment'));
+        window.dispatchEvent(new Event('reset-workbench'));
     }, [addLog]);
 
     const handlePickUpChemical = useCallback((chemical: Chemical) => {
@@ -118,10 +115,10 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         labLogs,
         safetyGogglesOn,
         heldItem,
-        heldEquipment: null,
         setSafetyGogglesOn,
         handleAddChemicalToInventory,
         handleAddEquipmentToInventory,
+        addLog,
         handleAddCustomLog,
         handleResetExperiment,
         handlePickUpChemical,
@@ -132,6 +129,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         labLogs,
         safetyGogglesOn,
         heldItem,
+        addLog,
         handleAddChemicalToInventory,
         handleAddEquipmentToInventory,
         handleAddCustomLog,
