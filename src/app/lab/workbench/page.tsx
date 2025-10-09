@@ -15,6 +15,7 @@ import { useExperiment } from '@/hooks/use-experiment';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, LayoutGrid } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function WorkbenchPage() {
   const { 
@@ -46,6 +47,11 @@ export default function WorkbenchPage() {
 
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
   const isMobile = useIsMobile();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,6 +131,16 @@ export default function WorkbenchPage() {
     )
   }
 
+  if (!isClient) {
+    return (
+        <div className="flex h-full bg-transparent text-foreground">
+            <Skeleton className="w-[25%] h-full" />
+            <div className="w-px bg-border" />
+            <Skeleton className="w-[75%] h-full" />
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-transparent text-foreground">
       <ResizablePanelGroup 
@@ -146,7 +162,7 @@ export default function WorkbenchPage() {
         >
           {inventoryContent}
         </ResizablePanel>
-        <ResizableHandle withHandle suppressHydrationWarning />
+        <ResizableHandle withHandle />
         <ResizablePanel defaultSize={75} className="relative">
             {workbenchContent}
             {selectedEquipment && selectedCount === 1 && !heldItem && !heldEquipment && !pouringState && !attachmentState && (
