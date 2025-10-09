@@ -41,7 +41,7 @@ export async function testOpenRouterPost(): Promise<TestResult> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "x-ai/grok-4-fast:free",
+        model: "qwen/qwen3-coder:free",
         messages: [{ role: "user", content: "Hello" }],
       }),
     });
