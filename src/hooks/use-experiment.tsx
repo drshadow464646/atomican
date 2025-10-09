@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect, u
 import type { ExperimentState, LabLog, Chemical, Equipment, Solution, ReactionPrediction, EquipmentConnection } from '@/lib/experiment';
 import { useToast } from '@/hooks/use-toast';
 import { getReactionPrediction } from '@/app/actions';
+import { useInventory } from './use-inventory'; // Import the lightweight inventory hook
 
 let logIdCounter = 0;
 const getUniqueLogId = () => {
@@ -35,9 +36,9 @@ type AttachmentState = {
 
 type ExperimentContextType = {
   experimentState: ExperimentState;
-  labLogs: LabLog[];
+  labLogs: LabLog[]; // Kept for notebook on workbench page
   inventoryChemicals: Chemical[];
-  inventoryEquipment: Equipment[];
+  inventoryEquipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[];
   safetyGogglesOn: boolean;
   heldItem: Chemical | null;
   heldEquipment: Equipment | null;
@@ -45,7 +46,6 @@ type ExperimentContextType = {
   attachmentState: AttachmentState;
   setSafetyGogglesOn: (on: boolean) => void;
   handleAddEquipmentToWorkbench: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
-  handleAddEquipmentToInventory: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   handleRemoveSelectedEquipment: (id: string) => void;
   handleResizeEquipment: (equipmentId: string, size: number) => void;
   handleMoveEquipment: (equipmentId: string, position: { x: number, y: number }) => void;
@@ -55,10 +55,7 @@ type ExperimentContextType = {
   handlePour: (volume: number) => void;
   handleInitiatePour: (targetId: string) => void;
   handleCancelPour: () => void;
-  handleAddChemicalToInventory: (chemical: Chemical) => void;
   handleTitrate: (volume: number) => void;
-  handleAddCustomLog: (note: string) => void;
-  handleResetExperiment: () => void;
   handlePickUpChemical: (chemical: Chemical) => void;
   handleClearHeldItem: () => void;
   dragState: React.RefObject<DragState>;
@@ -75,31 +72,32 @@ type ExperimentContextType = {
 const ExperimentContext = createContext<ExperimentContextType | undefined>(undefined);
 
 export function ExperimentProvider({ children }: { children: React.ReactNode }) {
+  // We get the global state from the lightweight InventoryProvider
+  const inventoryContext = useInventory();
+
   const [experimentState, setExperimentState] = useState<ExperimentState>(initialExperimentState);
-  const [labLogs, setLabLogs] = useState<LabLog[]>([]);
-  const [safetyGogglesOn, setSafetyGogglesOn] = useState(true);
-  const [heldItem, setHeldItem] = useState<Chemical | null>(null);
   const [heldEquipment, setHeldEquipment] = useState<Equipment | null>(null);
   const [pouringState, setPouringState] = useState<{ sourceId: string; targetId: string; } | null>(null);
   const [attachmentState, setAttachmentState] = useState<AttachmentState>(null);
   const { toast } = useToast();
-
-  const [inventoryChemicals, setInventoryChemicals] = useState<Chemical[]>([]);
-  const [inventoryEquipment, setInventoryEquipment] = useState<Equipment[]>([]);
-
+  
   const dragState = useRef<DragState>(null);
 
-  const addLog = useCallback((text: string, isCustom: boolean = false) => {
-    setLabLogs(prevLogs => {
-      const newLog: LabLog = {
-        id: getUniqueLogId(),
-        timestamp: new Date().toISOString(),
-        text,
-        isCustom,
-      };
-      return [...prevLogs, newLog]
-    });
-  }, []);
+  const addLog = inventoryContext.handleAddCustomLog;
+
+  useEffect(() => {
+    const handleReset = () => {
+        setExperimentState(initialExperimentState);
+        setHeldEquipment(null);
+        setPouringState(null);
+        setAttachmentState(null);
+        addLog('Workbench has been cleared.');
+    };
+    window.addEventListener('reset-experiment', handleReset);
+    return () => {
+        window.removeEventListener('reset-experiment', handleReset);
+    };
+  }, [addLog]);
   
   const applyReactionPrediction = (containerId: string, prediction: ReactionPrediction) => {
     setExperimentState(prevState => {
@@ -145,7 +143,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
 
   const handleSafetyCheck = useCallback(() => {
-    if (!safetyGogglesOn) {
+    if (!inventoryContext.safetyGogglesOn) {
       setTimeout(() => {
         toast({
           title: 'Safety Warning!',
@@ -156,17 +154,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       return false;
     }
     return true;
-  }, [safetyGogglesOn, toast]);
-
-  const handleClearHeldItem = useCallback(() => {
-    setHeldItem(null);
-    setHeldEquipment(null);
-  }, []);
+  }, [inventoryContext.safetyGogglesOn, toast]);
 
   const handleCancelPour = useCallback(() => {
     setPouringState(null);
-    handleClearHeldItem();
-  }, [handleClearHeldItem]);
+    inventoryContext.handleClearHeldItem();
+  }, [inventoryContext]);
 
   const handleCancelAttachment = useCallback(() => {
     setAttachmentState(null);
@@ -226,21 +219,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment], connections: prevState.connections };
     });
   }, [addLog, handleSafetyCheck]);
-
-  const handleAddEquipmentToInventory = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
-    if (inventoryEquipment.some((e) => e.id === equipment.id)) {
-      return;
-    }
-    const newInventoryItem: Equipment = {
-        ...equipment,
-        position: { x: 0, y: 0 },
-        size: 1,
-        isSelected: false,
-        solutions: [],
-        isReacting: false,
-    };
-    setInventoryEquipment(prev => [...prev, newInventoryItem]);
-  }, [inventoryEquipment]);
   
   const handleRemoveSelectedEquipment = useCallback((id: string) => {
     setExperimentState(prevState => {
@@ -272,7 +250,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       equipment: prevState.equipment.map(e => 
         e.id === equipmentId ? { ...e, size } : e
       ),
-      connections: prevState.connections,
     }));
   }, []);
   
@@ -282,7 +259,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       equipment: prevState.equipment.map(e =>
         e.id === equipmentId ? { ...e, position } : e
       ),
-      connections: prevState.connections,
     }));
   }, []);
 
@@ -293,8 +269,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (!target) return;
 
     setPouringState({ sourceId: heldEquipment.id, targetId: targetId });
-    handleClearHeldItem();
-  }, [heldEquipment, experimentState.equipment, handleClearHeldItem]);
+    inventoryContext.handleClearHeldItem();
+    setHeldEquipment(null);
+  }, [heldEquipment, experimentState.equipment, inventoryContext]);
 
   const handleDropOnApparatus = useCallback((targetId: string) => {
     if (!handleSafetyCheck()) return;
@@ -302,7 +279,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     const targetContainer = experimentState.equipment.find(e => e.id === targetId);
     if (!targetContainer) return;
 
-    if (heldItem) { // Adding a chemical from inventory
+    if (inventoryContext.heldItem) { // Adding a chemical from inventory
         setPouringState({ sourceId: 'inventory', targetId: targetId });
     
     } else if (heldEquipment) { // Attaching an item or initiating a pour
@@ -341,14 +318,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
                     
                     return { ...prevState, equipment: updatedEquipment };
                 });
-                handleClearHeldItem();
+                inventoryContext.handleClearHeldItem();
+                setHeldEquipment(null);
             }
         } else {
             // Logic for initiating a pour from another container
             handleInitiatePour(targetId);
         }
     }
-}, [handleSafetyCheck, heldItem, heldEquipment, experimentState.equipment, toast, addLog, handleClearHeldItem, handleInitiatePour]);
+}, [handleSafetyCheck, inventoryContext, heldEquipment, experimentState.equipment, toast, addLog, handleInitiatePour]);
 
   const handlePour = useCallback(async (volume: number) => {
     if (!pouringState) return;
@@ -367,7 +345,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (pourVolumeClamped <= 0) {
         toast({ title: 'Container Full', description: `${target.name} cannot hold any more liquid.`, variant: 'destructive' });
         setPouringState(null);
-        handleClearHeldItem();
+        inventoryContext.handleClearHeldItem();
         return;
     }
 
@@ -375,9 +353,9 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     let sourceVolumeToAdjust = 0;
     
     if (sourceId === 'inventory') {
-        if (!heldItem) return;
-        addLog(`Adding ${pourVolumeClamped.toFixed(1)}ml of ${heldItem.name} to ${target.name}.`);
-        reactants.push({ chemical: heldItem, volume: pourVolumeClamped });
+        if (!inventoryContext.heldItem) return;
+        addLog(`Adding ${pourVolumeClamped.toFixed(1)}ml of ${inventoryContext.heldItem.name} to ${target.name}.`);
+        reactants.push({ chemical: inventoryContext.heldItem, volume: pourVolumeClamped });
     } else {
         const source = experimentState.equipment.find(e => e.id === sourceId);
         if (!source || !source.solutions) return;
@@ -399,13 +377,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     }
     
     setPouringState(null);
-    handleClearHeldItem();
+    inventoryContext.handleClearHeldItem();
     addLog('Analyzing reaction...');
     
     setExperimentState(prevState => ({
       ...prevState,
       equipment: prevState.equipment.map(e => e.id === targetId ? {...e, isReacting: true} : e),
-      connections: prevState.connections,
     }));
 
     const prediction = await getReactionPrediction(reactants);
@@ -441,41 +418,27 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
             return {
                 ...newState,
                 equipment: newState.equipment.map(e => e.id === sourceId ? { ...sourceToUpdate } : e),
-                connections: newState.connections,
             };
         });
     }
 
-  }, [addLog, pouringState, experimentState.equipment, heldItem, handleClearHeldItem, toast]);
+  }, [addLog, pouringState, experimentState.equipment, inventoryContext, toast]);
   
-  const handlePickUpChemical = useCallback((chemical: Chemical) => {
-    if (pouringState || heldEquipment) return;
-    handleClearHeldItem();
-    setHeldItem(chemical);
-    handleSelectEquipment(null);
-  }, [pouringState, heldEquipment, handleClearHeldItem, handleSelectEquipment]);
-
   const handlePickUpEquipment = useCallback((id: string) => {
     const allEquipment = [...experimentState.equipment, ...experimentState.equipment.flatMap(e => e.attachments || [])];
     const equipment = allEquipment.find(e => e.id === id);
     if (!equipment || equipment.isReacting) return;
     
-    handleClearHeldItem();
+    inventoryContext.handleClearHeldItem();
+    setHeldEquipment(null);
     
     const validPouringEquipment = ['beaker', 'erlenmeyer-flask', 'graduated-cylinder', 'volumetric-flask', 'test-tube', 'thermometer', 'ph-meter', 'clamp'];
     if ((equipment.solutions && equipment.solutions.length > 0) || validPouringEquipment.includes(equipment.type)) {
       setHeldEquipment(equipment);
       handleSelectEquipment(id);
     }
-  }, [experimentState.equipment, handleClearHeldItem, handleSelectEquipment]);
+  }, [experimentState.equipment, inventoryContext, handleSelectEquipment]);
 
-  const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
-    if (inventoryChemicals.some((c) => c.id === chemical.id)) {
-        return;
-    }
-    setInventoryChemicals(prev => [...prev, chemical]);
-  }, [inventoryChemicals]);
-  
   const handleTitrate = useCallback(async (volume: number) => {
     if (!handleSafetyCheck()) return;
     
@@ -505,7 +468,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     setExperimentState(prevState => ({
         ...prevState,
         equipment: prevState.equipment.map(e => e.id === beaker.id ? {...e, isReacting: true} : e),
-        connections: prevState.connections,
     }));
 
     const prediction = await getReactionPrediction(reactants);
@@ -525,24 +487,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   }, [addLog, handleSafetyCheck, toast, experimentState.equipment]);
 
-
-  const handleAddCustomLog = useCallback((note: string) => {
-    if(note.trim()) {
-      addLog(note, true);
-    }
-  }, [addLog]);
-
-  const handleResetExperiment = useCallback(() => {
-    setExperimentState(initialExperimentState);
-    setInventoryChemicals([]);
-    setInventoryEquipment([]);
-    setLabLogs([]);
-    handleClearHeldItem();
-    setPouringState(null);
-    setAttachmentState(null);
-    addLog('Experiment reset.');
-  }, [addLog, handleClearHeldItem]);
-  
   const handleDragStart = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const allEquipment = [...experimentState.equipment, ...experimentState.equipment.flatMap(e => e.attachments || [])];
@@ -573,14 +517,15 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       if (!pouringState && !attachmentState) {
         handleSelectEquipment(null);
       }
-      if(heldEquipment || heldItem) {
-        handleClearHeldItem();
+      if(heldEquipment || inventoryContext.heldItem) {
+        inventoryContext.handleClearHeldItem();
+        setHeldEquipment(null);
       }
       if (attachmentState) {
           handleCancelAttachment();
       }
     }
-  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleSelectEquipment, handleCancelAttachment]);
+  }, [inventoryContext, heldEquipment, pouringState, attachmentState, handleSelectEquipment, handleCancelAttachment]);
   
   const handleEquipmentClick = useCallback((id: string, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -588,7 +533,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
           return;
       }
       
-      if (heldItem) {
+      if (inventoryContext.heldItem) {
           handleDropOnApparatus(id);
           return;
       }
@@ -601,14 +546,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
       handleSelectEquipment(id, e.shiftKey);
 
-  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleSelectEquipment]);
+  }, [dragState, inventoryContext.heldItem, heldEquipment, handleDropOnApparatus, handleSelectEquipment]);
 
   const handleMouseUpOnEquipment = useCallback((id: string) => {
     if (dragState.current?.hasMoved) {
         // Drag just ended on this item
     } else {
         // This was a click, not a drag. If not holding anything, pick up the item.
-        if (!heldItem && !heldEquipment) {
+        if (!inventoryContext.heldItem && !heldEquipment) {
             handlePickUpEquipment(id);
         }
     }
@@ -617,9 +562,10 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         handleDropOnApparatus(id);
     } else if (heldEquipment && heldEquipment.id === id) {
         // If you mouse-up on the item you're holding, clear the hold.
-        handleClearHeldItem();
+        inventoryContext.handleClearHeldItem();
+        setHeldEquipment(null);
     }
-  }, [dragState, heldItem, heldEquipment, handleDropOnApparatus, handleClearHeldItem, handlePickUpEquipment]);
+  }, [dragState, inventoryContext, heldEquipment, handleDropOnApparatus, handlePickUpEquipment]);
   
   const handleDetach = useCallback((equipmentId: string) => {
       setExperimentState(prevState => {
@@ -646,7 +592,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
               newState.equipment = newState.equipment.map(e => e.id === parentContainer!.id ? {...parentContainer, isSelected: false} : e);
           }
 
-          return { ...newState, equipment: [...newState.equipment], connections: newState.connections };
+          return { ...newState, equipment: [...newState.equipment] };
       });
   }, [addLog]);
 
@@ -710,17 +656,16 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo(() => ({
     experimentState,
-    labLogs,
-    inventoryChemicals,
-    inventoryEquipment,
-    safetyGogglesOn,
-    heldItem,
+    labLogs: inventoryContext.labLogs,
+    inventoryChemicals: inventoryContext.inventoryChemicals,
+    inventoryEquipment: inventoryContext.inventoryEquipment,
+    safetyGogglesOn: inventoryContext.safetyGogglesOn,
+    heldItem: inventoryContext.heldItem,
     heldEquipment,
     pouringState,
     attachmentState,
-    setSafetyGogglesOn,
+    setSafetyGogglesOn: inventoryContext.setSafetyGogglesOn,
     handleAddEquipmentToWorkbench,
-    handleAddEquipmentToInventory,
     handleRemoveSelectedEquipment,
     handleResizeEquipment,
     handleMoveEquipment,
@@ -730,12 +675,12 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handlePour,
     handleInitiatePour,
     handleCancelPour,
-    handleAddChemicalToInventory,
     handleTitrate,
-    handleAddCustomLog,
-    handleResetExperiment,
-    handlePickUpChemical,
-    handleClearHeldItem,
+    handlePickUpChemical: inventoryContext.handlePickUpChemical,
+    handleClearHeldItem: () => {
+        inventoryContext.handleClearHeldItem();
+        setHeldEquipment(null);
+    },
     dragState,
     handleDragStart,
     handleWorkbenchClick,
@@ -747,16 +692,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleRemoveConnection,
   }), [
     experimentState, 
-    labLogs, 
-    inventoryChemicals, 
-    inventoryEquipment, 
-    safetyGogglesOn,
-    heldItem,
+    inventoryContext,
     heldEquipment,
     pouringState,
     attachmentState,
     handleAddEquipmentToWorkbench,
-    handleAddEquipmentToInventory,
     handleRemoveSelectedEquipment,
     handleResizeEquipment,
     handleMoveEquipment,
@@ -766,12 +706,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handlePour,
     handleInitiatePour,
     handleCancelPour,
-    handleAddChemicalToInventory,
     handleTitrate,
-    handleAddCustomLog,
-    handleResetExperiment,
-    handlePickUpChemical,
-    handleClearHeldItem,
     dragState,
     handleDragStart,
     handleWorkbenchClick,

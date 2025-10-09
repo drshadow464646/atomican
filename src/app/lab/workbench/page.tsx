@@ -11,13 +11,14 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import { useExperiment } from '@/hooks/use-experiment';
+import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, LayoutGrid } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function WorkbenchPage() {
+// The actual page content is now in its own component
+function WorkbenchPageContent() {
   const { 
     experimentState, 
     inventoryChemicals,
@@ -41,6 +42,7 @@ export default function WorkbenchPage() {
     handleEquipmentClick,
     handleMouseUpOnEquipment,
     handleDetach,
+    handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
   } = useExperiment();
@@ -162,7 +164,7 @@ export default function WorkbenchPage() {
         >
           {inventoryContent}
         </ResizablePanel>
-        <ResizableHandle withHandle />
+        <ResizableHandle withHandle suppressHydrationWarning />
         <ResizablePanel defaultSize={75} className="relative">
             {workbenchContent}
             {selectedEquipment && selectedCount === 1 && !heldItem && !heldEquipment && !pouringState && !attachmentState && (
@@ -174,4 +176,13 @@ export default function WorkbenchPage() {
       </ResizablePanelGroup>
     </div>
   );
+}
+
+// The default export now wraps the page content with the heavy provider.
+export default function WorkbenchPage() {
+  return (
+    <ExperimentProvider>
+      <WorkbenchPageContent />
+    </ExperimentProvider>
+  )
 }

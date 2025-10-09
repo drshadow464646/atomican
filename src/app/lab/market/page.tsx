@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Droplets, Plus, Search, Loader2, Check } from 'lucide-react';
 import type { Chemical } from '@/lib/experiment';
-import { useExperiment } from '@/hooks/use-experiment';
+import { useInventory } from '@/hooks/use-inventory'; // Using new lightweight hook
 import { findChemicals } from '@/app/actions';
 import { commonChemicals } from '@/lib/chemical-catalog';
 
@@ -15,7 +15,7 @@ export default function MarketPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, startSearchTransition] = useTransition();
   const [results, setResults] = useState<Chemical[]>(commonChemicals);
-  const { handleAddChemicalToInventory, inventoryChemicals } = useExperiment();
+  const { handleAddChemicalToInventory, inventoryChemicals } = useInventory(); // Using new hook
   const [isAiSearch, setIsAiSearch] = useState(false);
 
   const performSearch = (query: string) => {

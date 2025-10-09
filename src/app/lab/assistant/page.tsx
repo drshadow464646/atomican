@@ -9,14 +9,14 @@ import { Bot, FlaskConical, Beaker, List, Loader2, TestTube, AlertTriangle } fro
 import { getExperimentSteps } from '@/app/actions';
 import type { GenerateExperimentStepsOutput } from '@/ai/flows/ai-guided-experiment-steps';
 import { LabNotebook } from '@/components/lab-notebook';
-import { useExperiment } from '@/hooks/use-experiment';
+import { useInventory } from '@/hooks/use-inventory'; // Using new lightweight hook
 import { Textarea } from '@/components/ui/textarea';
 
 export default function ProcedurePage() {
   const [goal, setGoal] = useState('Titration of HCl with NaOH');
   const [procedure, setProcedure] = useState<GenerateExperimentStepsOutput | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
-  const { labLogs, handleAddCustomLog } = useExperiment();
+  const { labLogs, handleAddCustomLog } = useInventory(); // Using new lightweight hook
   const [customNote, setCustomNote] = useState('');
 
   const handleGenerate = () => {

@@ -16,9 +16,9 @@ import {
 import Link from 'next/link';
 
 type InventoryPanelProps = {
-  equipment: Equipment[];
+  equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[];
   chemicals: Chemical[];
-  onAddEquipment: (equipment: Equipment) => void;
+  onAddEquipment: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
   onPickUpChemical: (chemical: Chemical) => void;
   isCollapsed: boolean;
   heldItem: Chemical | null;

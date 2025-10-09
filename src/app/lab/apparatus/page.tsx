@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2, Check, Cylinder, Ungroup, Library } from 'lucide-react';
-import { useExperiment } from '@/hooks/use-experiment';
+import { useInventory } from '@/hooks/use-inventory'; // Using the new lightweight hook
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Equipment } from '@/lib/experiment';
@@ -49,7 +49,7 @@ export default function ApparatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, startSearchTransition] = useTransition();
   const [results, setResults] = useState<Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[]>(commonApparatus);
-  const { handleAddEquipmentToInventory, inventoryEquipment } = useExperiment();
+  const { handleAddEquipmentToInventory, inventoryEquipment } = useInventory(); // Using new hook
   const [isAiSearch, setIsAiSearch] = useState(false);
 
   const performSearch = (query: string) => {

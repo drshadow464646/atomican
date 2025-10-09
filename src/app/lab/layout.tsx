@@ -4,26 +4,31 @@
 import { LabHeader } from '@/components/lab-header';
 import { SettingsForm } from '@/components/settings-form';
 import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
+
+// This is a new, lightweight provider for inventory and basic actions
+// that are needed across all lab pages.
+import { InventoryProvider, useInventory } from '@/hooks/use-inventory';
 import { useEffect } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
+  // Now using the lightweight inventory context
   const { 
     safetyGogglesOn, 
     setSafetyGogglesOn, 
     handleResetExperiment, 
     heldItem,
     heldEquipment
-  } = useExperiment();
+  } = useInventory();
   
   useEffect(() => {
-    const isHolding = !!heldItem || !!heldEquipment;
+    const isHolding = !!heldItem; // Simplified, as heldEquipment is only on workbench
     document.body.classList.toggle('cursor-copy', isHolding);
     
     // Cleanup function to remove the class when component unmounts
     return () => {
       document.body.classList.remove('cursor-copy');
     }
-  }, [heldItem, heldEquipment]);
+  }, [heldItem]);
 
   return (
     <div className="h-screen flex flex-col pb-[env(safe-area-inset-bottom)]">
@@ -48,8 +53,9 @@ export default function LabLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ExperimentProvider>
+    // We now wrap the layout with the new, lightweight InventoryProvider
+    <InventoryProvider>
       <LayoutContent>{children}</LayoutContent>
-    </ExperimentProvider>
+    </InventoryProvider>
   );
 }
