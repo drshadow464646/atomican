@@ -19,11 +19,10 @@ type InventoryContextType = {
     setSafetyGogglesOn: (on: boolean) => void;
     handleAddChemicalToInventory: (chemical: Chemical) => void;
     handleAddEquipmentToInventory: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
-    addLog: (text: string, isCustom?: boolean) => void;
-    handleAddCustomLog: (note: string) => void;
     handleResetExperiment: () => void;
     handlePickUpChemical: (chemical: Chemical) => void;
     handleClearHeldItem: () => void;
+    addLog: (text: string, isCustom?: boolean) => void;
 };
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -38,37 +37,33 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
 
     const addLog = useCallback((text: string, isCustom: boolean = false) => {
-        setLabLogs(prevLogs => {
-          const newLog: LabLog = {
-            id: getUniqueLogId(),
-            timestamp: new Date().toISOString(),
-            text,
-            isCustom,
-          };
-          return [...prevLogs, newLog]
-        });
+        const newLog: LabLog = {
+          id: getUniqueLogId(),
+          timestamp: new Date().toISOString(),
+          text,
+          isCustom,
+        };
+        setLabLogs(prevLogs => [...prevLogs, newLog]);
     }, []);
 
     const handleAddChemicalToInventory = useCallback((chemical: Chemical) => {
-        if (inventoryChemicals.some((c) => c.id === chemical.id)) {
-            return;
-        }
-        setInventoryChemicals(prev => [...prev, chemical]);
-        addLog(`Added ${chemical.name} to inventory.`);
-    }, [inventoryChemicals, addLog]);
+        setInventoryChemicals(prev => {
+            if (prev.some((c) => c.id === chemical.id)) {
+                return prev;
+            }
+            addLog(`Added ${chemical.name} to inventory.`);
+            return [...prev, chemical];
+        });
+    }, [addLog]);
 
     const handleAddEquipmentToInventory = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
-        if (inventoryEquipment.some((e) => e.id === equipment.id)) {
-          return;
-        }
-        setInventoryEquipment(prev => [...prev, equipment]);
-        addLog(`Added ${equipment.name} to inventory.`);
-    }, [inventoryEquipment, addLog]);
-    
-    const handleAddCustomLog = useCallback((note: string) => {
-        if(note.trim()) {
-          addLog(note, true);
-        }
+        setInventoryEquipment(prev => {
+            if (prev.some((e) => e.id === equipment.id)) {
+              return prev;
+            }
+            addLog(`Added ${equipment.name} to inventory.`);
+            return [...prev, equipment];
+        });
     }, [addLog]);
 
     const handleResetExperiment = useCallback(() => {
@@ -93,19 +88,27 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
     // Load from localStorage on mount
     useEffect(() => {
-        const savedChemicals = localStorage.getItem('atomican_inventory_chemicals');
-        const savedEquipment = localStorage.getItem('atomican_inventory_equipment');
-        const savedLogs = localStorage.getItem('atomican_lab_logs');
-        if (savedChemicals) setInventoryChemicals(JSON.parse(savedChemicals));
-        if (savedEquipment) setInventoryEquipment(JSON.parse(savedEquipment));
-        if (savedLogs) setLabLogs(JSON.parse(savedLogs));
+        try {
+            const savedChemicals = localStorage.getItem('atomican_inventory_chemicals');
+            const savedEquipment = localStorage.getItem('atomican_inventory_equipment');
+            const savedLogs = localStorage.getItem('atomican_lab_logs');
+            if (savedChemicals) setInventoryChemicals(JSON.parse(savedChemicals));
+            if (savedEquipment) setInventoryEquipment(JSON.parse(savedEquipment));
+            if (savedLogs) setLabLogs(JSON.parse(savedLogs));
+        } catch (e) {
+            console.error("Failed to load from local storage", e);
+        }
     }, []);
 
     // Save to localStorage on change
     useEffect(() => {
-        localStorage.setItem('atomican_inventory_chemicals', JSON.stringify(inventoryChemicals));
-        localStorage.setItem('atomican_inventory_equipment', JSON.stringify(inventoryEquipment));
-        localStorage.setItem('atomican_lab_logs', JSON.stringify(labLogs));
+        try {
+            localStorage.setItem('atomican_inventory_chemicals', JSON.stringify(inventoryChemicals));
+            localStorage.setItem('atomican_inventory_equipment', JSON.stringify(inventoryEquipment));
+            localStorage.setItem('atomican_lab_logs', JSON.stringify(labLogs));
+        } catch (e) {
+            console.error("Failed to save to local storage", e);
+        }
     }, [inventoryChemicals, inventoryEquipment, labLogs]);
 
 
@@ -119,7 +122,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         handleAddChemicalToInventory,
         handleAddEquipmentToInventory,
         addLog,
-        handleAddCustomLog,
         handleResetExperiment,
         handlePickUpChemical,
         handleClearHeldItem,
@@ -132,7 +134,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         addLog,
         handleAddChemicalToInventory,
         handleAddEquipmentToInventory,
-        handleAddCustomLog,
         handleResetExperiment,
         handlePickUpChemical,
         handleClearHeldItem,

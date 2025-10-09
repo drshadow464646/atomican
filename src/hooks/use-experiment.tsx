@@ -59,7 +59,8 @@ type ExperimentContextType = {
   handleInitiateAttachment: (sourceId: string) => void;
   handleCancelAttachment: () => void;
   handleRemoveConnection: (connectionId: string) => void;
-  
+  handleAddCustomLog: (note: string) => void;
+
   // From InventoryContext
   labLogs: LabLog[];
   inventoryChemicals: Chemical[];
@@ -77,8 +78,8 @@ const ExperimentContext = createContext<ExperimentContextType | undefined>(undef
 
 export function ExperimentProvider({ children }: { children: React.ReactNode }) {
   const inventoryContext = useInventory();
-  const { addLog } = inventoryContext;
-
+  
+  const [labLogs, setLabLogs] = useState<LabLog[]>([]);
   const [experimentState, setExperimentState] = useState<ExperimentState>(initialExperimentState);
   const [heldEquipment, setHeldEquipment] = useState<Equipment | null>(null);
   const [pouringState, setPouringState] = useState<{ sourceId: string; targetId: string; } | null>(null);
@@ -86,6 +87,38 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const { toast } = useToast();
   
   const dragState = useRef<DragState>(null);
+
+  const addLog = useCallback((text: string, isCustom: boolean = false) => {
+    const newLog: LabLog = {
+      id: getUniqueLogId(),
+      timestamp: new Date().toISOString(),
+      text,
+      isCustom,
+    };
+    setLabLogs(prevLogs => [...prevLogs, newLog]);
+  }, []);
+
+  const handleAddCustomLog = useCallback((note: string) => {
+      if(note.trim()) {
+        addLog(note, true);
+      }
+  }, [addLog]);
+
+  useEffect(() => {
+    setLabLogs(inventoryContext.labLogs);
+  }, [inventoryContext.labLogs]);
+
+  useEffect(() => {
+    // This is a bit of a hack to keep the global logs in sync
+    // A better solution would be a global state management library
+    if (labLogs.length > inventoryContext.labLogs.length) {
+        const newLog = labLogs[labLogs.length - 1];
+        if (inventoryContext.labLogs.every(l => l.id !== newLog.id)) {
+            inventoryContext.addLog(newLog.text, newLog.isCustom);
+        }
+    }
+  }, [labLogs, inventoryContext]);
+
 
   const handleResetWorkbench = useCallback(() => {
     setExperimentState(initialExperimentState);
@@ -197,21 +230,21 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
   const handleAddEquipmentToWorkbench = useCallback((equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => {
     if (!handleSafetyCheck()) return;
 
+    addLog(`Added ${equipment.name} to the workbench.`);
+    equipmentIdCounter++;
+    const newEquipment: Equipment = { 
+      ...equipment, 
+      id: `${equipment.id}-${equipmentIdCounter}`,
+      size: 1,
+      position: { x: 250 + (Math.random() * 50 - 25), y: 100 + (Math.random() * 50 - 25) },
+      isSelected: true,
+      solutions: [],
+      ph: 7,
+      color: 'transparent',
+      isReacting: false,
+      attachments: [],
+    }; 
     setExperimentState((prevState) => {
-      addLog(`Added ${equipment.name} to the workbench.`);
-      equipmentIdCounter++;
-      const newEquipment: Equipment = { 
-        ...equipment, 
-        id: `${equipment.id}-${equipmentIdCounter}`,
-        size: 1,
-        position: { x: 250 + (Math.random() * 50 - 25), y: 100 + (Math.random() * 50 - 25) },
-        isSelected: true,
-        solutions: [],
-        ph: 7,
-        color: 'transparent',
-        isReacting: false,
-        attachments: [],
-      }; 
       return { ...prevState, equipment: [...prevState.equipment.map(e => ({...e, isSelected: false})), newEquipment], connections: prevState.connections };
     });
   }, [addLog, handleSafetyCheck]);
@@ -639,6 +672,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo(() => ({
     experimentState,
+    labLogs,
     handleResetWorkbench,
     handleAddEquipmentToWorkbench,
     handleRemoveSelectedEquipment,
@@ -661,8 +695,8 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
+    handleAddCustomLog,
     // From inventory context
-    labLogs: inventoryContext.labLogs,
     inventoryChemicals: inventoryContext.inventoryChemicals,
     inventoryEquipment: inventoryContext.inventoryEquipment,
     safetyGogglesOn: inventoryContext.safetyGogglesOn,
@@ -674,6 +708,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handlePickUpChemical: inventoryContext.handlePickUpChemical,
   }), [
     experimentState,
+    labLogs,
     handleResetWorkbench,
     handleAddEquipmentToWorkbench,
     handleRemoveSelectedEquipment,
@@ -696,6 +731,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleInitiateAttachment,
     handleCancelAttachment,
     handleRemoveConnection,
+    handleAddCustomLog,
     inventoryContext,
     heldEquipment,
     pouringState,

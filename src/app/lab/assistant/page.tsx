@@ -16,7 +16,7 @@ export default function ProcedurePage() {
   const [goal, setGoal] = useState('Titration of HCl with NaOH');
   const [procedure, setProcedure] = useState<GenerateExperimentStepsOutput | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
-  const { labLogs, handleAddCustomLog } = useInventory(); // Using new lightweight hook
+  const { labLogs, addLog } = useInventory(); // Using new lightweight hook
   const [customNote, setCustomNote] = useState('');
 
   const handleGenerate = () => {
@@ -29,7 +29,7 @@ export default function ProcedurePage() {
 
   const handleAddNote = () => {
     if (customNote.trim()) {
-      handleAddCustomLog(customNote);
+      addLog(customNote, true);
       setCustomNote('');
     }
   };
