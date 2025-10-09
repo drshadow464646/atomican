@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Beaker, FlaskConical, Pipette, TestTube, Thermometer, Microscope, Scale, Search, Wind, Flame, Plus, Loader2, Check, Cylinder, Ungroup, Library } from 'lucide-react';
 import { useExperiment } from '@/hooks/use-experiment';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useDebouncedCallback } from 'use-debounce';
 import type { Equipment } from '@/lib/experiment';
 import { findApparatus } from '@/app/actions';
 import { commonApparatus } from '@/lib/apparatus-catalog';
@@ -66,14 +65,18 @@ export default function ApparatusPage() {
     });
   };
 
-  const debouncedSearch = useDebouncedCallback((query: string) => {
-    performSearch(query);
-  }, 500);
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchTerm(query);
-    debouncedSearch(query);
+    if (!query) {
+      setResults(commonApparatus);
+      setIsAiSearch(false);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(searchTerm);
   };
 
   return (
@@ -86,8 +89,8 @@ export default function ApparatusPage() {
           </p>
         </header>
 
-        <div className="mb-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <div className="relative flex items-center">
+        <form onSubmit={handleSearchSubmit} className="mb-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="relative flex items-center gap-2">
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
             <Input
               type="search"
@@ -96,8 +99,11 @@ export default function ApparatusPage() {
               value={searchTerm}
               onChange={handleSearchChange}
             />
+            <Button type="submit" disabled={isSearching}>
+              {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
+            </Button>
           </div>
-        </div>
+        </form>
         
         {isSearching && (
           <div className="text-center col-span-full py-16">

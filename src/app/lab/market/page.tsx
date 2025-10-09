@@ -1,13 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Droplets, Plus, Search, Loader2, Check } from 'lucide-react';
 import type { Chemical } from '@/lib/experiment';
-import { useDebouncedCallback } from 'use-debounce';
 import { useExperiment } from '@/hooks/use-experiment';
 import { findChemicals } from '@/app/actions';
 import { commonChemicals } from '@/lib/chemical-catalog';
@@ -32,14 +31,18 @@ export default function MarketPage() {
     });
   };
 
-  const debouncedSearch = useDebouncedCallback((query: string) => {
-    performSearch(query);
-  }, 500);
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchTerm(query);
-    debouncedSearch(query);
+    if (!query) {
+      setResults(commonChemicals);
+      setIsAiSearch(false);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(searchTerm);
   };
   
   return (
@@ -52,8 +55,8 @@ export default function MarketPage() {
           </p>
         </header>
 
-        <div className="mb-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <div className="relative flex items-center">
+        <form onSubmit={handleSearchSubmit} className="mb-8 max-w-lg mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="relative flex items-center gap-2">
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
             <Input
               type="search"
@@ -62,8 +65,11 @@ export default function MarketPage() {
               value={searchTerm}
               onChange={handleSearchChange}
             />
+             <Button type="submit" disabled={isSearching}>
+              {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
+            </Button>
           </div>
-        </div>
+        </form>
 
         {isSearching && (
           <div className="text-center col-span-full py-16">
