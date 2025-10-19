@@ -14,12 +14,14 @@ type EquipmentDetailsPanelProps = {
 };
 
 export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps) {
-  const { handleInitiateAttachment, attachmentState, handleCancelAttachment } = useExperiment();
+  const { handleInitiateAttachment, attachmentState, setAttachmentState } = useExperiment();
   const totalVolume = equipment.solutions?.reduce((acc, s) => acc + s.volume, 0) || 0;
   const hasContents = equipment.solutions && equipment.solutions.length > 0;
   const reaction = equipment.reactionEffects;
 
   const isAttaching = attachmentState?.sourceId === equipment.id;
+
+  const handleCancelAttachment = () => setAttachmentState(null);
 
   return (
     <Card className="shadow-lg backdrop-blur-xl bg-background/70 border-border/50">

@@ -14,12 +14,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import Link from 'next/link';
+import { useExperiment } from '@/hooks/use-experiment';
 
 type InventoryPanelProps = {
   equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[];
   chemicals: Chemical[];
-  onAddEquipment: (equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>) => void;
-  onPickUpChemical: (chemical: Chemical) => void;
   isCollapsed: boolean;
   heldItem: Chemical | null;
 };
@@ -36,11 +35,11 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
 export function InventoryPanel({
   equipment,
   chemicals,
-  onAddEquipment,
-  onPickUpChemical,
   isCollapsed,
   heldItem,
 }: InventoryPanelProps) {
+    const { handleAddEquipmentToWorkbench, inventory } = useExperiment();
+    
     if (isCollapsed) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -68,7 +67,7 @@ export function InventoryPanel({
                       key={item.id}
                       variant="outline"
                       className="justify-start"
-                      onClick={() => onAddEquipment(item)}
+                      onClick={() => handleAddEquipmentToWorkbench(item)}
                     >
                       {equipmentIcons[item.type] || <Beaker className="mr-2 h-5 w-5" />}
                       {item.name}
@@ -108,7 +107,7 @@ export function InventoryPanel({
                                 size="icon"
                                 variant="ghost"
                                 className="h-8 w-8"
-                                onClick={() => onPickUpChemical(chem)}
+                                onClick={() => inventory.pickUpChemical(chem)}
                               >
                                   <Hand className="h-4 w-4" />
                               </Button>

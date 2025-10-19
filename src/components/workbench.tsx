@@ -10,6 +10,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Slider } from './ui/slider';
 import { equipmentIcons } from '@/app/lab/apparatus/page';
+import { useExperiment } from '@/hooks/use-experiment';
+import { useInteractions } from '@/hooks/use-interactions';
 
 const ReactionEffects = ({ item }: { item: Equipment }) => {
     if (!item.reactionEffects) return null;
@@ -274,25 +276,21 @@ const ClampIcon = ({ item, size }: { item: Equipment, size: number }) => {
 
 const EquipmentDisplay = ({ 
   item, 
-  onMouseDown,
-  onClick,
-  onMouseUp,
-  onRemove,
-  onResize,
-  onDetach,
   isHoverTarget,
   isHeld,
+  ...interactionHandlers
 }: { 
   item: Equipment, 
+  isHoverTarget: boolean,
+  isHeld: boolean,
   onMouseDown: (id: string, e: React.MouseEvent) => void,
   onClick: (id: string, e: React.MouseEvent) => void,
   onMouseUp: (id: string) => void,
   onRemove: (id: string) => void,
   onResize: (id: string, size: number) => void,
   onDetach?: (id: string) => void,
-  isHoverTarget: boolean,
-  isHeld: boolean,
 }) => {
+    const { onResize, onRemove, onDetach } = useExperiment();
     const totalVolume = item.solutions?.reduce((sum, s) => sum + s.volume, 0) || 0;
     const fillPercentage = item.volume ? (totalVolume / item.volume) * 100 : 0;
     
@@ -382,22 +380,17 @@ const EquipmentDisplay = ({
                 ...attachmentStyle,
                 touchAction: 'none',
             }}
-            onMouseDown={(e) => onMouseDown(item.id, e)}
-            onClick={(e) => onClick(item.id, e)}
-            onMouseUp={() => onMouseUp(item.id)}
+            onMouseDown={(e) => interactionHandlers.onMouseDown(item.id, e)}
+            onClick={(e) => interactionHandlers.onClick(item.id, e)}
+            onMouseUp={() => interactionHandlers.onMouseUp(item.id)}
         >
              {item.attachments?.map(att => (
                  <EquipmentDisplay 
                     key={att.id}
                     item={att}
-                    onMouseDown={()=>{}}
-                    onClick={()=>{}}
-                    onMouseUp={()=>{}}
-                    onRemove={()=>{}}
-                    onResize={()=>{}}
-                    onDetach={onDetach}
                     isHoverTarget={false}
                     isHeld={false}
+                    {...interactionHandlers}
                  />
             ))}
 
@@ -436,57 +429,38 @@ const EquipmentDisplay = ({
     );
 };
 
-export function Workbench({ 
-    state, 
-    onTitrate,
-    onResizeEquipment,
-    onSelectEquipment,
-    onDropOnApparatus,
-    onPour,
-    onCancelPour,
-    heldItem,
+export function Workbench() {
+  const {
+    experimentState,
     heldEquipment,
-    onRemoveSelectedEquipment,
     pouringState,
+    setPouringState,
     attachmentState,
-    onDragStart,
-    onWorkbenchClick,
-    onEquipmentClick,
-    onMouseUpOnEquipment,
-    onDetach,
+    onTitrate,
+    onPour,
     onRemoveConnection,
-}: { 
-    state: ExperimentState, 
-    onTitrate: (volume: number, sourceId?: string, targetId?: string) => void;
-    onResizeEquipment: (id: string, size: number) => void;
-    onSelectEquipment: (id: string | null, append?: boolean) => void;
-    onDropOnApparatus: (equipmentId: string) => void;
-    onPour: (volume: number) => void;
-    onCancelPour: () => void;
-    heldItem: Chemical | null;
-    heldEquipment: Equipment | null;
-    onRemoveSelectedEquipment: (id: string) => void;
-    pouringState: { sourceId: string; targetId: string; } | null;
-    attachmentState: { sourceId: string } | null;
-    onDragStart: (id: string, e: React.MouseEvent) => void;
-    onWorkbenchClick: (e: React.MouseEvent) => void;
-    onEquipmentClick: (id: string, e: React.MouseEvent) => void;
-    onMouseUpOnEquipment: (id: string) => void;
-    onDetach: (equipmentId: string) => void;
-    onRemoveConnection: (connectionId: string) => void;
-}) {
+    inventory
+  } = useExperiment();
+
   const workbenchRef = useRef<HTMLDivElement>(null);
-  const [hoveredEquipmentId, setHoveredEquipmentId] = useState<string | null>(null);
   const [pourVolume, setPourVolume] = useState(10);
   
-  const hasBurette = state.equipment.some((e) => e.type === 'burette');
-  const hasTitrationTarget = state.equipment.some((e) => e.type === 'beaker' || e.type === 'erlenmeyer-flask');
+  const {
+      hoveredEquipmentId,
+      handleWorkbenchClick,
+      handleEquipmentMouseDown,
+      handleEquipmentClick,
+      handleEquipmentMouseUp
+  } = useInteractions(workbenchRef);
   
-  const selectedEquipment = state.equipment.find(e => e.isSelected);
-  const isHoldingSomething = !!heldItem || !!heldEquipment;
+  const hasBurette = experimentState.equipment.some((e) => e.type === 'burette');
+  const hasTitrationTarget = experimentState.equipment.some((e) => e.type === 'beaker' || e.type === 'erlenmeyer-flask');
+  
+  const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
+  const isHoldingSomething = !!inventory.heldItem || !!heldEquipment;
 
-  const pouringSourceItem = pouringState ? (pouringState.sourceId === 'inventory' ? heldItem : state.equipment.find(e => e.id === pouringState.sourceId)) : null;
-  const pouringTargetItem = pouringState ? state.equipment.find(e => e.id === pouringState.targetId) : null;
+  const pouringSourceItem = pouringState ? (pouringState.sourceId === 'inventory' ? inventory.heldItem : experimentState.equipment.find(e => e.id === pouringState.sourceId)) : null;
+  const pouringTargetItem = pouringState ? experimentState.equipment.find(e => e.id === pouringState.targetId) : null;
   
   let maxPourVolume = 0;
   if (pouringState && pouringSourceItem && pouringTargetItem) {
@@ -509,37 +483,8 @@ export function Workbench({
     }
   }, [pouringState, maxPourVolume]);
 
-  const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
-    let targetId: string | null = null;
-    
-    if (isHoldingSomething && workbenchRef.current) {
-        const elements = Array.from(workbenchRef.current.children);
-        // Find the element under the cursor
-        for (const elem of elements) {
-            const equipmentId = elem.getAttribute('data-equipment-id');
-            if (!equipmentId) continue;
-            
-            const isSelf = equipmentId === heldEquipment?.id;
-            const allAttachments = state.equipment.flatMap(eq => eq.attachments || []);
-            const isAttached = allAttachments.some(att => att.id === equipmentId);
-            
-            if (!isSelf && !isAttached) {
-                 const rect = elem.getBoundingClientRect();
-                 if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                     targetId = equipmentId;
-                     break;
-                 }
-            }
-        }
-    }
-    setHoveredEquipmentId(targetId);
-  }, [isHoldingSomething, heldEquipment, state.equipment]);
+  const onCancelPour = () => setPouringState(null);
   
-  useEffect(() => {
-    window.addEventListener('mousemove', handleGlobalMouseMove);
-    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
-  }, [handleGlobalMouseMove]);
-
   return (
     <div className="flex flex-col h-full">
       <Card 
@@ -550,10 +495,10 @@ export function Workbench({
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-test-tube-diagonal"><path d="M14.5 2.5 16 4l-1.5 1.5"/><path d="M17.5 5.5 19 7l-1.5 1.5"/><path d="m3 21 7-7"/><path d="M13.5 6.5 16 9l4-4"/><path d="m3 21 7-7"/><path d="M14.5 6.5 17 9l4-4"/><path d="M10.586 11.414a2 2 0 1 1 2.828-2.828"/></svg>
             Workbench
           </CardTitle>
-           {heldItem && !pouringState && (
+           {inventory.heldItem && !pouringState && (
             <CardDescription className="flex items-center gap-2 text-accent-foreground p-2 bg-accent rounded-md">
               <Hand className="h-4 w-4"/>
-              Holding: {heldItem.name}. Click on an apparatus to add it. (Press Esc to cancel)
+              Holding: {inventory.heldItem.name}. Click on an apparatus to add it. (Press Esc to cancel)
             </CardDescription>
           )}
           {heldEquipment && !pouringState && (
@@ -574,15 +519,10 @@ export function Workbench({
               ref={workbenchRef}
               className={cn(
                 "relative w-full flex-1",
-                (heldItem || heldEquipment) && "cursor-grabbing",
+                (inventory.heldItem || heldEquipment) && "cursor-grabbing",
                 attachmentState && "cursor-crosshair",
               )}
-              onMouseDown={onWorkbenchClick}
-              onMouseUp={() => {
-                if (heldItem && hoveredEquipmentId) {
-                  onDropOnApparatus(hoveredEquipmentId);
-                }
-              }}
+              onMouseDown={handleWorkbenchClick}
             >
               <div 
                 id="lab-slab" 
@@ -594,9 +534,9 @@ export function Workbench({
                 }}
               ></div>
                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                {state.connections.map(conn => {
-                    const from = state.equipment.find(e => e.id === conn.from);
-                    const to = state.equipment.find(e => e.id === conn.to);
+                {experimentState.connections.map(conn => {
+                    const from = experimentState.equipment.find(e => e.id === conn.from);
+                    const to = experimentState.equipment.find(e => e.id === conn.to);
                     if (!from || !to) return null;
                     return (
                         <g key={conn.id} className="group">
@@ -624,18 +564,15 @@ export function Workbench({
                     );
                 })}
               </svg>
-              {state.equipment.filter(e => !e.attachedTo).length > 0 ? (
+              {experimentState.equipment.filter(e => !e.attachedTo).length > 0 ? (
                   <>
-                      {state.equipment.filter(e => !e.attachedTo).map(item => (
+                      {experimentState.equipment.filter(e => !e.attachedTo).map(item => (
                           <EquipmentDisplay 
                               key={item.id}
                               item={item} 
-                              onMouseDown={onDragStart}
-                              onClick={onEquipmentClick}
-                              onMouseUp={onMouseUpOnEquipment}
-                              onRemove={onRemoveSelectedEquipment}
-                              onResize={onResizeEquipment}
-                              onDetach={onDetach}
+                              onMouseDown={handleEquipmentMouseDown}
+                              onClick={handleEquipmentClick}
+                              onMouseUp={handleEquipmentMouseUp}
                               isHoverTarget={(isHoldingSomething || !!attachmentState) && hoveredEquipmentId === item.id}
                               isHeld={heldEquipment?.id === item.id}
                           />

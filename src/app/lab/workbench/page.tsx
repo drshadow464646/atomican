@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { InventoryPanel } from '@/components/inventory-panel';
 import { Workbench } from '@/components/workbench';
 import { EquipmentDetailsPanel } from '@/components/equipment-details-panel';
@@ -21,38 +21,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 function WorkbenchPageContent() {
   const { 
     experimentState,
-    // Data from inventory context
-    inventoryChemicals,
-    inventoryEquipment,
-    // Actions from experiment context
-    handleAddEquipmentToWorkbench,
-    handleDropOnApparatus,
-    handleTitrate,
-    handleRemoveSelectedEquipment,
-    handleResizeEquipment,
-    handleSelectEquipment,
-    heldItem,
+    inventory,
     heldEquipment,
-    handlePickUpChemical,
-    handleClearHeldItem,
-    handlePour,
-    handleCancelPour,
     pouringState,
+    setPouringState,
     attachmentState,
-    handleDragStart,
-    handleWorkbenchClick,
-    handleEquipmentClick,
-    handleMouseUpOnEquipment,
-    handleDetach,
-    handleInitiateAttachment,
-    handleCancelAttachment,
-    handleRemoveConnection,
-    handleResetWorkbench,
+    setAttachmentState,
+    handleClearHeldItem,
+    handleRemoveSelectedEquipment,
   } = useExperiment();
-
-  const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
+  
   const isMobile = useIsMobile();
   const [isClient, setIsClient] = useState(false);
+  const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
@@ -61,14 +42,14 @@ function WorkbenchPageContent() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (heldItem || heldEquipment) {
+        if (inventory.heldItem || heldEquipment) {
             handleClearHeldItem();
         }
         if (pouringState) {
-            handleCancelPour();
+            setPouringState(null);
         }
         if (attachmentState) {
-            handleCancelAttachment();
+            setAttachmentState(null);
         }
       }
       const selectedIds = experimentState.equipment.filter(eq => eq.isSelected).map(eq => eq.id);
@@ -77,49 +58,27 @@ function WorkbenchPageContent() {
       }
     };
 
-    const resetListener = () => handleResetWorkbench();
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('reset-workbench', resetListener);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('reset-workbench', resetListener);
     };
-  }, [heldItem, heldEquipment, pouringState, attachmentState, handleClearHeldItem, handleCancelPour, handleCancelAttachment, experimentState.equipment, handleRemoveSelectedEquipment, handleResetWorkbench]);
+  }, [
+      inventory.heldItem, heldEquipment, pouringState, attachmentState, 
+      handleClearHeldItem, setPouringState, setAttachmentState,
+      experimentState.equipment, handleRemoveSelectedEquipment
+  ]);
 
   const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
   const selectedCount = experimentState.equipment.filter(e => e.isSelected).length;
   
-  const workbenchContent = (
-      <Workbench 
-          state={experimentState} 
-          onTitrate={handleTitrate}
-          onResizeEquipment={handleResizeEquipment}
-          onSelectEquipment={handleSelectEquipment}
-          onDropOnApparatus={handleDropOnApparatus}
-          onPour={handlePour}
-          onCancelPour={handleCancelPour}
-          heldItem={heldItem}
-          heldEquipment={heldEquipment}
-          onRemoveSelectedEquipment={handleRemoveSelectedEquipment}
-          pouringState={pouringState}
-          attachmentState={attachmentState}
-          onDragStart={handleDragStart}
-          onWorkbenchClick={handleWorkbenchClick}
-          onEquipmentClick={handleEquipmentClick}
-          onMouseUpOnEquipment={handleMouseUpOnEquipment}
-          onDetach={handleDetach}
-          onRemoveConnection={handleRemoveConnection}
-      />
-  );
+  const workbenchContent = <Workbench />;
   
   const inventoryContent = (
       <InventoryPanel
-        equipment={inventoryEquipment}
-        chemicals={inventoryChemicals}
-        onAddEquipment={handleAddEquipmentToWorkbench}
-        onPickUpChemical={handlePickUpChemical}
+        equipment={inventory.equipment}
+        chemicals={inventory.chemicals}
         isCollapsed={isMobile ? false : !isInventoryPanelVisible}
-        heldItem={heldItem}
+        heldItem={inventory.heldItem}
       />
   );
 
@@ -174,7 +133,7 @@ function WorkbenchPageContent() {
         <ResizableHandle withHandle suppressHydrationWarning />
         <ResizablePanel defaultSize={75} className="relative">
             {workbenchContent}
-            {selectedEquipment && selectedCount === 1 && !heldItem && !heldEquipment && !pouringState && !attachmentState && (
+            {selectedEquipment && selectedCount === 1 && !inventory.heldItem && !heldEquipment && !pouringState && !attachmentState && (
               <div className="absolute top-4 right-4 z-20 w-80">
                 <EquipmentDetailsPanel equipment={selectedEquipment} />
               </div>
