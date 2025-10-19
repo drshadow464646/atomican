@@ -70,6 +70,7 @@ function WorkbenchPageContent() {
 
   const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
   const selectedCount = experimentState.equipment.filter(e => e.isSelected).length;
+  const isHoldingSomething = !!inventory.heldItem || !!heldEquipment;
   
   const workbenchContent = <Workbench />;
   
