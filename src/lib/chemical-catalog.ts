@@ -82,4 +82,37 @@ export const commonChemicals: Chemical[] = [
     type: 'oxidant',
     concentration: 0.02,
   },
+  {
+    id: 'nitric-acid-0-1m',
+    name: 'Nitric Acid',
+    formula: 'HNO₃',
+    type: 'acid',
+    concentration: 0.1,
+  },
+  {
+    id: 'sodium-carbonate-0-1m',
+    name: 'Sodium Carbonate',
+    formula: 'Na₂CO₃',
+    type: 'base',
+    concentration: 0.1,
+  },
+  {
+    id: 'silver-nitrate-0-1m',
+    name: 'Silver Nitrate',
+    formula: 'AgNO₃',
+    type: 'salt',
+    concentration: 0.1,
+  },
+  {
+    id: 'ethanol',
+    name: 'Ethanol',
+    formula: 'C₂H₅OH',
+    type: 'solvent',
+  },
+  {
+    id: 'bromothymol-blue',
+    name: 'Bromothymol Blue',
+    formula: 'C₂₇H₂₈Br₂O₅S',
+    type: 'indicator',
+  },
 ];
