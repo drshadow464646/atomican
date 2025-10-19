@@ -105,7 +105,7 @@ const ErlenmeyerFlaskIcon = ({ item, fillPercentage, size }: { item: Equipment, 
             <ReactionEffects item={item} />
             <svg viewBox="0 0 100 120" className="w-full h-full">
                 {fillPercentage > 0 && color && (
-                    <Liquid d={`M10,${liquidY} L 90,${liquidY} L 90,115 A 5,5 0 0 1 85,120 H 15 A 5,5 0 0 1 10,115 Z`} color={color} isReacting={isReacting}/>
+                    <Liquid d={`M10,${liquidY} L 90,${liquidY} L 90,115 A 5,5 0.0 1 85,120 H 15 A 5,5 0 0 1 10,115 Z`} color={color} isReacting={isReacting}/>
                 )}
                 <path d="M35,10 H 65 M30,20 H 70 M30,20 L10,115 A 5,5 0 0 0 15,120 H 85 A 5,5 0 0 0 90,115 L 70,20" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="2" fill="transparent" />
             </svg>
@@ -285,12 +285,9 @@ const EquipmentDisplay = ({
   isHeld: boolean,
   onMouseDown: (id: string, e: React.MouseEvent) => void,
   onClick: (id: string, e: React.MouseEvent) => void,
-  onMouseUp: (id: string) => void,
-  onRemove: (id: string) => void,
-  onResize: (id: string, size: number) => void,
-  onDetach?: (id: string) => void,
+  onMouseUp: (id: string) => void
 }) => {
-    const { onResize, onRemove, onDetach } = useExperiment();
+    const { handleResizeEquipment, handleRemoveSelectedEquipment, handleDetach } = useExperiment();
     const totalVolume = item.solutions?.reduce((sum, s) => sum + s.volume, 0) || 0;
     const fillPercentage = item.volume ? (totalVolume / item.volume) * 100 : 0;
     
@@ -306,7 +303,7 @@ const EquipmentDisplay = ({
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const deltaY = moveEvent.clientY - startY;
             const newSize = Math.max(0.5, Math.min(2.5, startSize + deltaY / 100));
-            onResize(item.id, newSize);
+            handleResizeEquipment(item.id, newSize);
         };
 
         const handleMouseUp = () => {
@@ -402,13 +399,13 @@ const EquipmentDisplay = ({
                     className="absolute -top-3 -right-3 h-6 w-6 rounded-full z-20"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRemove(item.id);
+                      handleRemoveSelectedEquipment(item.id);
                     }}
                 >
                     <X className="h-4 w-4" />
                 </Button>
-                {onDetach && item.attachedTo && (
-                    <Button size="icon" variant="secondary" className="absolute -top-3 -left-3 h-6 w-6 rounded-full z-20" onClick={(e) => {e.stopPropagation(); onDetach(item.id)}}>
+                {handleDetach && item.attachedTo && (
+                    <Button size="icon" variant="secondary" className="absolute -top-3 -left-3 h-6 w-6 rounded-full z-20" onClick={(e) => {e.stopPropagation(); handleDetach(item.id)}}>
                         <Ungroup className="h-4 w-4" />
                     </Button>
                 )}
@@ -436,8 +433,8 @@ export function Workbench() {
     pouringState,
     setPouringState,
     attachmentState,
+    handlePour,
     onTitrate,
-    onPour,
     onRemoveConnection,
     inventory
   } = useExperiment();
@@ -600,7 +597,7 @@ export function Workbench() {
                         <span className="text-sm font-mono w-24 text-center">{pourVolume.toFixed(2)} ml</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => onPour(pourVolume)} className='flex-1' variant="default">
+                        <Button onClick={() => handlePour(pourVolume)} className='flex-1' variant="default">
                             {pouringState.sourceId === 'inventory' ? 'Add' : 'Pour'}
                         </Button>
                         <Button onClick={onCancelPour} className='flex-1' variant="outline">Cancel</Button>

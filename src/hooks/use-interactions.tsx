@@ -68,7 +68,7 @@ export function useInteractions(workbenchRef: React.RefObject<HTMLDivElement>) {
                 const allEquipment = experimentState.equipment.flatMap(eq => [eq, ...(eq.attachments || [])]);
                 const currentPos = allEquipment.find(eq => eq.id === item.id)?.position;
                 if (currentPos && (Math.abs(newX - currentPos.x) > 5 || Math.abs(newY - currentPos.y) > 5)) {
-                    item.hasMoved = true;
+                    dragState.current.hasMoved = true;
                 }
             }
 

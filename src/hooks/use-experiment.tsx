@@ -23,12 +23,6 @@ const initialExperimentState: ExperimentState = {
   color: 'transparent',
 };
 
-type DragState = { 
-  id: string; 
-  offset: { x: number; y: number; }; 
-  hasMoved: boolean; 
-} | null;
-
 type AttachmentState = {
     sourceId: string;
 } | null;
@@ -37,7 +31,6 @@ type ExperimentContextType = {
   experimentState: ExperimentState;
   labLogs: LabLog[];
   heldEquipment: Equipment | null;
-  setHeldEquipment: React.Dispatch<React.SetStateAction<Equipment | null>>;
   pouringState: { sourceId: string; targetId: string; } | null;
   setPouringState: React.Dispatch<React.SetStateAction<{ sourceId: string; targetId: string; } | null>>;
   attachmentState: AttachmentState;
@@ -57,7 +50,9 @@ type ExperimentContextType = {
   handleClearHeldItem: () => void;
   handleDetach: (equipmentId: string) => void;
   handleInitiateAttachment: (sourceId: string) => void;
-  handleRemoveConnection: (connectionId: string) => void;
+  onRemoveConnection: (connectionId: string) => void;
+
+  onTitrate: (volume: number) => void; // for workbench
 
   // From InventoryContext
   inventory: {
@@ -497,7 +492,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     addLog('Select another piece of equipment to connect to.');
   }, [addLog]);
   
-  const handleRemoveConnection = useCallback((connectionId: string) => {
+  const onRemoveConnection = useCallback((connectionId: string) => {
     setExperimentState(prevState => {
         const conn = prevState.connections.find(c => c.id === connectionId);
         if (conn) {
@@ -516,7 +511,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     experimentState,
     labLogs,
     heldEquipment,
-    setHeldEquipment,
+    setHeldEquipment: ()=>{},
     pouringState,
     setPouringState,
     attachmentState,
@@ -531,11 +526,11 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDropOnApparatus,
     handlePickUpEquipment,
     handlePour,
-    handleTitrate,
+    onTitrate: handleTitrate,
     handleClearHeldItem,
     handleDetach,
     handleInitiateAttachment,
-    handleRemoveConnection,
+    onRemoveConnection,
     inventory: {
         chemicals: inventoryContext.inventoryChemicals,
         equipment: inventoryContext.inventoryEquipment,
@@ -549,7 +544,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResetWorkbench, addLog, handleAddEquipmentToWorkbench, handleRemoveSelectedEquipment,
     handleResizeEquipment, handleMoveEquipment, handleSelectEquipment, handleDropOnApparatus,
     handlePickUpEquipment, handlePour, handleTitrate, handleClearHeldItem,
-    handleDetach, handleInitiateAttachment, handleRemoveConnection,
+    handleDetach, handleInitiateAttachment, onRemoveConnection,
     inventoryContext,
   ]);
 
