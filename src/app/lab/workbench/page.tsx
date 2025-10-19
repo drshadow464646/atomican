@@ -75,10 +75,7 @@ function WorkbenchPageContent() {
   
   const inventoryContent = (
       <InventoryPanel
-        equipment={inventory.equipment}
-        chemicals={inventory.chemicals}
         isCollapsed={isMobile ? false : !isInventoryPanelVisible}
-        heldItem={inventory.heldItem}
       />
   );
 

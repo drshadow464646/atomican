@@ -15,12 +15,10 @@ import {
 } from "@/components/ui/accordion"
 import Link from 'next/link';
 import { useExperiment } from '@/hooks/use-experiment';
+import { useInventory } from '@/hooks/use-inventory';
 
 type InventoryPanelProps = {
-  equipment: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[];
-  chemicals: Chemical[];
   isCollapsed: boolean;
-  heldItem: Chemical | null;
 };
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
@@ -33,12 +31,10 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
 };
 
 export function InventoryPanel({
-  equipment,
-  chemicals,
   isCollapsed,
-  heldItem,
 }: InventoryPanelProps) {
-    const { handleAddEquipmentToWorkbench, inventory } = useExperiment();
+    const { handleAddEquipmentToWorkbench, inventory: expInventory } = useExperiment();
+    const { inventoryChemicals, inventoryEquipment, heldItem, handlePickUpChemical } = useInventory();
     
     if (isCollapsed) {
     return (
@@ -58,11 +54,11 @@ export function InventoryPanel({
       <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto pt-0 sm:pt-0">
         <Accordion type="multiple" defaultValue={['equipment', 'chemicals']} className="w-full">
           <AccordionItem value="equipment">
-            <AccordionTrigger className="text-base font-medium">Equipment ({equipment.length})</AccordionTrigger>
+            <AccordionTrigger className="text-base font-medium">Equipment ({inventoryEquipment.length})</AccordionTrigger>
             <AccordionContent>
-              {equipment.length > 0 ? (
+              {inventoryEquipment.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2 pt-2">
-                  {equipment.map((item) => (
+                  {inventoryEquipment.map((item) => (
                     <Button
                       key={item.id}
                       variant="outline"
@@ -83,11 +79,11 @@ export function InventoryPanel({
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="chemicals">
-            <AccordionTrigger className="text-base font-medium">Chemicals ({chemicals.length})</AccordionTrigger>
+            <AccordionTrigger className="text-base font-medium">Chemicals ({inventoryChemicals.length})</AccordionTrigger>
             <AccordionContent>
-              {chemicals.length > 0 ? (
+              {inventoryChemicals.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2 pt-2">
-                  {chemicals.map((chem) => (
+                  {inventoryChemicals.map((chem) => (
                     <div key={chem.id} className={cn(
                         "rounded-md border p-2 transition-all",
                         heldItem?.id === chem.id && "ring-2 ring-primary bg-primary/10"
@@ -107,7 +103,7 @@ export function InventoryPanel({
                                 size="icon"
                                 variant="ghost"
                                 className="h-8 w-8"
-                                onClick={() => inventory.pickUpChemical(chem)}
+                                onClick={() => handlePickUpChemical(chem)}
                               >
                                   <Hand className="h-4 w-4" />
                               </Button>
