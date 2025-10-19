@@ -3,6 +3,13 @@ import type { Equipment } from './experiment';
 
 export const commonApparatus: Omit<Equipment, 'position' | 'isSelected' | 'size' | 'solutions'>[] = [
     {
+        id: 'beaker-100ml',
+        name: 'Beaker (100ml)',
+        type: 'beaker',
+        volume: 100,
+        description: 'A cylindrical container used to hold, mix, and heat liquids.',
+    },
+    {
         id: 'beaker-250ml',
         name: 'Beaker (250ml)',
         type: 'beaker',
@@ -17,11 +24,25 @@ export const commonApparatus: Omit<Equipment, 'position' | 'isSelected' | 'size'
         description: 'A conical flask used to hold and mix chemicals, minimizing splashing.',
     },
     {
+        id: 'erlenmeyer-flask-500ml',
+        name: 'Erlenmeyer Flask (500ml)',
+        type: 'erlenmeyer-flask',
+        volume: 500,
+        description: 'A conical flask used to hold and mix chemicals, minimizing splashing.',
+    },
+    {
+        id: 'graduated-cylinder-50ml',
+        name: 'Graduated Cylinder (50ml)',
+        type: 'graduated-cylinder',
+        volume: 50,
+        description: 'Used to accurately measure the volume of a liquid.',
+    },
+    {
         id: 'graduated-cylinder-100ml',
         name: 'Graduated Cylinder (100ml)',
         type: 'graduated-cylinder',
         volume: 100,
-        description: 'Used to measure the volume of a liquid.',
+        description: 'Used to accurately measure the volume of a liquid.',
     },
     {
         id: 'burette-50ml',
@@ -76,3 +97,4 @@ export const commonApparatus: Omit<Equipment, 'position' | 'isSelected' | 'size'
         description: 'Attaches to a ring stand to hold glassware, such as a burette or flask.',
     },
 ];
+
