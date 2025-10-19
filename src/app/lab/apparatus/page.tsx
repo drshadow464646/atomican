@@ -127,7 +127,7 @@ export default function ApparatusPage() {
                       <Badge variant="secondary">{item.type}</Badge>
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex-1">
                     <p className="text-sm text-muted-foreground text-center">
                         {item.description}
                     </p>
