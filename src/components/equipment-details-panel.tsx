@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Equipment, Solution } from '@/lib/experiment';
-import { Droplets, Beaker, ChevronsRight, Thermometer, Link, Link2Off } from 'lucide-react';
+import { Droplets, Beaker, ChevronsRight, Thermometer, Link, Link2Off, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { useExperiment } from '@/hooks/use-experiment';
@@ -14,12 +14,13 @@ type EquipmentDetailsPanelProps = {
 };
 
 export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps) {
-  const { handleInitiateAttachment, attachmentState, setAttachmentState } = useExperiment();
+  const { handleInitiateAttachment, attachmentState, setAttachmentState, handleMixSolutions } = useExperiment();
   const totalVolume = equipment.solutions?.reduce((acc, s) => acc + s.volume, 0) || 0;
   const hasContents = equipment.solutions && equipment.solutions.length > 0;
   const reaction = equipment.reactionEffects;
 
   const isAttaching = attachmentState?.sourceId === equipment.id;
+  const canMix = equipment.solutions && equipment.solutions.length > 1;
 
   const handleCancelAttachment = () => setAttachmentState(null);
 
@@ -36,14 +37,22 @@ export function EquipmentDetailsPanel({ equipment }: EquipmentDetailsPanelProps)
                     {equipment.description}
                 </CardDescription>
             </div>
-            <Button
-                variant={isAttaching ? 'destructive' : 'outline'}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => isAttaching ? handleCancelAttachment() : handleInitiateAttachment(equipment.id)}
-            >
-                {isAttaching ? <Link2Off className="h-4 w-4" /> : <Link className="h-4 w-4" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              {canMix && (
+                <Button variant="secondary" size="sm" onClick={() => handleMixSolutions(equipment.id)} disabled={equipment.isReacting}>
+                  <FlaskConical className="h-4 w-4 mr-2" />
+                  Mix
+                </Button>
+              )}
+              <Button
+                  variant={isAttaching ? 'destructive' : 'outline'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => isAttaching ? handleCancelAttachment() : handleInitiateAttachment(equipment.id)}
+              >
+                  {isAttaching ? <Link2Off className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+              </Button>
+            </div>
         </div>
       </CardHeader>
       <CardContent className="text-sm">

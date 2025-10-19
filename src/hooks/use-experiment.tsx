@@ -6,6 +6,7 @@ import type { ExperimentState, LabLog, Chemical, Equipment, Solution, ReactionPr
 import { useToast } from '@/hooks/use-toast';
 import { getReactionPrediction } from '@/app/actions';
 import { useInventory } from './use-inventory';
+import { getIndicatorColor, calculatePH } from '@/lib/experiment';
 
 let logIdCounter = 0;
 const getUniqueLogId = () => {
@@ -46,13 +47,13 @@ type ExperimentContextType = {
   handleDropOnApparatus: (equipmentId: string) => void;
   handlePickUpEquipment: (id: string) => void;
   handlePour: (volume: number) => void;
-  handleTitrate: (volume: number) => void;
   handleClearHeldItem: () => void;
   handleDetach: (equipmentId: string) => void;
   handleInitiateAttachment: (sourceId: string) => void;
   onRemoveConnection: (connectionId: string) => void;
 
   onTitrate: (volume: number) => void; // for workbench
+  handleMixSolutions: (equipmentId: string) => void;
 
   // From InventoryContext
   inventory: {
@@ -314,9 +315,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     if (!pouringState) return;
     const { sourceId, targetId } = pouringState;
 
-    let pouredSolutions: Solution[] = [];
-    let allReactants: Solution[] = [];
-    
     setExperimentState(prevState => {
       const newState = { ...prevState };
       const target = newState.equipment.find(e => e.id === targetId);
@@ -334,7 +332,14 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
       if (sourceId === 'inventory') {
         if (!inventoryContext.heldItem) return prevState;
         addLog(`Adding ${pourVolumeClamped.toFixed(1)}ml of ${inventoryContext.heldItem.name} to ${target.name}.`);
-        pouredSolutions = [{ chemical: inventoryContext.heldItem, volume: pourVolumeClamped }];
+        const pouredSolution: Solution = { chemical: inventoryContext.heldItem, volume: pourVolumeClamped };
+        
+        const existingSol = target.solutions.find(s => s.chemical.id === pouredSolution.chemical.id);
+        if (existingSol) {
+          existingSol.volume += pouredSolution.volume;
+        } else {
+          target.solutions.push(pouredSolution);
+        }
       } else {
         const source = newState.equipment.find(e => e.id === sourceId);
         if (!source || !source.solutions) return prevState;
@@ -349,7 +354,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         const pourFraction = sourceVolumeToAdjust / sourceVolume;
         addLog(`Pouring ${sourceVolumeToAdjust.toFixed(1)}ml from ${source.name} to ${target.name}.`);
 
-        pouredSolutions = source.solutions.map(sol => ({ ...sol, volume: sol.volume * pourFraction }));
+        const pouredSolutions = source.solutions.map(sol => ({ ...sol, volume: sol.volume * pourFraction }));
         
         source.solutions = source.solutions.map(s => ({
             ...s,
@@ -359,43 +364,59 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
         if (source.solutions.length === 0) {
             source.color = 'transparent';
             source.ph = 7;
-        }
-      }
-
-      for (const pouredSol of pouredSolutions) {
-        const existingSol = target.solutions.find(s => s.chemical.id === pouredSol.chemical.id);
-        if (existingSol) {
-          existingSol.volume += pouredSol.volume;
         } else {
-          target.solutions.push(pouredSol);
+            source.ph = calculatePH(source.solutions);
+            const indicator = source.solutions.find(s => s.chemical.type === 'indicator');
+            source.color = indicator ? getIndicatorColor(indicator.chemical.id, source.ph) : 'transparent';
+        }
+
+        for (const pouredSol of pouredSolutions) {
+            const existingSol = target.solutions.find(s => s.chemical.id === pouredSol.chemical.id);
+            if (existingSol) {
+              existingSol.volume += pouredSol.volume;
+            } else {
+              target.solutions.push(pouredSol);
+            }
         }
       }
       
-      allReactants = [...target.solutions];
-      target.isReacting = true;
+      target.ph = calculatePH(target.solutions);
+      const indicator = target.solutions.find(s => s.chemical.type === 'indicator');
+      target.color = indicator ? getIndicatorColor(indicator.chemical.id, target.ph) : 'transparent';
+
       return { ...newState };
     });
     
     setPouringState(null);
     handleClearHeldItem();
     
-    if (allReactants.length > 0) {
-      addLog('Analyzing reaction...');
-      getReactionPrediction(allReactants).then(prediction => {
-        applyReactionPrediction(targetId, prediction);
-      });
-    } else {
-       // This can happen if pouring into an empty container from an empty one.
-       // We should still turn off the reacting state.
-       setExperimentState(prevState => {
-         const equipment = prevState.equipment.find(e => e.id === targetId);
-         if (equipment) equipment.isReacting = false;
-         return {...prevState};
-       });
-    }
-
   }, [addLog, pouringState, inventoryContext.heldItem, toast, handleClearHeldItem]);
   
+  const handleMixSolutions = useCallback(async (equipmentId: string) => {
+    const equipment = experimentState.equipment.find(e => e.id === equipmentId);
+    if (!equipment || !equipment.solutions || equipment.solutions.length < 2) return;
+
+    if (!handleSafetyCheck()) return;
+
+    addLog(`Mixing solutions in ${equipment.name}. Analyzing reaction...`);
+    setExperimentState(prevState => ({
+      ...prevState,
+      equipment: prevState.equipment.map(e => e.id === equipmentId ? {...e, isReacting: true} : e),
+    }));
+
+    try {
+      const prediction = await getReactionPrediction(equipment.solutions);
+      applyReactionPrediction(equipmentId, prediction);
+    } catch (error) {
+      console.error("Reaction prediction failed:", error);
+      toast({ title: 'Error', description: 'Could not predict the reaction outcome.', variant: 'destructive' });
+      setExperimentState(prevState => ({
+        ...prevState,
+        equipment: prevState.equipment.map(e => e.id === equipmentId ? {...e, isReacting: false} : e),
+      }));
+    }
+  }, [experimentState.equipment, addLog, toast, handleSafetyCheck]);
+
   const handlePickUpEquipment = useCallback((id: string) => {
     const allEquipment = [...experimentState.equipment, ...experimentState.equipment.flatMap(e => e.attachments || [])];
     const equipment = allEquipment.find(e => e.id === id);
@@ -511,7 +532,6 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     experimentState,
     labLogs,
     heldEquipment,
-    setHeldEquipment: ()=>{},
     pouringState,
     setPouringState,
     attachmentState,
@@ -531,6 +551,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleDetach,
     handleInitiateAttachment,
     onRemoveConnection,
+    handleMixSolutions,
     inventory: {
         chemicals: inventoryContext.inventoryChemicals,
         equipment: inventoryContext.inventoryEquipment,
@@ -544,7 +565,7 @@ export function ExperimentProvider({ children }: { children: React.ReactNode }) 
     handleResetWorkbench, addLog, handleAddEquipmentToWorkbench, handleRemoveSelectedEquipment,
     handleResizeEquipment, handleMoveEquipment, handleSelectEquipment, handleDropOnApparatus,
     handlePickUpEquipment, handlePour, handleTitrate, handleClearHeldItem,
-    handleDetach, handleInitiateAttachment, onRemoveConnection,
+    handleDetach, handleInitiateAttachment, onRemoveConnection, handleMixSolutions,
     inventoryContext,
   ]);
 
