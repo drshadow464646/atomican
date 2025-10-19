@@ -18,8 +18,8 @@ export default function ModelTestPage() {
   const [postStatus, setPostStatus] = useState<TestStatus>('idle');
   const [postResponse, setPostResponse] = useState<TestResult | null>(null);
 
-  const primaryModelId = "qwen/qwen3-coder:free";
-  const secondaryModelId = "meituan/longcat-flash-chat:free";
+  const primaryModelId = "z-ai/glm-4.5-air:free";
+  const secondaryModelId = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free";
 
   const fetchModels = async () => {
     setListStatus('loading');

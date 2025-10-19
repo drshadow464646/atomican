@@ -5,8 +5,8 @@
  */
 
 const MODELS_TO_TRY = [
-  "qwen/qwen3-coder:free",
-  "meituan/longcat-flash-chat:free",
+  "z-ai/glm-4.5-air:free",
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
 ];
 
 /**
