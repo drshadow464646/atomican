@@ -54,4 +54,32 @@ export const commonChemicals: Chemical[] = [
     formula: 'C₁₄H₁₄N₃NaO₃S',
     type: 'indicator',
   },
+  {
+    id: 'acetic-acid-0-1m',
+    name: 'Acetic Acid',
+    formula: 'CH₃COOH',
+    type: 'acid',
+    concentration: 0.1,
+  },
+  {
+    id: 'ammonia-0-1m',
+    name: 'Ammonia',
+    formula: 'NH₃',
+    type: 'base',
+    concentration: 0.1,
+  },
+  {
+    id: 'copper-sulfate-0-1m',
+    name: 'Copper (II) Sulfate',
+    formula: 'CuSO₄',
+    type: 'salt',
+    concentration: 0.1,
+  },
+  {
+    id: 'potassium-permanganate-0-02m',
+    name: 'Potassium Permanganate',
+    formula: 'KMnO₄',
+    type: 'oxidant',
+    concentration: 0.02,
+  },
 ];
