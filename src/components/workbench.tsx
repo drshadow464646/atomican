@@ -454,6 +454,7 @@ export function Workbench() {
   const hasTitrationTarget = experimentState.equipment.some((e) => e.type === 'beaker' || e.type === 'erlenmeyer-flask');
   
   const selectedEquipment = experimentState.equipment.find(e => e.isSelected);
+  const selectedCount = experimentState.equipment.filter(e => e.isSelected).length;
   const isHoldingSomething = !!inventory.heldItem || !!heldEquipment;
 
   const pouringSourceItem = pouringState ? (pouringState.sourceId === 'inventory' ? inventory.heldItem : experimentState.equipment.find(e => e.id === pouringState.sourceId)) : null;

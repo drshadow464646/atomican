@@ -41,7 +41,25 @@ Do not include any other text, markdown formatting, or explanations.`;
       throw new Error("The AI returned an empty response from both models.");
     }
     
-    const parsedOutput = JSON.parse(textResponse);
+    // Find the start of the JSON
+    const jsonStartIndex = textResponse.indexOf('{');
+    const arrayStartIndex = textResponse.indexOf('[');
+    
+    let startIndex = -1;
+    if (jsonStartIndex !== -1 && arrayStartIndex !== -1) {
+        startIndex = Math.min(jsonStartIndex, arrayStartIndex);
+    } else if (jsonStartIndex !== -1) {
+        startIndex = jsonStartIndex;
+    } else {
+        startIndex = arrayStartIndex;
+    }
+
+    if (startIndex === -1) {
+        throw new Error("No JSON object or array found in the AI's response.");
+    }
+    
+    const jsonString = textResponse.substring(startIndex);
+    const parsedOutput = JSON.parse(jsonString);
     
     // The AI might return an array directly, or an object with an "equipment" key.
     // This handles both cases safely.

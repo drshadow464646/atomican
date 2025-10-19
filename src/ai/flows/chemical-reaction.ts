@@ -56,7 +56,14 @@ Consider acid-base neutralization, redox reactions, precipitation, and gas evolu
       throw new Error("The AI returned an empty response from both models.");
     }
     
-    const parsedOutput = JSON.parse(textResponse);
+    // Find the start of the JSON object
+    const jsonStartIndex = textResponse.indexOf('{');
+    if (jsonStartIndex === -1) {
+        throw new Error("No JSON object found in the AI's response.");
+    }
+    const jsonString = textResponse.substring(jsonStartIndex);
+
+    const parsedOutput = JSON.parse(jsonString);
     const validation = ReactionPredictionSchema.safeParse(parsedOutput);
 
     if (!validation.success) {

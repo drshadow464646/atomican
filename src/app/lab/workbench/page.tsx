@@ -128,13 +128,15 @@ function WorkbenchPageContent() {
           {inventoryContent}
         </ResizablePanel>
         <ResizableHandle withHandle suppressHydrationWarning />
-        <ResizablePanel defaultSize={75} className="relative">
-            {workbenchContent}
-            {selectedEquipment && selectedCount === 1 && !inventory.heldItem && !heldEquipment && !pouringState && !attachmentState && (
-              <div className="absolute top-4 right-4 z-20 w-80">
-                <EquipmentDetailsPanel equipment={selectedEquipment} />
-              </div>
-            )}
+        <ResizablePanel defaultSize={75} className="relative p-4">
+            <div className="relative w-full h-full">
+                {workbenchContent}
+                {selectedEquipment && selectedCount === 1 && !isHoldingSomething && !pouringState && !attachmentState && (
+                  <div className="absolute top-0 right-0 z-20 w-full max-w-sm sm:w-80">
+                    <EquipmentDetailsPanel equipment={selectedEquipment} />
+                  </div>
+                )}
+            </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
