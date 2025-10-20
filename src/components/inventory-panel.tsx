@@ -2,7 +2,7 @@
 'use client';
 
 import { Beaker, FlaskConical, Pipette, Droplets, Package, Hand } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Chemical, Equipment } from '@/lib/experiment';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -16,10 +16,8 @@ import {
 import Link from 'next/link';
 import { useExperiment } from '@/hooks/use-experiment';
 import { useInventory } from '@/hooks/use-inventory';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-type InventoryPanelProps = {
-  isCollapsed: boolean;
-};
 
 const equipmentIcons: { [key: string]: React.ReactNode } = {
     'beaker': <Beaker className="mr-2 h-5 w-5" />,
@@ -32,9 +30,12 @@ const equipmentIcons: { [key: string]: React.ReactNode } = {
 
 export function InventoryPanel({
   isCollapsed,
-}: InventoryPanelProps) {
+}: {
+  isCollapsed: boolean;
+}) {
     const { handleAddEquipmentToWorkbench, inventory: expInventory } = useExperiment();
     const { inventoryChemicals, inventoryEquipment, heldItem, handlePickUpChemical } = useInventory();
+    const isMobile = useIsMobile();
     
     if (isCollapsed) {
     return (
@@ -43,6 +44,102 @@ export function InventoryPanel({
       </div>
     );
   }
+  
+  const cardContent = (
+    <>
+      <Accordion type="multiple" defaultValue={['equipment', 'chemicals']} className="w-full">
+        <AccordionItem value="equipment">
+          <AccordionTrigger className="text-base font-medium">Equipment ({inventoryEquipment.length})</AccordionTrigger>
+          <AccordionContent>
+            {inventoryEquipment.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2 pt-2">
+                {inventoryEquipment.map((item) => (
+                  <Button
+                    key={item.id}
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => handleAddEquipmentToWorkbench(item)}
+                  >
+                    {equipmentIcons[item.type] || <Beaker className="mr-2 h-5 w-5" />}
+                    {item.name}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                <p>No equipment in your inventory.</p>
+                <Button variant="link" asChild><Link href="/lab/apparatus">Add from Catalog</Link></Button>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="chemicals">
+          <AccordionTrigger className="text-base font-medium">Chemicals ({inventoryChemicals.length})</AccordionTrigger>
+          <AccordionContent>
+            {inventoryChemicals.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2 pt-2">
+                {inventoryChemicals.map((chem) => (
+                  <div key={chem.id} className={cn(
+                      "rounded-md border p-2 transition-all",
+                      heldItem?.id === chem.id && "ring-2 ring-primary bg-primary/10"
+                    )}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Droplets className="mr-2 h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-semibold">{chem.name}</p>
+                          <p className="text-xs text-muted-foreground">{chem.formula}</p>
+                        </div>
+                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => handlePickUpChemical(chem)}
+                            >
+                                <Hand className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Pick up chemical</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                <p>No chemicals in your inventory.</p>
+                <Button variant="link" asChild><Link href="/lab/market">Add from Market</Link></Button>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </>
+  );
+  
+  // On mobile, don't wrap in a Card component
+  if(isMobile) {
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="text-lg font-medium flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Inventory
+            </div>
+            <CardDescription>
+                Items and chemicals you have collected.
+            </CardDescription>
+            {cardContent}
+        </div>
+    )
+  }
+
   return (
     <Card className="h-full flex flex-col border-0 rounded-none bg-transparent sm:bg-card sm:border-border">
       <CardHeader className="hidden sm:block">
@@ -52,80 +149,7 @@ export function InventoryPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto pt-0 sm:pt-0">
-        <Accordion type="multiple" defaultValue={['equipment', 'chemicals']} className="w-full">
-          <AccordionItem value="equipment">
-            <AccordionTrigger className="text-base font-medium">Equipment ({inventoryEquipment.length})</AccordionTrigger>
-            <AccordionContent>
-              {inventoryEquipment.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2 pt-2">
-                  {inventoryEquipment.map((item) => (
-                    <Button
-                      key={item.id}
-                      variant="outline"
-                      className="justify-start"
-                      onClick={() => handleAddEquipmentToWorkbench(item)}
-                    >
-                      {equipmentIcons[item.type] || <Beaker className="mr-2 h-5 w-5" />}
-                      {item.name}
-                    </Button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground text-center py-4">
-                  <p>No equipment in your inventory.</p>
-                  <Button variant="link" asChild><Link href="/lab/apparatus">Add from Catalog</Link></Button>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="chemicals">
-            <AccordionTrigger className="text-base font-medium">Chemicals ({inventoryChemicals.length})</AccordionTrigger>
-            <AccordionContent>
-              {inventoryChemicals.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2 pt-2">
-                  {inventoryChemicals.map((chem) => (
-                    <div key={chem.id} className={cn(
-                        "rounded-md border p-2 transition-all",
-                        heldItem?.id === chem.id && "ring-2 ring-primary bg-primary/10"
-                      )}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Droplets className="mr-2 h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-semibold">{chem.name}</p>
-                            <p className="text-xs text-muted-foreground">{chem.formula}</p>
-                          </div>
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() => handlePickUpChemical(chem)}
-                              >
-                                  <Hand className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Pick up chemical</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground text-center py-4">
-                  <p>No chemicals in your inventory.</p>
-                  <Button variant="link" asChild><Link href="/lab/market">Add from Market</Link></Button>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        {cardContent}
       </CardContent>
     </Card>
   );

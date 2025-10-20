@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/resizable';
 import { ExperimentProvider, useExperiment } from '@/hooks/use-experiment';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, LayoutGrid } from 'lucide-react';
+import { Drawer } from "vaul";
+import { Package, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // The actual page content is now in its own component
@@ -82,18 +82,29 @@ function WorkbenchPageContent() {
 
   if (isMobile) {
     return (
-        <Tabs defaultValue="workbench" className="w-full h-full flex flex-col p-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="workbench"><LayoutGrid className="mr-2 h-4 w-4"/> Workbench</TabsTrigger>
-            <TabsTrigger value="inventory"><Package className="mr-2 h-4 w-4"/> Inventory</TabsTrigger>
-          </TabsList>
-          <TabsContent value="workbench" className="flex-1 overflow-auto mt-2">
-            {workbenchContent}
-          </TabsContent>
-          <TabsContent value="inventory" className="flex-1 overflow-auto mt-2">
-            {inventoryContent}
-          </TabsContent>
-        </Tabs>
+        <Drawer.Root shouldScaleBackground>
+          <div className="h-full flex flex-col relative">
+            <div className="flex-1 min-h-0">
+              {workbenchContent}
+            </div>
+            <Drawer.Trigger asChild>
+              <button className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 p-2 mb-2 rounded-lg bg-background/80 backdrop-blur-sm border shadow-lg flex items-center justify-center gap-2">
+                <Package className="h-5 w-5" />
+                <span className="font-medium">Inventory</span>
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            </Drawer.Trigger>
+          </div>
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 bg-black/40" />
+            <Drawer.Content className="bg-background flex flex-col rounded-t-[10px] h-[90%] mt-24 fixed bottom-0 left-0 right-0">
+                <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted-foreground/50 my-4" />
+                <div className="flex-1 overflow-auto p-4">
+                  {inventoryContent}
+                </div>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
     )
   }
 
