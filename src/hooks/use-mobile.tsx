@@ -1,4 +1,6 @@
 
+'use client';
+
 import { useState, useEffect } from "react"
 import { useIsClient } from "./use-is-client";
 
@@ -24,6 +26,10 @@ export function useIsMobile() {
       window.removeEventListener('resize', checkDevice);
     };
   }, [isClient]);
+
+  if (!isClient) {
+    return null;
+  }
 
   return isMobile;
 }
