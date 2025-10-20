@@ -16,6 +16,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Drawer } from "vaul";
 import { Package, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIsClient } from '@/hooks/use-is-client';
 
 // The actual page content is now in its own component
 function WorkbenchPageContent() {
@@ -32,12 +33,8 @@ function WorkbenchPageContent() {
   } = useExperiment();
   
   const isMobile = useIsMobile();
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useIsClient();
   const [isInventoryPanelVisible, setIsInventoryPanelVisible] = useState(true);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -79,6 +76,16 @@ function WorkbenchPageContent() {
         isCollapsed={isMobile ? false : !isInventoryPanelVisible}
       />
   );
+  
+  if (!isClient) {
+    return (
+        <div className="flex h-full bg-transparent text-foreground">
+            <Skeleton className="w-[25%] h-full" />
+            <div className="w-px bg-border" />
+            <Skeleton className="w-[75%] h-full" />
+        </div>
+    );
+  }
 
   if (isMobile) {
     return (
@@ -106,16 +113,6 @@ function WorkbenchPageContent() {
           </Drawer.Portal>
         </Drawer.Root>
     )
-  }
-
-  if (!isClient) {
-    return (
-        <div className="flex h-full bg-transparent text-foreground">
-            <Skeleton className="w-[25%] h-full" />
-            <div className="w-px bg-border" />
-            <Skeleton className="w-[75%] h-full" />
-        </div>
-    );
   }
 
   return (
